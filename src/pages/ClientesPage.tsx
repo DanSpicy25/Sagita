@@ -4,6 +4,7 @@ import { Cliente } from '@/types'
 import { clientesService } from '@/services/clientes.service'
 import { Button, Input, Modal, Loader, Avatar, EmptyState } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
+import { formatTelefonoVE, handleOnlyNumbersKeyDown } from '@/utils/phone'
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -170,9 +171,10 @@ export default function ClientesPage() {
           <Input
             label="Teléfono / WhatsApp"
             type="tel"
-            placeholder="+1 555-0199"
+            placeholder="+58 412 123 4567"
             value={nuevoCliente.telefono}
-            onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })}
+            onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: formatTelefonoVE(e.target.value) })}
+            onKeyDown={handleOnlyNumbersKeyDown}
             leftIcon={<Phone className="w-4 h-4" />}
           />
 

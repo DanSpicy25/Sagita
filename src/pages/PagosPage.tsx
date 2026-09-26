@@ -18,7 +18,7 @@ import {
   ItemListaEspera,
 } from '@/types'
 import { pagosService } from '@/services/pagos.service'
-import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState, ConfirmDialog } from '@/components/ui'
+import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState } from '@/components/ui'
 import { FacturaModal } from '@/components/pagos/FacturaModal'
 import { useToast } from '@/hooks/useToast'
 
@@ -106,21 +106,14 @@ export default function PagosPage() {
   }
 
   // Eliminar cupón
-  const [cuponParaEliminar, setCuponParaEliminar] = useState<number | null>(null)
-  const [eliminandoCupon, setEliminandoCupon] = useState(false)
-
-  const handleConfirmEliminarCupon = async () => {
-    if (!cuponParaEliminar) return
-    setEliminandoCupon(true)
+  const handleEliminarCupon = async (id: number) => {
+    if (!confirm('¿Deseas retirar este código de descuento?')) return
     try {
-      await pagosService.eliminarCupon(cuponParaEliminar)
+      await pagosService.eliminarCupon(id)
       toast.success('Cupón retirado', 'El cupón ya no podrá ser aplicado')
       cargarDatos()
-      setCuponParaEliminar(null)
     } catch {
       toast.error('Error al eliminar cupón', 'Error en el servidor')
-    } finally {
-      setEliminandoCupon(false)
     }
   }
 
@@ -435,7 +428,7 @@ export default function PagosPage() {
                         Usos: <strong>{c.usos_actuales}</strong> / {c.usos_max ?? '∞'}
                       </span>
                       <button
-                        onClick={() => setCuponParaEliminar(c.id)}
+                        onClick={() => handleEliminarCupon(c.id)}
                         className="p-1 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
                         aria-label="Eliminar cupón"
                       >
@@ -691,19 +684,6 @@ export default function PagosPage() {
           </div>
         </form>
       </Modal>
-
-      {/* Confirmación para retirar cupón de descuento */}
-      <ConfirmDialog
-        open={cuponParaEliminar !== null}
-        title="¿Retirar código de descuento?"
-        description="¿Deseas retirar este código de descuento? Los clientes ya no podrán aplicarlo durante el proceso de pago ni en reservas."
-        confirmLabel="Retirar código"
-        cancelLabel="Cancelar"
-        variant="danger"
-        loading={eliminandoCupon}
-        onConfirm={handleConfirmEliminarCupon}
-        onCancel={() => setCuponParaEliminar(null)}
-      />
     </div>
   )
 }

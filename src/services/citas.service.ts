@@ -15,7 +15,8 @@ export const citasService = {
   getDisponibilidad: (
     empleadoId: number,
     fecha: string,
-    servicioId?: number
+    servicioId?: number,
+    duracionMin?: number
   ): Promise<{ success: boolean; data?: SlotDisponible[] }> =>
-    appointmentRepository.getDisponibilidad(empleadoId, fecha, servicioId),
+    appointmentRepository.getDisponibilidad(empleadoId, fecha, servicioId, duracionMin),
 }

@@ -60,10 +60,16 @@ async function request<T>(
     throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.')
   }
 
-  const data = (await response.json()) as ApiResponse<T>
+  const text = await response.text()
+  let data: ApiResponse<T>
+  try {
+    data = (text ? JSON.parse(text) : {}) as ApiResponse<T>
+  } catch {
+    throw new Error(`Respuesta no válida del servidor (${response.status})`)
+  }
 
   if (!response.ok) {
-    throw new Error(data.message ?? 'Error inesperado del servidor')
+    throw new Error(data.message ?? `Error del servidor (${response.status})`)
   }
 
   return data

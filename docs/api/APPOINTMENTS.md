@@ -41,7 +41,9 @@
 }
 ```
 
-### Consultar Disponibilidad (`GET /api/citas/disponibilidad?empleado_id=2&fecha=2026-09-30&servicio_id=1`)
+### Consultar Disponibilidad (`GET /api/citas/disponibilidad?empleado_id=2&fecha=2026-09-30&servicio_id=1&duracion_min=55`)
+
+`duracion_min` es opcional. Cuando se envía, representa la duración total solicitada en minutos, incluyendo complementos; la disponibilidad debe reservar ese intervalo completo. Si se omite, el servidor usa la duración base del servicio.
 
 ## Response
 

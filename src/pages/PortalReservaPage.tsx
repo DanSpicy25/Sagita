@@ -21,19 +21,27 @@ import {
 } from 'lucide-react'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { TenantSelector } from '@/components/crm/TenantSelector'
-import { I18nSelector } from '@/components/crm/I18nSelector'
 import { Button, Input, Badge, Loader } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { serviciosService } from '@/services/servicios.service'
 import { empleadosService } from '@/services/empleados.service'
 import { citasService } from '@/services/citas.service'
 import { clientesService } from '@/services/clientes.service'
-import { Servicio, Empleado, SlotDisponible, Cita, CategoriaServicio } from '@/types'
+import { pagosService } from '@/services/pagos.service'
+import { Servicio, Empleado, SlotDisponible, Cita, CategoriaServicio, ServicioExtra } from '@/types'
+import { formatTelefonoVE, handleOnlyNumbersKeyDown } from '@/utils/phone'
 import {
   descargarArchivoIcs,
   generarUrlGoogleCalendar,
   generarUrlWhatsApp,
 } from '@/utils/calendar'
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 export default function PortalReservaPage() {
   const { configuracion, nombreMarca, lemaMarca } = useConfiguracion()
@@ -47,6 +55,8 @@ export default function PortalReservaPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [categorias, setCategorias] = useState<CategoriaServicio[]>([])
   const [empleados, setEmpleados] = useState<Empleado[]>([])
+  const [extrasCatalogo, setExtrasCatalogo] = useState<ServicioExtra[]>([])
+  const [extrasSeleccionados, setExtrasSeleccionados] = useState<ServicioExtra[]>([])
   const [categoriaFiltro, setCategoriaFiltro] = useState<number | 'todas'>('todas')
 
   // Estados del Flujo de Reserva
@@ -68,25 +78,31 @@ export default function PortalReservaPage() {
   // Resultado de confirmación
   const [citaConfirmada, setCitaConfirmada] = useState<Cita | null>(null)
   const [folioReserva, setFolioReserva] = useState<string>('')
+  const duracionExtraMin = useMemo(
+    () => extrasSeleccionados.reduce((acc, curr) => acc + (curr.duracion_extra_min || 0), 0),
+    [extrasSeleccionados]
+  )
+  const duracionTotal = (servicioSel?.duracion_base_min || 0) + duracionExtraMin
 
   // Cargar datos iniciales
   useEffect(() => {
     async function cargarCatalogos() {
       try {
-        const [resServ, resCat, resEmp] = await Promise.all([
+        const [resServ, resCat, resEmp, resExt] = await Promise.all([
           serviciosService.getAll(),
           serviciosService.getCategorias(),
           empleadosService.getAll(),
+          pagosService.getServiciosExtra(),
         ])
-        setServicios(resServ.data ?? [])
+        setServicios((resServ.data ?? []).filter((servicio) => servicio.activo))
         setCategorias(resCat.data ?? [])
-        setEmpleados(resEmp.data ?? [])
+        setEmpleados((resEmp.data ?? []).filter((empleado) => empleado.activo))
+        setExtrasCatalogo(resExt.data ?? [])
 
         // Fecha por defecto: hoy o mañana
         const hoy = new Date()
         hoy.setDate(hoy.getDate() + 1)
-        const fechaDefault = hoy.toISOString().split('T')[0]
-        setFechaSel(fechaDefault)
+        setFechaSel(formatLocalDate(hoy))
       } catch (err) {
         console.error('Error al cargar datos del portal', err)
       } finally {
@@ -100,17 +116,29 @@ export default function PortalReservaPage() {
   useEffect(() => {
     if (!fechaSel || !empleadoSel) {
       setSlots([])
+      setCargandoSlots(false)
       return
     }
+
+    let cancelled = false
     setCargandoSlots(true)
+    setSlots([])
     citasService
-      .getDisponibilidad(empleadoSel.id, fechaSel, servicioSel?.id)
+      .getDisponibilidad(empleadoSel.id, fechaSel, servicioSel?.id, duracionTotal)
       .then((res) => {
-        setSlots(res.data ?? [])
+        if (!cancelled) setSlots(res.data ?? [])
       })
-      .catch(() => setSlots([]))
-      .finally(() => setCargandoSlots(false))
-  }, [fechaSel, empleadoSel, servicioSel])
+      .catch(() => {
+        if (!cancelled) setSlots([])
+      })
+      .finally(() => {
+        if (!cancelled) setCargandoSlots(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [fechaSel, empleadoSel, servicioSel, duracionTotal])
 
   // Filtrar servicios
   const serviciosFiltrados = useMemo(() => {
@@ -118,9 +146,46 @@ export default function PortalReservaPage() {
     return servicios.filter((s) => s.categoria_id === categoriaFiltro)
   }, [servicios, categoriaFiltro])
 
+  // Subservicios / aditamentos disponibles para el servicio elegido
+  const extrasDisponibles = useMemo(() => {
+    if (!servicioSel) return []
+    return extrasCatalogo.filter((e) => e.activo && (e.servicio_id === servicioSel.id || !e.servicio_id))
+  }, [extrasCatalogo, servicioSel])
+
+  // Subservicios agrupados por servicio_id para mostrar badges en catálogo
+  const extrasPorServicio = useMemo(() => {
+    const mapa: Record<number, ServicioExtra[]> = {}
+    for (const ext of extrasCatalogo) {
+      if (ext.activo && ext.servicio_id) {
+        if (!mapa[ext.servicio_id]) mapa[ext.servicio_id] = []
+        mapa[ext.servicio_id].push(ext)
+      }
+    }
+    return mapa
+  }, [extrasCatalogo])
+
+  // Toggle selección de un extra
+  const toggleExtra = (extra: ServicioExtra) => {
+    setExtrasSeleccionados((prev) =>
+      prev.some((e) => e.id === extra.id)
+        ? prev.filter((e) => e.id !== extra.id)
+        : [...prev, extra]
+    )
+  }
+
+  // Cálculo de tiempo y precio con extras
+  const precioTotalExtras = useMemo(
+    () => extrasSeleccionados.reduce((acc, curr) => acc + (curr.precio || 0), 0),
+    [extrasSeleccionados]
+  )
+
+  const precioTotal = (servicioSel?.precio_base || 0) + precioTotalExtras
+
   // Seleccionar servicio e iniciar wizard
   const handleSeleccionarServicio = (serv: Servicio) => {
     setServicioSel(serv)
+    setExtrasSeleccionados([])
+    setHoraSel('')
     // Asignar primer empleado activo disponible por defecto si no hay uno elegido
     const empCompatible = empleados.find((e) => e.activo) ?? empleados[0]
     setEmpleadoSel(empCompatible ?? null)
@@ -136,6 +201,14 @@ export default function PortalReservaPage() {
     e.preventDefault()
     if (!servicioSel || !empleadoSel || !fechaSel || !horaSel) {
       toast.warning('Faltan datos', 'Por favor selecciona fecha y horario')
+      return
+    }
+    const slotSeleccionado = slots.find(
+      (slot) => slot.hora_inicio.slice(0, 5) === horaSel && slot.disponible
+    )
+    if (cargandoSlots || !slotSeleccionado) {
+      setHoraSel('')
+      toast.warning('Horario no disponible', 'Selecciona nuevamente un horario disponible')
       return
     }
     if (!nombreCliente.trim() || !telefonoCliente.trim() || !emailCliente.trim()) {
@@ -156,28 +229,33 @@ export default function PortalReservaPage() {
       const clienteId = resCli.data?.id ?? Date.now()
 
       // 2. Calcular duraciones y fecha inicio / fin
-      const durMin = servicioSel.duracion_base_min || 45
-      const fechaInicio = `${fechaSel} ${horaSel}:00`
-      const [h, m] = horaSel.split(':').map(Number)
-      const totalMin = h * 60 + m + durMin
-      const hFin = String(Math.floor(totalMin / 60)).padStart(2, '0')
-      const mFin = String(totalMin % 60).padStart(2, '0')
-      const fechaFin = `${fechaSel} ${hFin}:${mFin}:00`
+      const durMin = duracionTotal || 45
+      const inicio = new Date(`${fechaSel}T${horaSel}:00`)
+      const fechaInicio = inicio.toISOString()
+      const fechaFin = new Date(inicio.getTime() + durMin * 60000).toISOString()
 
       // 3. Crear cita en el sistema
+      const nombresExtras = extrasSeleccionados.map((e) => e.nombre).join(', ')
+      const notaFinal = [
+        notasCliente ? `[Reserva Web] ${notasCliente}` : '[Reserva Web]',
+        nombresExtras ? `Aditamentos: ${nombresExtras}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ')
+
       const resCita = await citasService.create({
         cliente_id: clienteId,
         empleado_id: empleadoSel.id,
         servicio_id: servicioSel.id,
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,
-        precio_total: servicioSel.precio_base,
+        precio_total: precioTotal,
         estado: 'confirmada',
         modalidad: 'presencial',
-        notas: notasCliente ? `[Reserva Web] ${notasCliente}` : '[Reserva Web]',
+        notas: notaFinal,
       })
 
-      const folio = `CIT-${Math.floor(10000 + Math.random() * 90000)}`
+      const folio = `CIT-${resCita.data?.id ?? Date.now()}`
       setFolioReserva(folio)
 
       const citaGuardada: Cita = resCita.data ?? {
@@ -187,7 +265,7 @@ export default function PortalReservaPage() {
         servicio_id: servicioSel.id,
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,
-        precio_total: servicioSel.precio_base,
+        precio_total: precioTotal,
         estado: 'confirmada',
         servicio: servicioSel,
         empleado: empleadoSel,
@@ -218,6 +296,7 @@ export default function PortalReservaPage() {
   // Reiniciar para agendar otra
   const handleReiniciar = () => {
     setServicioSel(null)
+    setExtrasSeleccionados([])
     setHoraSel('')
     setNombreCliente('')
     setTelefonoCliente('')
@@ -281,10 +360,9 @@ export default function PortalReservaPage() {
             </a>
           </nav>
 
-          {/* Selectores de sucursal, idioma y teléfono directo */}
+          {/* Selectores de sucursal y teléfono directo */}
           <div className="flex items-center gap-2.5">
             <TenantSelector />
-            <I18nSelector />
 
             {configuracion.telefono_soporte && (
               <a
@@ -477,9 +555,19 @@ export default function PortalReservaPage() {
                           {formatearMoneda(serv.precio_base)}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-3">
                         {serv.descripcion || 'Servicio profesional garantizado por nuestro equipo.'}
                       </p>
+
+                      {/* Indicador de aditamentos disponibles */}
+                      {extrasPorServicio[serv.id] && extrasPorServicio[serv.id].length > 0 && (
+                        <div className="mb-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200/60 dark:border-primary-800/40">
+                            <Sparkles className="w-3 h-3 text-primary-500 shrink-0" />
+                            <span>{extrasPorServicio[serv.id].length} aditamentos disponibles</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -520,8 +608,8 @@ export default function PortalReservaPage() {
               </Button>
             </div>
 
-            {/* Resumen del servicio elegido */}
-            <div className="bg-primary-50 dark:bg-primary-950/50 rounded-xl p-4 flex items-center justify-between border border-primary-100 dark:border-primary-900/50">
+            {/* Resumen del servicio elegido y totales dinámicos */}
+            <div className="bg-primary-50 dark:bg-primary-950/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-primary-100 dark:border-primary-900/50">
               <div>
                 <p className="text-xs text-primary-700 dark:text-primary-300 font-semibold">
                   Servicio Seleccionado:
@@ -530,13 +618,95 @@ export default function PortalReservaPage() {
                   {servicioSel.nombre}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {servicioSel.duracion_base_min} min • Pago en tienda
+                  Base: {servicioSel.duracion_base_min} min • Duración estimada: <strong className="text-slate-700 dark:text-slate-300">{duracionTotal} min</strong>
                 </p>
               </div>
-              <span className="text-xl font-extrabold text-primary-600 dark:text-primary-400">
-                {formatearMoneda(servicioSel.precio_base)}
-              </span>
+              <div className="text-left sm:text-right">
+                <span className="text-2xl font-black text-primary-600 dark:text-primary-400 block">
+                  {formatearMoneda(precioTotal)}
+                </span>
+                {extrasSeleccionados.length > 0 ? (
+                  <span className="text-[11px] text-primary-700 dark:text-primary-300 font-medium">
+                    Incluye {extrasSeleccionados.length} aditamento{extrasSeleccionados.length > 1 ? 's' : ''} (+{formatearMoneda(precioTotalExtras)})
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Pago directo en tienda
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Subservicios y Aditamentos Opcionales */}
+            {extrasDisponibles.length > 0 && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary-500" />
+                      <span>Aditamentos y Subservicios Opcionales</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Personaliza tu experiencia agregando complementos a tu {servicioSel.nombre}:
+                    </p>
+                  </div>
+                  {extrasSeleccionados.length > 0 && (
+                    <Badge variant="primary" className="text-xs font-semibold">
+                      {extrasSeleccionados.length} seleccionado{extrasSeleccionados.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {extrasDisponibles.map((extra) => {
+                    const seleccionado = extrasSeleccionados.some((e) => e.id === extra.id)
+                    return (
+                      <button
+                        key={extra.id}
+                        type="button"
+                        onClick={() => toggleExtra(extra)}
+                        className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                          seleccionado
+                            ? 'border-primary-600 bg-primary-50/70 dark:bg-primary-950/50 ring-2 ring-primary-500/25 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1">
+                              {extra.nombre}
+                            </span>
+                            <span className="font-bold text-xs text-primary-600 dark:text-primary-400 shrink-0">
+                              +{formatearMoneda(extra.precio)}
+                            </span>
+                          </div>
+                          {extra.descripcion && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 line-clamp-2 leading-relaxed">
+                              {extra.descripcion}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60 text-[11px]">
+                          <span className="text-slate-400 font-medium">
+                            {extra.duracion_extra_min > 0 ? `+${extra.duracion_extra_min} min` : 'Sin tiempo extra'}
+                          </span>
+                          <span
+                            className={`font-semibold px-2 py-0.5 rounded text-[10px] ${
+                              seleccionado
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            {seleccionado ? '✓ Añadido' : '+ Agregar'}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Selector de Profesional */}
             <div>
@@ -548,7 +718,10 @@ export default function PortalReservaPage() {
                   <button
                     key={emp.id}
                     type="button"
-                    onClick={() => setEmpleadoSel(emp)}
+                    onClick={() => {
+                      setEmpleadoSel(emp)
+                      setHoraSel('')
+                    }}
                     className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${
                       empleadoSel?.id === emp.id
                         ? 'border-primary-600 bg-primary-50/50 dark:bg-primary-950/40 ring-2 ring-primary-500/20'
@@ -579,7 +752,7 @@ export default function PortalReservaPage() {
               <input
                 type="date"
                 value={fechaSel}
-                min={new Date().toISOString().split('T')[0]}
+                min={formatLocalDate(new Date())}
                 onChange={(e) => {
                   setFechaSel(e.target.value)
                   setHoraSel('')
@@ -665,24 +838,49 @@ export default function PortalReservaPage() {
             </div>
 
             {/* Resumen flotante */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border border-slate-200 dark:border-slate-700 text-xs">
-              <div>
-                <span className="text-slate-400 block font-medium">Servicio:</span>
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {servicioSel.nombre}
-                </span>
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-xs space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <span className="text-slate-400 block font-medium">Servicio:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {servicioSel.nombre}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Atendido por:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {empleadoSel.nombre}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Fecha y Hora:</span>
+                  <span className="font-bold text-primary-600 dark:text-primary-400">
+                    {fechaSel} a las {horaSel} ({duracionTotal} min)
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-400 block font-medium">Atendido por:</span>
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {empleadoSel.nombre}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 block font-medium">Fecha y Hora:</span>
-                <span className="font-bold text-primary-600 dark:text-primary-400">
-                  {fechaSel} a las {horaSel}
-                </span>
+
+              {extrasSeleccionados.length > 0 && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-400 block font-medium mb-1.5">Aditamentos / Subservicios:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {extrasSeleccionados.map((ext) => (
+                      <span
+                        key={ext.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs font-medium"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{ext.nombre}</span>
+                        <strong className="text-primary-600 dark:text-primary-400">+{formatearMoneda(ext.precio)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <span className="font-semibold text-slate-600 dark:text-slate-300">Total a Pagar en Tienda:</span>
+                <span className="text-base font-extrabold text-primary-600 dark:text-primary-400">{formatearMoneda(precioTotal)}</span>
               </div>
             </div>
 
@@ -699,10 +897,11 @@ export default function PortalReservaPage() {
                 />
                 <Input
                   label="Teléfono / WhatsApp (para recordatorio)"
-                  placeholder="Ej. +1 (555) 987-6543"
+                  placeholder="+58 412 123 4567"
                   type="tel"
                   value={telefonoCliente}
-                  onChange={(e) => setTelefonoCliente(e.target.value)}
+                  onChange={(e) => setTelefonoCliente(formatTelefonoVE(e.target.value))}
+                  onKeyDown={handleOnlyNumbersKeyDown}
                   leftIcon={<Phone className="w-4 h-4" />}
                   required
                 />
@@ -778,6 +977,17 @@ export default function PortalReservaPage() {
                   {servicioSel?.nombre}
                 </span>
               </div>
+              {extrasSeleccionados.length > 0 && (
+                <div className="text-xs space-y-1.5 py-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <span className="text-slate-500 font-semibold block">Aditamentos / Subservicios:</span>
+                  {extrasSeleccionados.map((ext) => (
+                    <div key={ext.id} className="flex justify-between pl-2 text-slate-700 dark:text-slate-300">
+                      <span>• {ext.nombre}</span>
+                      <span className="font-bold text-primary-600 dark:text-primary-400">+{formatearMoneda(ext.precio)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-500">Profesional:</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
@@ -787,13 +997,13 @@ export default function PortalReservaPage() {
               <div className="flex justify-between">
                 <span className="text-slate-500">Fecha y Hora:</span>
                 <span className="font-bold text-primary-600 dark:text-primary-400">
-                  {fechaSel} — {horaSel} hrs
+                  {fechaSel} — {horaSel} hrs ({duracionTotal} min)
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Total a pagar:</span>
-                <span className="font-extrabold text-slate-900 dark:text-white">
-                  {formatearMoneda(servicioSel?.precio_base ?? 0)}
+              <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-slate-500 font-semibold">Total a pagar:</span>
+                <span className="font-extrabold text-slate-900 dark:text-white text-base">
+                  {formatearMoneda(precioTotal)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500">
@@ -829,7 +1039,7 @@ export default function PortalReservaPage() {
                 <a
                   href={generarUrlWhatsApp(
                     configuracion.telefono_soporte,
-                    `Hola, confirmo mi cita para ${servicioSel?.nombre} el ${fechaSel} a las ${horaSel}. Mi nombre es ${nombreCliente}.`
+                    `Hola, confirmo mi cita para ${servicioSel?.nombre}${extrasSeleccionados.length > 0 ? ` con ${extrasSeleccionados.length} aditamento(s): ${extrasSeleccionados.map((e) => e.nombre).join(', ')}` : ''} el ${fechaSel} a las ${horaSel}. Total a pagar: ${formatearMoneda(precioTotal)}. Mi nombre es ${nombreCliente}.`
                   )}
                   target="_blank"
                   rel="noreferrer"

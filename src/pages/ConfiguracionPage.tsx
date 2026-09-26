@@ -20,7 +20,7 @@ import {
   FuenteTipografica,
   RadioEsquinas,
 } from '@/types'
-import { Button, Input, ConfirmDialog } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
 import {
   PrevisualizadorMarcaBlanca,
   GeneradorWidgetEmbebible,
@@ -92,16 +92,16 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false)
-
   // Restaurar por defecto
-  const handleConfirmReset = async () => {
+  const handleReset = async () => {
+    if (!confirm('¿Deseas restaurar toda la configuración de marca blanca a los valores de fábrica?')) {
+      return
+    }
     setGuardando(true)
     try {
       await resetConfiguracion()
       toast.info('Configuración restaurada', 'Se restablecieron los valores por defecto')
       setFormData({ ...configuracion })
-      setConfirmResetOpen(false)
     } catch {
       toast.error('Error', 'No se pudo restablecer la configuración')
     } finally {
@@ -126,7 +126,7 @@ export default function ConfiguracionPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setConfirmResetOpen(true)}
+            onClick={handleReset}
             isLoading={guardando || cargando}
             leftIcon={<RotateCcw className="w-4 h-4" />}
           >
@@ -653,19 +653,6 @@ export default function ConfiguracionPage() {
           <PrevisualizadorMarcaBlanca configuracion={formData} />
         </div>
       </div>
-
-      {/* Confirmación para restaurar valores de fábrica */}
-      <ConfirmDialog
-        open={confirmResetOpen}
-        title="¿Restaurar configuración?"
-        description="¿Deseas restaurar toda la configuración de marca blanca a los valores de fábrica? Se restablecerán los colores, logotipos y tipografía predeterminados."
-        confirmLabel="Restaurar valores"
-        cancelLabel="Cancelar"
-        variant="warning"
-        loading={guardando}
-        onConfirm={handleConfirmReset}
-        onCancel={() => setConfirmResetOpen(false)}
-      />
     </div>
   )
 }

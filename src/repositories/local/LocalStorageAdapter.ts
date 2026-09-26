@@ -36,6 +36,15 @@ export class LocalStorageAdapter {
       if (raw) {
         return JSON.parse(raw) as T[]
       }
+      if (!tenantId) {
+        const legacyKey = `${STORAGE_PREFIX}${collection}`
+        const legacyData = localStorage.getItem(legacyKey)
+        if (legacyData) {
+          localStorage.setItem(key, legacyData)
+          localStorage.removeItem(legacyKey)
+          return JSON.parse(legacyData) as T[]
+        }
+      }
       if (seedData) {
         this.setCollection(collection, seedData, tenantId)
         return seedData

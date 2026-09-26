@@ -27,12 +27,12 @@ export class ApiAppointmentRepository implements IAppointmentRepository {
   getDisponibilidad(
     empleadoId: number,
     fecha: string,
-    servicioId?: number
+    servicioId?: number,
+    duracionMin?: number
   ): Promise<{ success: boolean; data?: SlotDisponible[] }> {
-    return apiClient.get<SlotDisponible[]>(
-      `/citas/disponibilidad?empleado_id=${empleadoId}&fecha=${fecha}${
-        servicioId ? `&servicio_id=${servicioId}` : ''
-      }`
-    )
+    const params = new URLSearchParams({ empleado_id: String(empleadoId), fecha })
+    if (servicioId) params.set('servicio_id', String(servicioId))
+    if (duracionMin) params.set('duracion_min', String(duracionMin))
+    return apiClient.get<SlotDisponible[]>(`/citas/disponibilidad?${params.toString()}`)
   }
 }

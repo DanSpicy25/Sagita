@@ -111,7 +111,6 @@ sagitta/
 ├── 📋 .env.example                 # Template para el equipo
 │
 ├── public/
-│   ├── manifest.json               # PWA: nombre, colores, iconos
 │   └── mockServiceWorker.js        # Service Worker de MSW (auto-generado)
 │
 └── src/

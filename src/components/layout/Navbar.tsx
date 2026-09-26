@@ -1,11 +1,11 @@
+import { useContext } from 'react'
 import { Menu, Sun, Moon, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useContext } from 'react'
 import { AppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui'
 import { CentroNotificaciones } from '@/components/integraciones'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
-import { TenantSelector, I18nSelector } from '@/components/crm'
+import { TenantSelector } from '@/components/crm'
 
 export function Navbar() {
   const { user, logout } = useAuth()
@@ -49,9 +49,6 @@ export function Navbar() {
 
       {/* Right */}
       <div className="flex items-center gap-2">
-        {/* Selector de Idioma (i18n) */}
-        <I18nSelector />
-
         {/* Notificaciones */}
         <CentroNotificaciones />
 

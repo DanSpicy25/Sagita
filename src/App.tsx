@@ -29,10 +29,19 @@ const ReportesPage = lazy(() => import('@/pages/ReportesPage'))
 const RolesPage = lazy(() => import('@/pages/RolesPage'))
 
 // ─── Guard de rutas privadas ───────────────────────────────────────────────
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+function PrivateRoute({
+  children,
+  requiredPermission,
+}: {
+  children: React.ReactNode
+  requiredPermission?: string
+}) {
+  const { isAuthenticated, isLoading, hasPermission } = useAuth()
   if (isLoading) return <Loader fullScreen text="Cargando..." />
   if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (requiredPermission && !hasPermission(requiredPermission)) {
+    return <Navigate to="/dashboard" replace />
+  }
   return <PageWrapper>{children}</PageWrapper>
 }
 
@@ -139,7 +148,7 @@ function AppRoutes() {
       <Route
         path="/crm"
         element={
-          <PrivateRoute>
+          <PrivateRoute requiredPermission="crm.manage">
             <CrmDesarrolladoresPage />
           </PrivateRoute>
         }

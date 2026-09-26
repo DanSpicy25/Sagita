@@ -80,11 +80,12 @@ const SEED_CITAS: Cita[] = [
 
 function parseTimeToMinutes(str: string): number | null {
   if (!str) return null
-  const timePart = str.includes(' ')
-    ? str.split(' ')[1]
-    : str.includes('T')
-      ? str.split('T')[1]
-      : str
+  const normalized = str.includes(' ') ? str.replace(' ', 'T') : str
+  const parsedDate = new Date(normalized)
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.getHours() * 60 + parsedDate.getMinutes()
+  }
+  const timePart = str.includes(' ') ? str.split(' ')[1] : str.includes('T') ? str.split('T')[1] : str
   if (!timePart) return null
   const [hStr, mStr] = timePart.split(':')
   const h = parseInt(hStr, 10)
@@ -145,7 +146,8 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
   async getDisponibilidad(
     empleadoId: number,
     fecha: string,
-    servicioId?: number
+    servicioId?: number,
+    duracionSolicitadaMin?: number
   ): Promise<{ success: boolean; data?: SlotDisponible[] }> {
     if (!fecha) {
       return { success: false, data: [] }
@@ -154,7 +156,7 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
     const fechaTarget = fecha.slice(0, 10)
 
     // Determinar la duración del servicio si fue provisto (default: 30 minutos)
-    let duracionMin = 30
+    let duracionMin = duracionSolicitadaMin && duracionSolicitadaMin > 0 ? duracionSolicitadaMin : 30
     if (servicioId) {
       try {
         const servicios = LocalStorageAdapter.getCollection<{ id: number; duracion_base_min?: number }>(
@@ -162,7 +164,12 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
           []
         )
         const serv = servicios.find((s) => s.id === servicioId)
-        if (serv && serv.duracion_base_min && serv.duracion_base_min > 0) {
+        if (
+          !duracionSolicitadaMin &&
+          serv &&
+          serv.duracion_base_min &&
+          serv.duracion_base_min > 0
+        ) {
           duracionMin = serv.duracion_base_min
         }
       } catch {
@@ -176,7 +183,17 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
     const citasDelDia = citas
       .filter((c) => {
         if (c.empleado_id !== empleadoId || c.estado === 'cancelada') return false
-        const cDate = c.fecha_inicio.slice(0, 10)
+        const normalized = c.fecha_inicio.includes(' ')
+          ? c.fecha_inicio.replace(' ', 'T')
+          : c.fecha_inicio
+        const localDate = new Date(normalized)
+        const cDate = Number.isNaN(localDate.getTime())
+          ? c.fecha_inicio.slice(0, 10)
+          : [
+              localDate.getFullYear(),
+              String(localDate.getMonth() + 1).padStart(2, '0'),
+              String(localDate.getDate()).padStart(2, '0'),
+            ].join('-')
         return cDate === fechaTarget
       })
       .map((c) => {

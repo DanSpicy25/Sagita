@@ -18,7 +18,7 @@ import {
   NivelAuditLog,
 } from '@/types'
 import { crmService } from '@/services/crm.service'
-import { Button, Badge, Loader, EmptyState, ConfirmDialog } from '@/components/ui'
+import { Button, Badge, Loader, EmptyState } from '@/components/ui'
 import { ModalApiKey, VisorOpenApi } from '@/components/crm'
 import { useToast } from '@/hooks/useToast'
 
@@ -108,21 +108,16 @@ export default function CrmDesarrolladoresPage() {
   }
 
   // Revocar API Key
-  const [apiKeyParaRevocar, setApiKeyParaRevocar] = useState<number | null>(null)
-  const [revocando, setRevocando] = useState(false)
-
-  const handleConfirmRevocar = async () => {
-    if (!apiKeyParaRevocar) return
-    setRevocando(true)
+  const handleRevocarApiKey = async (id: number) => {
+    if (!confirm('¿Deseas revocar esta clave de API permanentemente? Las aplicaciones que la usen perderán el acceso.')) {
+      return
+    }
     try {
-      await crmService.revocarApiKey(apiKeyParaRevocar)
+      await crmService.revocarApiKey(id)
       toast.success('Clave revocada', 'El token ya no tiene validez')
       cargarDatos()
-      setApiKeyParaRevocar(null)
     } catch {
       toast.error('Error', 'No se pudo revocar la clave')
-    } finally {
-      setRevocando(false)
     }
   }
 
@@ -427,7 +422,7 @@ export default function CrmDesarrolladoresPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setApiKeyParaRevocar(key.id)}
+                        onClick={() => handleRevocarApiKey(key.id)}
                         className="text-red-500 hover:text-red-600 shrink-0"
                         leftIcon={<Trash2 className="w-3.5 h-3.5" />}
                       >
@@ -532,19 +527,6 @@ export default function CrmDesarrolladoresPage() {
         isOpen={modalApiKeyAbierto}
         onClose={() => setModalApiKeyAbierto(false)}
         onCrear={handleCrearApiKey}
-      />
-
-      {/* Confirmación para revocar clave API */}
-      <ConfirmDialog
-        open={apiKeyParaRevocar !== null}
-        title="¿Revocar clave API?"
-        description="¿Deseas revocar esta clave de API permanentemente? Las aplicaciones externas que la utilicen perderán el acceso de inmediato."
-        confirmLabel="Revocar clave"
-        cancelLabel="Cancelar"
-        variant="danger"
-        loading={revocando}
-        onConfirm={handleConfirmRevocar}
-        onCancel={() => setApiKeyParaRevocar(null)}
       />
     </div>
   )

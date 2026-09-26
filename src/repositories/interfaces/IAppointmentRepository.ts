@@ -9,6 +9,7 @@ export interface IAppointmentRepository {
   getDisponibilidad(
     empleadoId: number,
     fecha: string,
-    servicioId?: number
+    servicioId?: number,
+    duracionMin?: number
   ): Promise<{ success: boolean; data?: SlotDisponible[] }>
 }

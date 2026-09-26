@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Clock, Tag, Sparkles, Trash2, Edit2 } from 'lucide-react'
 import { Servicio, CategoriaServicio } from '@/types'
 import { serviciosService } from '@/services/servicios.service'
-import { Button, Input, Select, Modal, Loader, Badge, EmptyState, ConfirmDialog } from '@/components/ui'
+import { Button, Input, Select, Modal, Loader, Badge, EmptyState } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 
 export default function ServiciosPage() {
@@ -62,21 +62,14 @@ export default function ServiciosPage() {
     }
   }
 
-  const [servicioParaEliminar, setServicioParaEliminar] = useState<{ id: number; nombre: string } | null>(null)
-  const [eliminandoServicio, setEliminandoServicio] = useState(false)
-
-  const handleConfirmEliminarServicio = async () => {
-    if (!servicioParaEliminar) return
-    setEliminandoServicio(true)
+  const handleEliminar = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este servicio?')) return
     try {
-      await serviciosService.delete(servicioParaEliminar.id)
+      await serviciosService.delete(id)
       toast.success('Servicio eliminado', 'El servicio fue retirado del catálogo')
       cargarDatos()
-      setServicioParaEliminar(null)
     } catch (err) {
       toast.error('Error al eliminar', err instanceof Error ? err.message : 'Error')
-    } finally {
-      setEliminandoServicio(false)
     }
   }
 
@@ -220,7 +213,7 @@ export default function ServiciosPage() {
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => setServicioParaEliminar({ id: serv.id, nombre: serv.nombre })}
+                    onClick={() => handleEliminar(serv.id)}
                     className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-500 transition-colors"
                     aria-label="Eliminar"
                   >
@@ -318,19 +311,6 @@ export default function ServiciosPage() {
           </div>
         </form>
       </Modal>
-
-      {/* Confirmación para eliminar servicio */}
-      <ConfirmDialog
-        open={servicioParaEliminar !== null}
-        title="¿Eliminar servicio?"
-        description={`¿Estás seguro de que deseas eliminar el servicio "${servicioParaEliminar?.nombre}"? El servicio será retirado del catálogo activo y ya no podrá ser agendado.`}
-        confirmLabel="Eliminar servicio"
-        cancelLabel="Cancelar"
-        variant="danger"
-        loading={eliminandoServicio}
-        onConfirm={handleConfirmEliminarServicio}
-        onCancel={() => setServicioParaEliminar(null)}
-      />
     </div>
   )
 }

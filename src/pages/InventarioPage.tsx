@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { Producto, MovimientoStock, AlertaStock, MovimientoInventario } from '@/types'
 import { inventarioService } from '@/services/inventario.service'
-import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState, ConfirmDialog } from '@/components/ui'
+import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -221,21 +221,14 @@ export default function InventarioPage() {
     }
   }
 
-  const [productoParaEliminar, setProductoParaEliminar] = useState<Producto | null>(null)
-  const [eliminandoProducto, setEliminandoProducto] = useState(false)
-
-  const handleConfirmEliminarProducto = async () => {
-    if (!productoParaEliminar) return
-    setEliminandoProducto(true)
+  const handleEliminarProducto = async (p: Producto) => {
+    if (!confirm(`¿Eliminar el producto "${p.nombre}"?`)) return
     try {
-      await inventarioService.deleteProducto(productoParaEliminar.id)
-      toast.success('Producto eliminado', productoParaEliminar.nombre)
+      await inventarioService.deleteProducto(p.id)
+      toast.success('Producto eliminado', p.nombre)
       cargarDatos()
-      setProductoParaEliminar(null)
     } catch {
       toast.error('Error', 'No se pudo eliminar el producto')
-    } finally {
-      setEliminandoProducto(false)
     }
   }
 
@@ -501,7 +494,7 @@ export default function InventarioPage() {
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => setProductoParaEliminar(p)}
+                                  onClick={() => handleEliminarProducto(p)}
                                   className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                                   title="Eliminar"
                                 >
@@ -919,19 +912,6 @@ export default function InventarioPage() {
           </div>
         </form>
       </Modal>
-
-      {/* Confirmación para eliminar producto */}
-      <ConfirmDialog
-        open={productoParaEliminar !== null}
-        title="¿Eliminar producto?"
-        description={`¿Estás seguro de que deseas eliminar el producto "${productoParaEliminar?.nombre}"? Esta acción removerá el artículo del catálogo y afectará el seguimiento de sus existencias.`}
-        confirmLabel="Eliminar producto"
-        cancelLabel="Cancelar"
-        variant="danger"
-        loading={eliminandoProducto}
-        onConfirm={handleConfirmEliminarProducto}
-        onCancel={() => setProductoParaEliminar(null)}
-      />
     </div>
   )
 }
