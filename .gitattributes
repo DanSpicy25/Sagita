@@ -1,0 +1,12 @@
+# Normalizar line endings automáticamente
+* text=auto eol=lf
+
+# Archivos binarios — no transformar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff2 binary
+*.woff binary
+
