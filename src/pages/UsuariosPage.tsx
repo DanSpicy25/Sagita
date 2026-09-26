@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
-import { Button, Input, Modal, Badge, Loader } from '@/components/ui'
+import { Button, Input, Modal, Badge, Loader, ConfirmDialog } from '@/components/ui'
 import { usuariosService } from '@/services/usuarios.service'
 import { UsuarioGestion, UserRole, CrearUsuarioPayload } from '@/types'
 
@@ -127,21 +127,31 @@ export default function UsuariosPage() {
   }
 
   // Eliminar
-  const handleEliminar = async (id: number, nombre: string) => {
+  const [usuarioParaEliminar, setUsuarioParaEliminar] = useState<{ id: number; nombre: string } | null>(null)
+  const [eliminandoUsuario, setEliminandoUsuario] = useState(false)
+
+  const handleSolicitarEliminar = (id: number, nombre: string) => {
     if (id === 1) {
       toast.warning('Protegido', 'No se puede eliminar el usuario Auditor Supremo inicial')
       return
     }
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar al usuario ${nombre}?`)) return
+    setUsuarioParaEliminar({ id, nombre })
+  }
 
+  const handleConfirmEliminarUsuario = async () => {
+    if (!usuarioParaEliminar) return
+    setEliminandoUsuario(true)
     try {
-      const res = await usuariosService.eliminar(id)
+      const res = await usuariosService.eliminar(usuarioParaEliminar.id)
       if (res.success) {
-        toast.success('Eliminado', `Usuario ${nombre} eliminado`)
+        toast.success('Eliminado', `Usuario ${usuarioParaEliminar.nombre} eliminado`)
         cargarUsuarios()
+        setUsuarioParaEliminar(null)
       }
     } catch {
       toast.error('Error', 'No se pudo eliminar el usuario')
+    } finally {
+      setEliminandoUsuario(false)
     }
   }
 
@@ -336,7 +346,7 @@ export default function UsuariosPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEliminar(u.id, u.nombre)}
+                            onClick={() => handleSolicitarEliminar(u.id, u.nombre)}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                             title="Eliminar usuario"
                           >
@@ -444,6 +454,19 @@ export default function UsuariosPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Confirmación para eliminar usuario */}
+      <ConfirmDialog
+        open={usuarioParaEliminar !== null}
+        title="¿Eliminar usuario?"
+        description={`¿Estás seguro de que deseas eliminar al usuario "${usuarioParaEliminar?.nombre}"? Esta acción revocará sus credenciales de acceso a la plataforma.`}
+        confirmLabel="Eliminar usuario"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={eliminandoUsuario}
+        onConfirm={handleConfirmEliminarUsuario}
+        onCancel={() => setUsuarioParaEliminar(null)}
+      />
     </div>
   )
 }

@@ -19,7 +19,7 @@ import {
   PlantillaMensaje,
 } from '@/types'
 import { integracionesService } from '@/services/integraciones.service'
-import { Button, Badge, Loader, EmptyState } from '@/components/ui'
+import { Button, Badge, Loader, EmptyState, ConfirmDialog } from '@/components/ui'
 import { ModalWebhook, PlantillaEditor } from '@/components/integraciones'
 import { useToast } from '@/hooks/useToast'
 
@@ -85,14 +85,21 @@ export default function IntegracionesPage() {
     }
   }
 
-  const handleEliminarWebhook = async (id: number) => {
-    if (!confirm('¿Deseas eliminar este endpoint de webhook?')) return
+  const [webhookParaEliminar, setWebhookParaEliminar] = useState<number | null>(null)
+  const [eliminandoWebhook, setEliminandoWebhook] = useState(false)
+
+  const handleConfirmEliminarWebhook = async () => {
+    if (!webhookParaEliminar) return
+    setEliminandoWebhook(true)
     try {
-      await integracionesService.eliminarWebhook(id)
+      await integracionesService.eliminarWebhook(webhookParaEliminar)
       toast.success('Webhook eliminado', 'El endpoint ya no recibirá peticiones')
       cargarDatos()
+      setWebhookParaEliminar(null)
     } catch {
       toast.error('Error al eliminar webhook', 'Error en el servidor')
+    } finally {
+      setEliminandoWebhook(false)
     }
   }
 
@@ -573,7 +580,7 @@ export default function IntegracionesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEliminarWebhook(w.id)}
+                          onClick={() => setWebhookParaEliminar(w.id)}
                           className="text-red-500 hover:text-red-600"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -593,6 +600,19 @@ export default function IntegracionesPage() {
         isOpen={modalWebhookAbierto}
         onClose={() => setModalWebhookAbierto(false)}
         onGuardar={handleGuardarWebhook}
+      />
+
+      {/* Confirmación para eliminar webhook */}
+      <ConfirmDialog
+        open={webhookParaEliminar !== null}
+        title="¿Eliminar webhook?"
+        description="¿Deseas eliminar este endpoint de webhook? El servicio dejará de enviar notificaciones y eventos a esta URL de forma permanente."
+        confirmLabel="Eliminar webhook"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={eliminandoWebhook}
+        onConfirm={handleConfirmEliminarWebhook}
+        onCancel={() => setWebhookParaEliminar(null)}
       />
     </div>
   )
