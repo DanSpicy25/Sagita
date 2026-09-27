@@ -1,7 +1,8 @@
-import { Calendar, Clock, User, Phone, MapPin, CalendarPlus, MessageSquare, Video } from 'lucide-react'
+import { Calendar, Clock, User, Phone, MapPin, CalendarPlus, MessageSquare, Video, FileDown, Printer } from 'lucide-react'
 import { Cita, EstadoCita } from '@/types'
 import { Badge, Button } from '@/components/ui'
-import { descargarArchivoIcs, generarUrlWhatsApp } from '@/utils/calendar'
+import { descargarArchivoIcs, generarUrlWhatsApp, descargarCitaPdf, visualizarCitaPdf } from '@/utils/calendar'
+import { useConfiguracion } from '@/context/ConfiguracionContext'
 
 interface TarjetaCitaProps {
   cita: Cita
@@ -16,6 +17,9 @@ const estadoBadges: Record<EstadoCita, { variant: 'warning' | 'success' | 'dange
   cancelada: { variant: 'danger', label: 'Cancelada' },
   completada: { variant: 'default', label: 'Completada' },
   no_asistio: { variant: 'danger', label: 'No asistió' },
+  en_atencion: { variant: 'info', label: 'En atención' },
+  en_cola: { variant: 'warning', label: 'En cola' },
+  reprogramada: { variant: 'warning', label: 'Reprogramada' },
 }
 
 export function TarjetaCita({
@@ -24,11 +28,12 @@ export function TarjetaCita({
   onCambiarEstado,
   onCancelar,
 }: TarjetaCitaProps) {
+  const { nombreMarca, configuracion } = useConfiguracion()
   const badge = estadoBadges[cita.estado] ?? { variant: 'default', label: cita.estado }
 
   const handleWhatsApp = () => {
     if (!cita.cliente?.telefono) return
-    const msg = `Hola ${cita.cliente.nombre}, te contactamos de Sagitta para confirmar tu cita de ${
+    const msg = `Hola ${cita.cliente.nombre}, te contactamos de ${nombreMarca} para confirmar tu cita de ${
       cita.servicio?.nombre ?? 'servicio'
     } programada para el ${cita.fecha_inicio.slice(0, 10)} a las ${cita.fecha_inicio.slice(11, 16)} con ${
       cita.empleado?.nombre ?? 'nuestro especialista'
@@ -135,11 +140,31 @@ export function TarjetaCita({
           {/* Exportar .ICS */}
           <button
             type="button"
-            onClick={() => descargarArchivoIcs(cita)}
+            onClick={() => descargarArchivoIcs(cita, nombreMarca)}
             className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
             title="Exportar a calendario (.ics)"
           >
             <CalendarPlus className="w-4 h-4" />
+          </button>
+
+          {/* Exportar / Descargar PDF */}
+          <button
+            type="button"
+            onClick={() => descargarCitaPdf(cita, configuracion)}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-primary-600 transition-colors"
+            title="Descargar comprobante en PDF"
+          >
+            <FileDown className="w-4 h-4" />
+          </button>
+
+          {/* Ver / Imprimir Comprobante */}
+          <button
+            type="button"
+            onClick={() => visualizarCitaPdf(cita, configuracion)}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+            title="Ver e Imprimir comprobante PDF"
+          >
+            <Printer className="w-4 h-4" />
           </button>
 
           {/* Recordatorio WhatsApp */}

@@ -9,6 +9,7 @@ interface BadgeProps {
   size?: Size
   dot?: boolean
   className?: string
+  title?: string
 }
 
 const variants: Record<Variant, string> = {
@@ -44,9 +45,11 @@ export function Badge({
   size = 'md',
   dot = false,
   className = '',
+  title,
 }: BadgeProps) {
   return (
     <span
+      title={title}
       className={[
         'inline-flex items-center gap-1.5 rounded-full font-medium',
         variants[variant],

@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useRef, useEffect } from 'react'
 import {
   Palette,
   Shield,
@@ -9,23 +9,40 @@ import {
   Check,
   Globe,
   UploadCloud,
+  Sparkles,
+  Download,
+  Upload,
+  Sun,
+  Moon,
+  Monitor,
+  Layers,
+  Sliders,
+  FileJson,
+  AlertCircle,
 } from 'lucide-react'
 import {
   useConfiguracion,
   PALETAS_PREDEFINIDAS,
+  CONFIGURACION_DEFAULT,
 } from '@/context/ConfiguracionContext'
 import {
   ConfiguracionMarcaBlanca,
   PaletaColor,
   FuenteTipografica,
   RadioEsquinas,
+  EstiloSombras,
+  Densidad,
+  ModoVisual,
 } from '@/types'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Modal } from '@/components/ui'
 import {
   PrevisualizadorMarcaBlanca,
   GeneradorWidgetEmbebible,
 } from '@/components/configuracion'
 import { useToast } from '@/hooks/useToast'
+import { THEME_PRESETS } from '@/config/themePresets'
+import { applyTheme, configuracionToTema, temaToConfiguracion } from '@/utils/themeEngine'
+import { descargarTema, importarTema } from '@/utils/themeValidator'
 
 type TabConfig = 'marca_blanca' | 'apariencia' | 'widget' | 'negocio'
 
@@ -37,17 +54,64 @@ const FUENTES_DISPONIBLES: { id: FuenteTipografica; nombre: string; ejemplo: str
   { id: 'Outfit', nombre: 'Outfit', ejemplo: 'Vanguardista, fresca y premium' },
 ]
 
-const RADIOS_DISPONIBLES: { id: RadioEsquinas; nombre: string; clase: string }[] = [
-  { id: 'cuadrado', nombre: 'Cuadrado (0px)', clase: 'rounded-none' },
-  { id: 'suave', nombre: 'Suave (6px)', clase: 'rounded-md' },
-  { id: 'moderno', nombre: 'Moderno (14px)', clase: 'rounded-xl' },
-  { id: 'pronunciado', nombre: 'Pronunciado (18px)', clase: 'rounded-2xl' },
+const RADIOS_DISPONIBLES: { id: RadioEsquinas; nombre: string; clase: string; px: string }[] = [
+  { id: 'cuadrado', nombre: 'Cuadrado', clase: 'rounded-none', px: '0px' },
+  { id: 'suave', nombre: 'Suave', clase: 'rounded-md', px: '4-8px' },
+  { id: 'moderno', nombre: 'Moderno', clase: 'rounded-xl', px: '8-12px' },
+  { id: 'pronunciado', nombre: 'Pronunciado', clase: 'rounded-2xl', px: '16-24px' },
+]
+
+const SOMBRAS_DISPONIBLES: { id: EstiloSombras; nombre: string; desc: string; previewClass: string }[] = [
+  {
+    id: 'none',
+    nombre: 'Sin Sombras (Flat)',
+    desc: 'Diseño plano, moderno y minimalista sin elevaciones artificiales.',
+    previewClass: 'shadow-none border border-slate-200 dark:border-slate-700',
+  },
+  {
+    id: 'subtle',
+    nombre: 'Sutil (Recomendada)',
+    desc: 'Elevación suave y equilibrada, ideal para dashboards e interfaces limpias.',
+    previewClass: 'shadow-sm border border-slate-100 dark:border-slate-800',
+  },
+  {
+    id: 'elevated',
+    nombre: 'Elevada (Profundidad)',
+    desc: 'Sombras pronunciadas con relieve para resaltar tarjetas y componentes interactivos.',
+    previewClass: 'shadow-lg border border-slate-100 dark:border-slate-800',
+  },
+]
+
+const DENSIDADES_DISPONIBLES: { id: Densidad; nombre: string; desc: string }[] = [
+  {
+    id: 'compact',
+    nombre: 'Compacta',
+    desc: 'Mayor densidad de datos y márgenes reducidos para pantallas operativas y tablas.',
+  },
+  {
+    id: 'comfortable',
+    nombre: 'Confortable (Estándar)',
+    desc: 'Espaciado armónico y legible para flujos de reservas y navegación general.',
+  },
+  {
+    id: 'spacious',
+    nombre: 'Espaciosa',
+    desc: 'Márgenes amplios y respiro visual, ideal para experiencias táctiles y de bienestar.',
+  },
+]
+
+const MODOS_DISPONIBLES: { id: ModoVisual; nombre: string; desc: string; icon: typeof Sun }[] = [
+  { id: 'light', nombre: 'Modo Claro', desc: 'Fondo blanco y contrastes luminosos', icon: Sun },
+  { id: 'dark', nombre: 'Modo Oscuro', desc: 'Fondo nocturno para baja luminosidad', icon: Moon },
+  { id: 'system', nombre: 'Automático', desc: 'Sigue la preferencia del sistema operativo', icon: Monitor },
 ]
 
 export default function ConfiguracionPage() {
   const {
     configuracion,
     actualizarConfiguracion,
+    actualizarTema,
+    aplicarPreset,
     resetConfiguracion,
     cargando,
   } = useConfiguracion()
@@ -57,25 +121,61 @@ export default function ConfiguracionPage() {
   const [formData, setFormData] = useState<ConfiguracionMarcaBlanca>({ ...configuracion })
   const [guardando, setGuardando] = useState(false)
 
-  // Manejar cambios en el formulario local
+  // Estado para el modal de importar tema
+  const [modalImportar, setModalImportar] = useState(false)
+  const [jsonImportar, setJsonImportar] = useState('')
+  const [erroresImportacion, setErroresImportacion] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Mantener sincronizado formData cuando la configuración externa cambia
+  useEffect(() => {
+    setFormData({ ...configuracion })
+  }, [configuracion])
+
+  // Manejar cambios en el formulario local y propagación inmediata en vivo al DOM
   const handleChange = <K extends keyof ConfiguracionMarcaBlanca>(
     campo: K,
     valor: ConfiguracionMarcaBlanca[K]
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [campo]: valor,
-    }))
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [campo]: valor,
+      }
+      // Sincronizar en tiempo real con el ThemeEngine en toda la pantalla
+      applyTheme(configuracionToTema(updated))
+      return updated
+    })
   }
 
   // Selección de paleta predefinida
   const handleSeleccionarPaleta = (paletaKey: PaletaColor) => {
     const paleta = PALETAS_PREDEFINIDAS[paletaKey]
-    setFormData((prev) => ({
-      ...prev,
-      paleta_predefinida: paletaKey,
-      color_primario: paleta.hex,
-    }))
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        paleta_predefinida: paletaKey,
+        color_primario: paleta.hex,
+      }
+      applyTheme(configuracionToTema(updated))
+      return updated
+    })
+  }
+
+  // Aplicación de Presets predefinidos (Corporate, Modern, Elegant, Wellness, Medical, Minimal)
+  const handleAplicarPreset = async (presetId: string) => {
+    try {
+      const nuevoTema = await aplicarPreset(presetId)
+      const nuevaConfig = temaToConfiguracion(nuevoTema, formData)
+      setFormData(nuevaConfig)
+      applyTheme(nuevoTema)
+      toast.success(
+        'Preset de Diseño Aplicado',
+        `Se ha aplicado el estilo visual "${nuevoTema.presetName}" a toda la plataforma.`
+      )
+    } catch (err) {
+      toast.error('Error al aplicar preset', err instanceof Error ? err.message : 'Error desconocido')
+    }
   }
 
   // Guardar configuración en API y Contexto
@@ -84,9 +184,9 @@ export default function ConfiguracionPage() {
     setGuardando(true)
     try {
       await actualizarConfiguracion(formData)
-      toast.success('Configuración guardada', 'Los cambios de marca blanca y diseño se han aplicado')
+      toast.success('Configuración guardada', 'Los cambios de marca blanca y diseño se han guardado con éxito.')
     } catch {
-      toast.error('Error al guardar', 'No se pudo sincronizar la configuración con el servidor')
+      toast.error('Error al guardar', 'No se pudo sincronizar la configuración con el servidor.')
     } finally {
       setGuardando(false)
     }
@@ -94,19 +194,72 @@ export default function ConfiguracionPage() {
 
   // Restaurar por defecto
   const handleReset = async () => {
-    if (!confirm('¿Deseas restaurar toda la configuración de marca blanca a los valores de fábrica?')) {
+    if (!confirm('¿Deseas restaurar toda la configuración visual a los valores de fábrica?')) {
       return
     }
     setGuardando(true)
     try {
       await resetConfiguracion()
-      toast.info('Configuración restaurada', 'Se restablecieron los valores por defecto')
-      setFormData({ ...configuracion })
+      toast.info('Configuración restaurada', 'Se restablecieron los valores por defecto.')
+      setFormData({ ...CONFIGURACION_DEFAULT })
+      applyTheme(configuracionToTema(CONFIGURACION_DEFAULT))
     } catch {
-      toast.error('Error', 'No se pudo restablecer la configuración')
+      toast.error('Error', 'No se pudo restablecer la configuración.')
     } finally {
       setGuardando(false)
     }
+  }
+
+  // Exportar Tema a JSON (limpio y sin secretos)
+  const handleExportarTema = () => {
+    try {
+      const temaActual = configuracionToTema(formData)
+      descargarTema(temaActual)
+      toast.success(
+        'Tema Exportado',
+        'El archivo JSON del tema ha sido generado y descargado sin datos sensibles ni secretos.'
+      )
+    } catch (err) {
+      toast.error('Error al exportar tema', err instanceof Error ? err.message : 'Error desconocido')
+    }
+  }
+
+  // Importar Tema desde archivo JSON o texto
+  const handleProcesarImportacion = async (contenidoJson: string) => {
+    setErroresImportacion([])
+    const resultado = importarTema(contenidoJson)
+
+    if (!resultado.valid || !resultado.data) {
+      setErroresImportacion(resultado.errors)
+      return
+    }
+
+    try {
+      await actualizarTema(resultado.data)
+      const nuevaConfig = temaToConfiguracion(resultado.data, formData)
+      setFormData(nuevaConfig)
+      applyTheme(resultado.data)
+      setModalImportar(false)
+      setJsonImportar('')
+      toast.success('Tema Importado', 'La configuración visual ha sido validada y aplicada con éxito.')
+    } catch (err) {
+      setErroresImportacion([err instanceof Error ? err.message : 'Error al guardar el tema importado.'])
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const content = event.target?.result as string
+      if (content) {
+        setJsonImportar(content)
+        handleProcesarImportacion(content)
+      }
+    }
+    reader.readAsText(file)
   }
 
   return (
@@ -118,11 +271,33 @@ export default function ConfiguracionPage() {
             Configuración & Marca Blanca
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Personaliza el nombre comercial, logotipos, paleta de colores, widget embebible y directrices del sistema
+            Personaliza el nombre comercial, logotipos, paleta de colores, geometría, sombras y presets visuales
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExportarTema}
+            leftIcon={<Download className="w-4 h-4" />}
+          >
+            Exportar Tema
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setErroresImportacion([])
+              setJsonImportar('')
+              setModalImportar(true)
+            }}
+            leftIcon={<Upload className="w-4 h-4" />}
+          >
+            Importar Tema
+          </Button>
+
           <Button
             variant="secondary"
             size="sm"
@@ -132,6 +307,7 @@ export default function ConfiguracionPage() {
           >
             Restaurar
           </Button>
+
           <Button
             size="sm"
             onClick={() => handleSubmit()}
@@ -168,7 +344,7 @@ export default function ConfiguracionPage() {
           ].join(' ')}
         >
           <Palette className="w-4 h-4" />
-          Aspecto Visual & Temas
+          Aspecto Visual & Presets
         </button>
 
         <button
@@ -213,7 +389,7 @@ export default function ConfiguracionPage() {
                       Modo Marca Blanca Total
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                      Oculta completamente toda referencia a la plataforma base (Sagitta),
+                      Oculta completamente toda referencia a la plataforma base,
                       permitiéndote revender o usar la plataforma bajo tu propio nombre comercial.
                     </p>
                   </div>
@@ -264,7 +440,7 @@ export default function ConfiguracionPage() {
                     label="Nombre Comercial del Negocio"
                     value={formData.nombre_negocio}
                     onChange={(e) => handleChange('nombre_negocio', e.target.value)}
-                    placeholder="Ej. Clínica Dental Sonrisas"
+                    placeholder="Ej. Nexus Consultoría"
                     hint="Reemplazará el nombre en toda la app y pestañas"
                   />
 
@@ -272,7 +448,7 @@ export default function ConfiguracionPage() {
                     label="Lema o Eslogan"
                     value={formData.lema_negocio}
                     onChange={(e) => handleChange('lema_negocio', e.target.value)}
-                    placeholder="Ej. Cuidamos tu salud cada día"
+                    placeholder="Ej. Cuidamos tu tiempo y bienestar"
                     hint="Visible en pantallas de login y bienvenida"
                   />
                 </div>
@@ -336,9 +512,85 @@ export default function ConfiguracionPage() {
             </div>
           )}
 
-          {/* TAB 2: ASPECTO VISUAL & TEMAS */}
+          {/* TAB 2: ASPECTO VISUAL & PRESETS */}
           {tabActivo === 'apariencia' && (
             <div className="space-y-6">
+              {/* Presets Visuales Predefinidos (1-Click) */}
+              <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary-500" />
+                      Presets de Diseño (1-Click)
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Plantillas completas de color, tipografía, bordes y sombras para diferentes verticales.
+                    </p>
+                  </div>
+                  {formData.preset_nombre && (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300">
+                      Actual: {formData.preset_nombre}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.values(THEME_PRESETS).map((preset) => {
+                    const isSelected = formData.preset_nombre === preset.name
+                    return (
+                      <div
+                        key={preset.id}
+                        className={[
+                          'p-4 rounded-xl border text-left flex flex-col justify-between transition-all space-y-3',
+                          isSelected
+                            ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/20 dark:bg-primary-950/20'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900',
+                        ].join(' ')}
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                              {preset.name}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {preset.previewColors.map((color, idx) => (
+                                <span
+                                  key={idx}
+                                  className="w-3.5 h-3.5 rounded-full border border-black/10 inline-block shadow-xs"
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[11px] font-medium text-primary-600 dark:text-primary-400">
+                            {preset.category}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+                            {preset.description}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                          <span>{preset.config.typography.fontBody} • {preset.config.radius}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleAplicarPreset(preset.id)}
+                            className={[
+                              'px-2.5 py-1 rounded-lg font-semibold transition-all',
+                              isSelected
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-950 hover:text-primary-600',
+                            ].join(' ')}
+                          >
+                            {isSelected ? 'Activo' : 'Aplicar'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
               {/* Paletas de Colores */}
               <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
                 <div>
@@ -426,7 +678,7 @@ export default function ConfiguracionPage() {
                     Fuente Tipográfica Corporativa
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Se cargará e inyectará automáticamente desde Google Fonts en todo el sitio.
+                    Se cargará e inyectará automáticamente desde Google Fonts en toda la aplicación.
                   </p>
                 </div>
 
@@ -458,14 +710,14 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
 
-              {/* Radio de Esquinas (Border Radius) */}
+              {/* Geometría: Radio de Esquinas (Border Radius) */}
               <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                    Estilo de Botones y Tarjetas (Bordes)
+                    Estilo de Botones, Inputs y Tarjetas (Bordes)
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Define la curvatura de botones, inputs y contenedores.
+                    Define la curvatura arquitectónica de botones, inputs y contenedores.
                   </p>
                 </div>
 
@@ -478,19 +730,160 @@ export default function ConfiguracionPage() {
                         type="button"
                         onClick={() => handleChange('radio_esquinas', r.id)}
                         className={[
-                          'p-3 border text-center transition-all flex flex-col items-center gap-2',
-                          r.clase,
+                          'p-3.5 border text-center transition-all flex flex-col items-center gap-2 rounded-xl',
                           activo
                             ? 'border-primary-500 bg-primary-50/20 dark:bg-primary-950/20 ring-1 ring-primary-500'
                             : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700',
                         ].join(' ')}
                       >
                         <div
-                          className={`w-8 h-8 bg-slate-300 dark:bg-slate-700 ${r.clase}`}
-                        />
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                          {r.nombre}
-                        </span>
+                          className={`w-10 h-10 bg-slate-300 dark:bg-slate-700 ${r.clase} shadow-xs flex items-center justify-center`}
+                        >
+                          {activo && <Check className="w-4 h-4 text-primary-600" />}
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                            {r.nombre}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block">{r.px}</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Profundidad: Sombras y Elevación */}
+              <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary-500" />
+                    Profundidad y Sombras (Elevación)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Controla el nivel de relieve y sombras proyectadas en tarjetas, menús y modales.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {SOMBRAS_DISPONIBLES.map((s) => {
+                    const activo = (formData.sombras || 'subtle') === s.id
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleChange('sombras', s.id)}
+                        className={[
+                          'p-4 rounded-xl border text-left transition-all space-y-3',
+                          activo
+                            ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/20 dark:bg-primary-950/20'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900',
+                        ].join(' ')}
+                      >
+                        <div className={`h-12 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center ${s.previewClass}`}>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {s.nombre.split(' ')[0]}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                            <span>{s.nombre}</span>
+                            {activo && <Check className="w-3.5 h-3.5 text-primary-600" />}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                            {s.desc}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Densidad de la Interfaz */}
+              <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-primary-500" />
+                    Densidad de la Interfaz
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ajusta el espaciado interior (padding y gaps) para adaptar la densidad visual.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {DENSIDADES_DISPONIBLES.map((d) => {
+                    const activo = (formData.densidad || 'comfortable') === d.id
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => handleChange('densidad', d.id)}
+                        className={[
+                          'p-4 rounded-xl border text-left transition-all space-y-2',
+                          activo
+                            ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/20 dark:bg-primary-950/20'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                            {d.nombre}
+                          </span>
+                          {activo && <Check className="w-3.5 h-3.5 text-primary-600" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                          {d.desc}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Modo Visual (Claro / Oscuro / Sistema) */}
+              <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Sun className="w-4 h-4 text-primary-500" />
+                    Modo Visual de la Sede
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configura la apariencia inicial o forzada para los usuarios de este tenant.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {MODOS_DISPONIBLES.map((m) => {
+                    const activo = (formData.modo_visual || 'light') === m.id
+                    const IconComponent = m.icon
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleChange('modo_visual', m.id)}
+                        className={[
+                          'p-4 rounded-xl border text-left transition-all flex items-start gap-3',
+                          activo
+                            ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/20 dark:bg-primary-950/20'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900',
+                        ].join(' ')}
+                      >
+                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0">
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                              {m.nombre}
+                            </span>
+                            {activo && <Check className="w-3.5 h-3.5 text-primary-600" />}
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                            {m.desc}
+                          </p>
+                        </div>
                       </button>
                     )
                   })}
@@ -653,7 +1046,80 @@ export default function ConfiguracionPage() {
           <PrevisualizadorMarcaBlanca configuracion={formData} />
         </div>
       </div>
+
+      {/* Modal de Importación de Tema */}
+      <Modal
+        isOpen={modalImportar}
+        onClose={() => setModalImportar(false)}
+        title="Importar Configuración de Tema Visual"
+        size="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setModalImportar(false)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              disabled={!jsonImportar.trim()}
+              onClick={() => handleProcesarImportacion(jsonImportar)}
+            >
+              Validar y Aplicar Tema
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Puedes cargar un archivo de tema (<code>.json</code>) exportado previamente o pegar el
+            contenido JSON en el editor. El sistema validará exhaustivamente la estructura y
+            garantizará que no contenga credenciales ni claves privadas.
+          </p>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json,application/json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              leftIcon={<FileJson className="w-4 h-4" />}
+            >
+              Seleccionar Archivo JSON
+            </Button>
+            <span className="text-xs text-slate-400">o pega el JSON directamente abajo:</span>
+          </div>
+
+          <div>
+            <textarea
+              rows={8}
+              value={jsonImportar}
+              onChange={(e) => setJsonImportar(e.target.value)}
+              placeholder='{\n  "version": "1.0.0",\n  "brand": { "name": "Mi Negocio" },\n  "colors": { "primary": "#2563eb" },\n  "typography": { "fontBody": "Poppins" },\n  "radius": "moderno",\n  "shadows": "subtle",\n  "density": "comfortable",\n  "mode": "light"\n}'
+              className="w-full font-mono text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          {erroresImportacion.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs space-y-1.5 text-red-700 dark:text-red-300">
+              <div className="flex items-center gap-1.5 font-bold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>El tema no pasó la validación de seguridad e integridad:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px] pl-1">
+                {erroresImportacion.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }
-

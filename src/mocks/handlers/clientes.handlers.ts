@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { Cliente } from '@/types'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 export const MOCK_CLIENTES: Cliente[] = [
   { id: 1, nombre: 'Ana García', email: 'ana@email.com', telefono: '+1 555-0101', total_citas: 8, created_at: '2026-01-10T00:00:00Z' },

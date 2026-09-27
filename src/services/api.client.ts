@@ -1,7 +1,8 @@
 import { ApiResponse, AuthTokens, LoginPayload, User } from '@/types'
 import { usuariosService } from './usuarios.service'
+import { API_BASE_URL } from '@/config/environment'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL as string
+const BASE_URL = API_BASE_URL
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 

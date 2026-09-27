@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Receipt } from 'lucide-react'
+import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Receipt, FileDown, Printer } from 'lucide-react'
 import { Cita, VistaCalendario, EstadoCita, Factura } from '@/types'
 import { citasService } from '@/services/citas.service'
 import { pagosService } from '@/services/pagos.service'
@@ -12,8 +12,11 @@ import {
 import { FacturaModal } from '@/components/pagos/FacturaModal'
 import { Button, Loader, Modal, Badge } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
+import { useConfiguracion } from '@/context/ConfiguracionContext'
+import { descargarArchivoIcs, descargarCitaPdf, visualizarCitaPdf } from '@/utils/calendar'
 
 export default function CitasPage() {
+  const { configuracion } = useConfiguracion()
   const [citas, setCitas] = useState<Cita[]>([])
   const [cargando, setCargando] = useState(true)
   const [vista, setVista] = useState<VistaCalendario>('mes')
@@ -203,6 +206,33 @@ export default function CitasPage() {
                   leftIcon={<Receipt className="w-3.5 h-3.5" />}
                 >
                   Factura
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => descargarArchivoIcs(citaSeleccionada, configuracion.nombre_negocio)}
+                  leftIcon={<CalIcon className="w-3.5 h-3.5" />}
+                >
+                  .ICS
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => descargarCitaPdf(citaSeleccionada, configuracion)}
+                  leftIcon={<FileDown className="w-3.5 h-3.5" />}
+                >
+                  PDF
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => visualizarCitaPdf(citaSeleccionada, configuracion)}
+                  leftIcon={<Printer className="w-3.5 h-3.5" />}
+                >
+                  Imprimir
                 </Button>
 
                 {citaSeleccionada.estado !== 'cancelada' && (

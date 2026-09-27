@@ -29,18 +29,23 @@ interface AppContextValue {
 
 export const AppContext = createContext<AppContextValue | undefined>(undefined)
 
+const THEME_MIGRATION_KEY = 'sagitta_theme_migration'
+const THEME_MIGRATION_VERSION = 'light-default-v1'
+
 // ─── Provider ─────────────────────────────────────────────────────────────
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem('sagitta_theme') as Theme) ?? 'dark'
+    if (localStorage.getItem(THEME_MIGRATION_KEY) !== THEME_MIGRATION_VERSION) return 'light'
+    return (localStorage.getItem('sagitta_theme') as Theme) ?? 'light'
   })
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   const [toasts, setToasts] = useState<Toast[]>([])
 
   // Aplicar tema al html
   useEffect(() => {
     const root = document.documentElement
+    localStorage.setItem(THEME_MIGRATION_KEY, THEME_MIGRATION_VERSION)
     if (theme === 'dark') root.classList.add('dark')
     else if (theme === 'light') root.classList.remove('dark')
     else {

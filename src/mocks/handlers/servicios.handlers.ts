@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { Servicio, CategoriaServicio } from '@/types'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 const MOCK_CATEGORIAS: CategoriaServicio[] = [
   { id: 1, nombre: 'Consultas', color: '#6366f1', icono: 'stethoscope' },

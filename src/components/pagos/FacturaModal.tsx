@@ -1,6 +1,7 @@
 import { Printer, Calendar, User, CreditCard, RotateCcw } from 'lucide-react'
 import { Factura } from '@/types'
 import { Modal, Badge, Button } from '@/components/ui'
+import { useConfiguracion } from '@/context/ConfiguracionContext'
 
 interface FacturaModalProps {
   factura: Factura | null
@@ -21,6 +22,7 @@ export function FacturaModal({
   onClose,
   onSolicitarReembolso,
 }: FacturaModalProps) {
+  const { nombreMarca, lemaMarca, configuracion } = useConfiguracion()
   if (!factura) return null
 
   const handleImprimir = () => {
@@ -56,7 +58,7 @@ export function FacturaModal({
               onClick={handleImprimir}
               leftIcon={<Printer className="w-4 h-4" />}
             >
-              Imprimir Comprobante
+              Imprimir / Guardar PDF
             </Button>
             <Button size="sm" onClick={onClose}>
               Cerrar
@@ -69,10 +71,20 @@ export function FacturaModal({
         {/* Cabecera Factura */}
         <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <h3 className="font-extrabold text-xl text-primary-600 tracking-tight">
-              Sagitta
-            </h3>
-            <p className="text-xs text-slate-400">Sistema de Reservas y Gestión Médica</p>
+            {configuracion.logo_url ? (
+              <img
+                src={configuracion.logo_url}
+                alt={nombreMarca}
+                className="h-8 w-auto object-contain mb-1"
+              />
+            ) : (
+              <h3 className="font-extrabold text-xl text-primary-600 tracking-tight">
+                {nombreMarca}
+              </h3>
+            )}
+            <p className="text-xs text-slate-400">
+              {lemaMarca || 'Comprobante Oficial de Servicios'}
+            </p>
             <p className="text-[11px] text-slate-400 mt-1">RFC / CIF: B-98765432</p>
           </div>
 

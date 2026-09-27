@@ -4,7 +4,7 @@ import { usuariosService, USUARIOS_INICIALES } from '@/services/usuarios.service
 
 let currentSessionUser: User = USUARIOS_INICIALES[1] // Admin por defecto
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 export const authHandlers = [
   // POST /auth/login

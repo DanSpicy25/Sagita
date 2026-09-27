@@ -71,7 +71,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-fade-in sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -79,7 +79,7 @@ export function ConfirmDialog({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={() => {
           if (!loading) onCancel()
         }}
@@ -90,7 +90,7 @@ export function ConfirmDialog({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden p-6 z-10 animate-slide-up focus:outline-none"
+        className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface-elevated p-4 shadow-lg animate-slide-up z-10 focus:outline-none sm:max-h-[calc(100dvh-2rem)] sm:p-6"
       >
         {/* Botón cerrar esquina superior derecha */}
         <button
@@ -98,7 +98,7 @@ export function ConfirmDialog({
           onClick={onCancel}
           disabled={loading}
           aria-label="Cerrar diálogo"
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 disabled:opacity-40 transition-colors p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="absolute top-4 right-4 text-text-muted hover:text-text disabled:opacity-40 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <X className="w-4 h-4" />
         </button>
@@ -106,10 +106,10 @@ export function ConfirmDialog({
         <div className="flex items-start gap-4">
           {/* Badge de icono semántico */}
           <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
               isDanger
-                ? 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400 border border-red-200 dark:border-red-900/50'
-                : 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50'
+                ? 'bg-danger-soft text-danger border-danger/20'
+                : 'bg-warning-soft text-warning border-warning/20'
             }`}
           >
             {isDanger ? (
@@ -123,14 +123,14 @@ export function ConfirmDialog({
           <div className="flex-1 pr-4">
             <h2
               id="confirm-dialog-title"
-              className="text-base font-semibold text-slate-900 dark:text-slate-100"
+              className="text-base font-semibold text-text font-heading"
             >
               {title}
             </h2>
             {description && (
               <p
                 id="confirm-dialog-desc"
-                className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed"
+                className="text-sm text-text-muted mt-1.5 leading-relaxed"
               >
                 {description}
               </p>
@@ -153,18 +153,13 @@ export function ConfirmDialog({
 
           <Button
             type="button"
-            variant={isDanger ? 'danger' : 'primary'}
+            variant={isDanger ? 'danger' : 'warning'}
             size="sm"
             isLoading={loading}
             disabled={loading}
             onClick={async () => {
               await onConfirm()
             }}
-            className={
-              !isDanger
-                ? 'bg-amber-600 hover:bg-amber-700 text-white focus:ring-amber-500'
-                : undefined
-            }
           >
             {confirmLabel}
           </Button>

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { Empleado, HorarioEmpleado, SlotDisponible } from '@/types'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 const HORARIOS_BASE: HorarioEmpleado[] = [
   { id: 1, empleado_id: 1, dia_semana: 1, hora_inicio: '09:00', hora_fin: '18:00', activo: true },

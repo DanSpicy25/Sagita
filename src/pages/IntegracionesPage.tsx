@@ -3,7 +3,6 @@ import {
   Calendar,
   Video,
   MessageSquare,
-  Bell,
   Webhook as WebhookIcon,
   CheckCircle2,
   Plus,
@@ -11,25 +10,49 @@ import {
   Trash2,
   Copy,
   Check,
+  Zap,
+  Sparkles,
+  Settings2,
+  History,
 } from 'lucide-react'
 import {
   Integracion,
   EstadoIntegracion,
   Webhook,
   PlantillaMensaje,
+  EjecucionLogAutomatizacion,
 } from '@/types'
 import { integracionesService } from '@/services/integraciones.service'
+import { automatizacionesService } from '@/services/automatizaciones.service'
 import { Button, Badge, Loader, EmptyState } from '@/components/ui'
 import { ModalWebhook, PlantillaEditor } from '@/components/integraciones'
+import {
+  TableroAutomatizaciones,
+  HistorialEjecuciones,
+  PreferenciasComunicacion,
+  GestionPlantillasMensajes,
+} from '@/components/automatizaciones'
 import { useToast } from '@/hooks/useToast'
 
-type TabIntegracion = 'calendarios' | 'whatsapp' | 'notificaciones' | 'webhooks'
+export type TabIntegracion =
+  | 'automatizaciones'
+  | 'plantillas'
+  | 'preferencias'
+  | 'historial'
+  | 'calendarios'
+  | 'whatsapp'
+  | 'webhooks'
 
-export default function IntegracionesPage() {
-  const [tabActivo, setTabActivo] = useState<TabIntegracion>('calendarios')
+export default function IntegracionesPage({
+  defaultTab = 'automatizaciones',
+}: {
+  defaultTab?: TabIntegracion
+}) {
+  const [tabActivo, setTabActivo] = useState<TabIntegracion>(defaultTab)
   const [integraciones, setIntegraciones] = useState<Integracion[]>([])
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [plantillas, setPlantillas] = useState<PlantillaMensaje[]>([])
+  const [logs, setLogs] = useState<EjecucionLogAutomatizacion[]>([])
   const [cargando, setCargando] = useState(true)
 
   // Modales y estados
@@ -45,11 +68,13 @@ export default function IntegracionesPage() {
       integracionesService.getIntegraciones(),
       integracionesService.getWebhooks(),
       integracionesService.getPlantillas(),
+      automatizacionesService.getLogs(),
     ])
-      .then(([intRes, webRes, planRes]) => {
+      .then(([intRes, webRes, planRes, logRes]) => {
         if (intRes.data) setIntegraciones(intRes.data)
         if (webRes.data) setWebhooks(webRes.data)
         if (planRes.data) setPlantillas(planRes.data)
+        if (logRes.data) setLogs(logRes.data)
       })
       .catch((err) => {
         toast.error('Error al cargar integraciones', err instanceof Error ? err.message : 'Error')
@@ -57,40 +82,57 @@ export default function IntegracionesPage() {
       .finally(() => setCargando(false))
   }
 
+  const cargarLogs = () => {
+    automatizacionesService.getLogs().then((res) => {
+      if (res.data) setLogs(res.data)
+    })
+  }
+
+  const handleLimpiarLogs = async () => {
+    if (!confirm('¿Deseas vaciar el historial de ejecuciones de automatización?')) return
+    await automatizacionesService.limpiarLogs()
+    toast.success('Historial limpiado', 'Se han borrado los logs de auditoría.')
+    cargarLogs()
+  }
+
   useEffect(() => {
     cargarDatos()
   }, [])
 
   const handleToggleIntegracion = async (id: string, estadoActual: EstadoIntegracion) => {
-    const nuevoEstado = estadoActual === 'conectado' ? 'desconectado' : 'conectado'
+    const nuevoEstado: EstadoIntegracion =
+      estadoActual === 'conectado' ? 'desconectado' : 'conectado'
     try {
       await integracionesService.toggleIntegracion(id, nuevoEstado)
+      setIntegraciones((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, estado: nuevoEstado } : item))
+      )
       toast.success(
         'Integración actualizada',
-        nuevoEstado === 'conectado' ? 'Servicio vinculado con éxito' : 'Servicio desvinculado'
+        `El servicio ahora está ${nuevoEstado === 'conectado' ? 'activo' : 'inactivo'}`
       )
-      cargarDatos()
     } catch {
-      toast.error('Error', 'No se pudo actualizar el estado de la integración')
+      toast.error('Error al actualizar', 'No se pudo cambiar el estado de la integración')
     }
   }
 
-  const handleGuardarWebhook = async (nuevo: Partial<Webhook>) => {
+  const handleGuardarWebhook = async (data: Partial<Webhook>) => {
     try {
-      await integracionesService.crearWebhook(nuevo)
-      toast.success('Webhook registrado', 'El endpoint comenzará a recibir eventos en tiempo real')
+      await integracionesService.crearWebhook(data)
+      toast.success('Webhook registrado', 'El endpoint recibirá eventos en tiempo real')
       cargarDatos()
+      setModalWebhookAbierto(false)
     } catch {
-      toast.error('Error', 'No se pudo registrar el webhook')
+      toast.error('Error al guardar', 'Hubo un fallo en el servidor')
     }
   }
 
   const handleEliminarWebhook = async (id: number) => {
-    if (!confirm('¿Deseas eliminar este endpoint de webhook?')) return
+    if (!confirm('¿Seguro que deseas eliminar este webhook? Dejará de recibir alertas.')) return
     try {
       await integracionesService.eliminarWebhook(id)
-      toast.success('Webhook eliminado', 'El endpoint ya no recibirá peticiones')
-      cargarDatos()
+      toast.success('Webhook eliminado', 'El endpoint ha sido desvinculado')
+      setWebhooks((prev) => prev.filter((w) => w.id !== id))
     } catch {
       toast.error('Error al eliminar webhook', 'Error en el servidor')
     }
@@ -121,34 +163,17 @@ export default function IntegracionesPage() {
     cargarDatos()
   }
 
-  const handleProbarPush = () => {
-    if ('Notification' in window) {
-      Notification.requestPermission().then((perm) => {
-        if (perm === 'granted') {
-          new Notification('Sagitta - Prueba de Notificación', {
-            body: '¡Las notificaciones Web Push están funcionando correctamente!',
-            icon: '/manifest.json',
-          })
-          toast.success('Notificación enviada', 'Revisa la esquina de tu pantalla')
-        } else {
-          toast.warning('Permiso denegado', 'Debes permitir notificaciones en tu navegador')
-        }
-      })
-    } else {
-      toast.info('Simulación Push', 'Tu navegador no soporta Web Push API')
-    }
-  }
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Integraciones y Notificaciones
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Zap className="w-6 h-6 text-amber-500" />
+            Automatizaciones, Integraciones y Comunicación
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Sincroniza con Google Calendar, videollamadas Meet/Zoom, WhatsApp, Push y Webhooks
+            Motor de reglas (Trigger → Condiciones → Acciones), plantillas dinámicas, canales y webhooks
           </p>
         </div>
 
@@ -165,16 +190,68 @@ export default function IntegracionesPage() {
       {/* Tabs de Navegación */}
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
         <button
+          onClick={() => setTabActivo('automatizaciones')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'automatizaciones'
+              ? 'bg-primary-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <Zap className="w-4 h-4 text-amber-400" />
+          Automatizaciones
+        </button>
+
+        <button
+          onClick={() => setTabActivo('plantillas')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'plantillas'
+              ? 'bg-primary-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <Sparkles className="w-4 h-4 text-primary-300" />
+          Plantillas Dinámicas
+        </button>
+
+        <button
+          onClick={() => setTabActivo('preferencias')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'preferencias'
+              ? 'bg-primary-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <Settings2 className="w-4 h-4 text-blue-400" />
+          Canales & Silencio
+        </button>
+
+        <button
+          onClick={() => setTabActivo('historial')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'historial'
+              ? 'bg-primary-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <History className="w-4 h-4" />
+          Historial de Ejecución ({logs.length})
+        </button>
+
+        <button
           onClick={() => setTabActivo('calendarios')}
           className={[
             'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
             tabActivo === 'calendarios'
-              ? 'bg-primary-600 text-white shadow-sm'
+              ? 'bg-primary-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
           ].join(' ')}
         >
           <Calendar className="w-4 h-4" />
-          Calendarios & Videollamadas
+          Calendarios & Meet
         </button>
 
         <button
@@ -182,25 +259,12 @@ export default function IntegracionesPage() {
           className={[
             'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
             tabActivo === 'whatsapp'
-              ? 'bg-primary-600 text-white shadow-sm'
+              ? 'bg-primary-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
           ].join(' ')}
         >
           <MessageSquare className="w-4 h-4" />
-          WhatsApp Automatizado
-        </button>
-
-        <button
-          onClick={() => setTabActivo('notificaciones')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'notificaciones'
-              ? 'bg-primary-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
-        >
-          <Bell className="w-4 h-4" />
-          Email & Web Push
+          WhatsApp Directo
         </button>
 
         <button
@@ -208,12 +272,12 @@ export default function IntegracionesPage() {
           className={[
             'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
             tabActivo === 'webhooks'
-              ? 'bg-primary-600 text-white shadow-sm'
+              ? 'bg-primary-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
           ].join(' ')}
         >
           <WebhookIcon className="w-4 h-4" />
-          Webhooks & API ({webhooks.length})
+          Webhooks ({webhooks.length})
         </button>
       </div>
 
@@ -222,267 +286,240 @@ export default function IntegracionesPage() {
         <Loader text="Cargando integraciones..." />
       ) : (
         <div className="space-y-6">
-          {/* TAB 1: CALENDARIOS & VIDEOLLAMADAS */}
+          {/* TAB: AUTOMATIZACIONES */}
+          {tabActivo === 'automatizaciones' && (
+            <TableroAutomatizaciones onVerLogs={() => setTabActivo('historial')} />
+          )}
+
+          {/* TAB: PLANTILLAS */}
+          {tabActivo === 'plantillas' && (
+            <GestionPlantillasMensajes
+              plantillas={plantillas}
+              onGuardarPlantilla={handleGuardarPlantilla}
+            />
+          )}
+
+          {/* TAB: PREFERENCIAS DE CANALES & SILENCIO */}
+          {tabActivo === 'preferencias' && <PreferenciasComunicacion />}
+
+          {/* TAB: HISTORIAL DE EJECUCIÓN */}
+          {tabActivo === 'historial' && (
+            <HistorialEjecuciones
+              logs={logs}
+              onLimpiarLogs={handleLimpiarLogs}
+              onRecargar={cargarLogs}
+            />
+          )}
+
+          {/* TAB: CALENDARIOS & VIDEOLLAMADAS */}
           {tabActivo === 'calendarios' && (() => {
             const gcal = integraciones.find((i) => i.id === 'google_calendar')
             const gmeet = integraciones.find((i) => i.id === 'google_meet')
             const zoom = integraciones.find((i) => i.id === 'zoom')
             return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Google Calendar */}
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
-                        <Calendar className="w-5 h-5" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Google Calendar */}
+                <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                          <Calendar className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                            {gcal?.nombre ?? 'Google Calendar'}
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Sincronización automática bidireccional
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                          {gcal?.nombre ?? 'Google Calendar'}
-                        </h4>
-                        <p className="text-xs text-slate-400">
-                          Sincronización automática bidireccional
-                        </p>
-                      </div>
+                      <Badge variant={gcal?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={gcal?.estado === 'conectado'}>
+                        {gcal?.estado === 'conectado' ? 'Conectado' : 'Desconectado'}
+                      </Badge>
                     </div>
-                    <Badge variant={gcal?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={gcal?.estado === 'conectado'}>
-                      {gcal?.estado === 'conectado' ? 'Conectado' : 'Desconectado'}
-                    </Badge>
-                  </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    {gcal?.descripcion ?? 'Tus citas se guardan automáticamente en tu calendario de Google y los bloqueos de tu agenda personal impiden reservas superpuestas.'}
-                  </p>
-
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
-                    <p className="text-slate-400">Cuenta vinculada:</p>
-                    <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      {gcal?.cuenta_vinculada ?? 'Sin cuenta vinculada'}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                      {gcal?.descripcion ?? 'Tus citas se guardan automáticamente en tu calendario de Google y los bloqueos de tu agenda personal impiden reservas superpuestas.'}
                     </p>
-                  </div>
-                </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
-                    {gcal?.ultima_sync ? 'Sincronizado recientemente' : 'Sin sincronizar'}
-                  </span>
-                  <Button
-                    variant={gcal?.estado === 'conectado' ? 'secondary' : 'primary'}
-                    size="sm"
-                    onClick={() => handleToggleIntegracion('google_calendar', gcal?.estado ?? 'desconectado')}
-                  >
-                    {gcal?.estado === 'conectado' ? 'Desvincular' : 'Vincular Google'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Google Meet */}
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
-                        <Video className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                          {gmeet?.nombre ?? 'Google Meet'}
-                        </h4>
-                        <p className="text-xs text-slate-400">Telemedicina y Citas Virtuales</p>
-                      </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
+                      <p className="text-slate-400">Cuenta vinculada:</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        {gcal?.cuenta_vinculada ?? 'Sin cuenta vinculada'}
+                      </p>
                     </div>
-                    <Badge variant={gmeet?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={gmeet?.estado === 'conectado'}>
-                      {gmeet?.estado === 'conectado' ? 'Activo' : 'Inactivo'}
-                    </Badge>
                   </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    {gmeet?.descripcion ?? 'Genera una sala de reunión única de Google Meet al programar cualquier servicio de modalidad virtual o teleconsulta.'}
-                  </p>
-
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
-                    <p className="text-slate-400">Enlace de muestra:</p>
-                    <code className="text-primary-600 font-semibold">https://meet.google.com/sag-demo</code>
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      Última sinc: {gcal?.ultima_sincronizacion ? new Date(gcal.ultima_sincronizacion).toLocaleTimeString() : 'Nunca'}
+                    </span>
+                    <Button
+                      variant={gcal?.estado === 'conectado' ? 'secondary' : 'primary'}
+                      size="sm"
+                      onClick={() => handleToggleIntegracion('google_calendar', gcal?.estado ?? 'desconectado')}
+                    >
+                      {gcal?.estado === 'conectado' ? 'Desconectar' : 'Conectar con Google'}
+                    </Button>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-emerald-600 font-semibold">Listo para citas online</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleIntegracion('google_meet', gmeet?.estado ?? 'desconectado')}
-                  >
-                    {gmeet?.estado === 'conectado' ? 'Desactivar' : 'Activar'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Zoom */}
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-500 flex items-center justify-center">
-                        <Video className="w-5 h-5" />
+                {/* Google Meet */}
+                <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                          <Video className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                            {gmeet?.nombre ?? 'Google Meet'}
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Generación dinámica de enlaces de videollamada
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                          {zoom?.nombre ?? 'Zoom Video'}
-                        </h4>
-                        <p className="text-xs text-slate-400">Salas de conferencias Zoom</p>
-                      </div>
+                      <Badge variant={gmeet?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={gmeet?.estado === 'conectado'}>
+                        {gmeet?.estado === 'conectado' ? 'Conectado' : 'Desconectado'}
+                      </Badge>
                     </div>
-                    <Badge variant={zoom?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={zoom?.estado === 'conectado'}>
-                      {zoom?.estado === 'conectado' ? 'Conectado' : 'Desconectado'}
-                    </Badge>
-                  </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    {zoom?.descripcion ?? 'Conecta tu cuenta de Zoom para crear salas y enviar ID y contraseña a tus pacientes automáticamente.'}
-                  </p>
-                </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                      {gmeet?.descripcion ?? 'Crea salas de Google Meet de manera automática cuando se agenda una cita bajo la modalidad virtual.'}
+                    </p>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
-                  <Button
-                    size="sm"
-                    variant={zoom?.estado === 'conectado' ? 'secondary' : 'primary'}
-                    onClick={() => handleToggleIntegracion('zoom', zoom?.estado ?? 'desconectado')}
-                  >
-                    {zoom?.estado === 'conectado' ? 'Desvincular Zoom' : 'Conectar Zoom'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Formato iCalendar .ICS */}
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                          Apple Calendar & Outlook (.ics)
-                        </h4>
-                        <p className="text-xs text-slate-400">Descarga universal de eventos</p>
-                      </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
+                      <p className="text-slate-400">Generador:</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        {gmeet?.cuenta_vinculada ?? 'workspace@sagitta.app'}
+                      </p>
                     </div>
-                    <Badge variant="success" size="sm" dot>
-                      Habilitado
-                    </Badge>
                   </div>
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Todos los clientes pueden exportar sus citas directamente a la app Calendario
-                    de iOS, macOS o Microsoft Outlook con un solo clic.
-                  </p>
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      Modo: Enlace automático en citas virtuales
+                    </span>
+                    <Button
+                      variant={gmeet?.estado === 'conectado' ? 'secondary' : 'primary'}
+                      size="sm"
+                      onClick={() => handleToggleIntegracion('google_meet', gmeet?.estado ?? 'desconectado')}
+                    >
+                      {gmeet?.estado === 'conectado' ? 'Desactivar' : 'Activar Meet'}
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Estándar RFC 5545</span>
-                  <span className="text-xs font-semibold text-primary-600">Activo en tarjetas</span>
+                {/* Zoom Meetings */}
+                <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center">
+                          <Video className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                            {zoom?.nombre ?? 'Zoom Meetings'}
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Salas de conferencia Zoom OAuth
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={zoom?.estado === 'conectado' ? 'success' : 'default'} size="sm" dot={zoom?.estado === 'conectado'}>
+                        {zoom?.estado === 'conectado' ? 'Conectado' : 'Desconectado'}
+                      </Badge>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                      {zoom?.descripcion ?? 'Alternativa para citas online con soporte para grabación en la nube e invitaciones personalizadas.'}
+                    </p>
+
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
+                      <p className="text-slate-400">App Zoom:</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        {zoom?.cuenta_vinculada ?? 'Sin vincular'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      OAuth 2.0 Server-to-Server
+                    </span>
+                    <Button
+                      variant={zoom?.estado === 'conectado' ? 'secondary' : 'primary'}
+                      size="sm"
+                      onClick={() => handleToggleIntegracion('zoom', zoom?.estado ?? 'desconectado')}
+                    >
+                      {zoom?.estado === 'conectado' ? 'Desconectar' : 'Conectar con Zoom'}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
             )
           })()}
 
-          {/* TAB 2: WHATSAPP AUTOMATIZADO */}
+          {/* TAB: WHATSAPP DIRECTO */}
           {tabActivo === 'whatsapp' && (() => {
             const wa = integraciones.find((i) => i.id === 'whatsapp')
             return (
-            <div className="space-y-6">
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
-                    <MessageSquare className="w-6 h-6" />
+              <div className="space-y-6">
+                <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                        {wa?.nombre ?? 'WhatsApp Business API'}
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Número emisor: <strong>{wa?.cuenta_vinculada ?? '+1 555-0900 (Cuenta Oficial Verificada)'}</strong>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                      {wa?.nombre ?? 'WhatsApp Business API'}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Número emisor: <strong>{wa?.cuenta_vinculada ?? '+1 555-0900 (Cuenta Oficial Verificada)'}</strong>
-                    </p>
+
+                  <div className="flex items-center gap-2">
+                    <Badge variant={wa?.estado === 'conectado' ? 'success' : 'default'} dot={wa?.estado === 'conectado'}>
+                      {wa?.estado === 'conectado' ? 'Conectado y Operativo' : 'Desconectado'}
+                    </Badge>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        toast.success(
+                          'Recordatorios activos',
+                          'Los mensajes se disparan 24 horas antes de cada cita'
+                        )
+                      }
+                    >
+                      Estado del Servicio
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge variant={wa?.estado === 'conectado' ? 'success' : 'default'} dot={wa?.estado === 'conectado'}>
-                    {wa?.estado === 'conectado' ? 'Conectado y Operativo' : 'Desconectado'}
-                  </Badge>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      toast.success(
-                        'Recordatorios activos',
-                        'Los mensajes se disparan 24 horas antes de cada cita'
-                      )
-                    }
-                  >
-                    Estado del Servicio
-                  </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {plantillas
+                    .filter((p) => p.canal === 'whatsapp')
+                    .map((p) => (
+                      <PlantillaEditor
+                        key={p.id}
+                        plantilla={p}
+                        onGuardar={handleGuardarPlantilla}
+                      />
+                    ))}
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {plantillas
-                  .filter((p) => p.canal === 'whatsapp')
-                  .map((p) => (
-                    <PlantillaEditor
-                      key={p.id}
-                      plantilla={p}
-                      onGuardar={handleGuardarPlantilla}
-                    />
-                  ))}
-              </div>
-            </div>
             )
           })()}
 
-          {/* TAB 3: NOTIFICACIONES & PUSH */}
-          {tabActivo === 'notificaciones' && (
-            <div className="space-y-6">
-              <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
-                    <Bell className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                      Notificaciones Web Push en Navegador
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Alertas instantáneas gestionadas vía Service Worker
-                    </p>
-                  </div>
-                </div>
-
-                <Button onClick={handleProbarPush} size="sm">
-                  Enviar Notificación de Prueba
-                </Button>
-              </div>
-
-              {/* Editores de plantillas para Email y Push */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {plantillas
-                  .filter((p) => p.canal !== 'whatsapp')
-                  .map((p) => (
-                    <PlantillaEditor
-                      key={p.id}
-                      plantilla={p}
-                      onGuardar={handleGuardarPlantilla}
-                    />
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: WEBHOOKS & API */}
+          {/* TAB: WEBHOOKS & API */}
           {tabActivo === 'webhooks' && (
             <div className="card shadow-card overflow-hidden">
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -597,3 +634,4 @@ export default function IntegracionesPage() {
     </div>
   )
 }
+

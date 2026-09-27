@@ -36,6 +36,7 @@ const CATEGORIAS = [
 const TIPOS_MOVIMIENTO: { value: MovimientoInventario; label: string }[] = [
   { value: 'PURCHASE', label: 'Compra / Entrada' },
   { value: 'SALE', label: 'Venta / Salida' },
+  { value: 'SERVICE_CONSUMPTION', label: 'Consumo por Servicio (BOM)' },
   { value: 'ADJUSTMENT', label: 'Ajuste de Inventario' },
   { value: 'RETURN', label: 'Devolución' },
   { value: 'LOSS', label: 'Pérdida / Merma' },
@@ -66,10 +67,12 @@ function tipoVariant(tipo: MovimientoInventario): 'success' | 'danger' | 'warnin
   switch (tipo) {
     case 'PURCHASE': return 'success'
     case 'SALE': return 'info'
+    case 'SERVICE_CONSUMPTION': return 'info'
     case 'ADJUSTMENT': return 'default'
     case 'RETURN': return 'warning'
     case 'LOSS': return 'danger'
     case 'TRANSFER': return 'info'
+    default: return 'default'
   }
 }
 
@@ -81,10 +84,12 @@ function tipoIcon(tipo: MovimientoInventario) {
   switch (tipo) {
     case 'PURCHASE': return <ArrowUpCircle className="w-3.5 h-3.5" />
     case 'SALE': return <ArrowDownCircle className="w-3.5 h-3.5" />
+    case 'SERVICE_CONSUMPTION': return <ArrowDownCircle className="w-3.5 h-3.5" />
     case 'ADJUSTMENT': return <RefreshCw className="w-3.5 h-3.5" />
     case 'RETURN': return <RotateCcw className="w-3.5 h-3.5" />
     case 'LOSS': return <PackageMinus className="w-3.5 h-3.5" />
     case 'TRANSFER': return <ArrowLeftRight className="w-3.5 h-3.5" />
+    default: return <RefreshCw className="w-3.5 h-3.5" />
   }
 }
 

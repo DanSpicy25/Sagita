@@ -75,4 +75,9 @@ export class LocalClientRepository implements IClientRepository {
     if (!updated) throw new Error('Cliente no encontrado')
     return { success: true, message: 'Cliente actualizado', data: updated }
   }
+
+  async delete(id: number): Promise<ApiResponse<void>> {
+    LocalStorageAdapter.delete(this.collection, id)
+    return { success: true, message: 'Cliente eliminado' }
+  }
 }

@@ -122,6 +122,14 @@ export class LocalStorageAdapter {
     return false
   }
 
+  static delete<T extends { id?: string | number }>(
+    collection: string,
+    id: string | number,
+    tenantId?: string
+  ): boolean {
+    return this.remove<T>(collection, id, tenantId)
+  }
+
   /**
    * Reinicia todas las colecciones locales del sistema
    */

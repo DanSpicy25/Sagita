@@ -1,12 +1,17 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  plugins: [
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const useMocks = env.VITE_USE_MOCKS !== 'false'
+
+  return {
+    plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: useMocks ? null : 'auto',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Sagitta — Sistema de Citas',
@@ -36,17 +41,18 @@ export default defineConfig({
         ]
       }
     })
-  ],
-  resolve: {
-    alias: { '@': '/src' }
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path
+    ],
+    resolve: {
+      alias: { '@': '/src' }
+    },
+    server: {
+      port: 5173,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          rewrite: (path) => path
+        }
       }
     }
   }

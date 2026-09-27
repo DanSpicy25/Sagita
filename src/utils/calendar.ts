@@ -8,28 +8,36 @@ function formatoIcsFecha(fechaStr: string): string {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 }
 
+export {
+  descargarCitaPdf,
+  visualizarCitaPdf,
+  generarPdfCitaBytes,
+} from './pdfGenerator'
+
 /**
  * Genera y descarga un archivo .ics estándar para importar en Apple Calendar, Outlook o Google Calendar
  */
-export function descargarArchivoIcs(cita: Cita) {
+export function descargarArchivoIcs(cita: Cita, nombreMarca = 'Sagitta') {
   const dtStart = formatoIcsFecha(cita.fecha_inicio)
   const dtEnd = formatoIcsFecha(cita.fecha_fin)
   const dtStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 
-  const summary = `${cita.servicio?.nombre ?? 'Cita Médica / Profesional'} - Sagitta`
+  const summary = `${cita.servicio?.nombre ?? 'Cita Médica / Profesional'} - ${nombreMarca}`
   const description = `Cita con ${cita.empleado?.nombre ?? 'Profesional'} para ${cita.cliente?.nombre ?? 'Cliente'}.${
     cita.enlace_videollamada ? `\\nEnlace Videollamada: ${cita.enlace_videollamada}` : ''
   }${cita.notas ? `\\nNotas: ${cita.notas}` : ''}`
   const location = cita.ubicacion?.direccion ?? (cita.enlace_videollamada ? 'Videollamada en línea' : 'Consultorio Central')
 
+  const brandSlug = nombreMarca.toLowerCase().replace(/[^a-z0-9]/g, '-')
+
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Sagitta//Sistema de Citas//ES',
+    `PRODID:-//${nombreMarca}//Sistema de Citas//ES`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:sagitta-cita-${cita.id}-${dtStamp}@sagitta.app`,
+    `UID:${brandSlug}-cita-${cita.id}-${dtStamp}@app`,
     `DTSTAMP:${dtStamp}`,
     `DTSTART:${dtStart}`,
     `DTEND:${dtEnd}`,
@@ -45,7 +53,7 @@ export function descargarArchivoIcs(cita: Cita) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.setAttribute('download', `cita-${cita.id}-sagitta.ics`)
+  link.setAttribute('download', `cita-${cita.id}-${brandSlug}.ics`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

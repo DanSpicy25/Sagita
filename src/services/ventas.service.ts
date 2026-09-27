@@ -5,7 +5,9 @@ import {
   SesionCaja,
   MovimientoCaja,
   TipoMovimientoCaja,
+  MetodoPagoVenta,
 } from '@/types'
+import { commerceEngine, DatosVentaPayload, ResultadoProcesamientoVenta } from './commerceEngine.service'
 
 export const ventasService = {
   getVentas: (params?: Record<string, string>): Promise<ApiResponse<Venta[]>> =>
@@ -16,6 +18,12 @@ export const ventasService = {
 
   createVenta: (data: Partial<Venta>): Promise<ApiResponse<Venta>> =>
     salesRepository.createVenta(data),
+
+  procesarVentaCompleta: (payload: DatosVentaPayload): Promise<ApiResponse<ResultadoProcesamientoVenta>> =>
+    commerceEngine.procesarVenta(payload),
+
+  procesarDevolucionVenta: (ventaId: number, motivo: string, monto?: number): Promise<ApiResponse<Venta>> =>
+    commerceEngine.procesarDevolucion(ventaId, motivo, monto),
 
   updateVenta: (id: number, data: Partial<Venta>): Promise<ApiResponse<Venta>> =>
     salesRepository.updateVenta(id, data),
@@ -29,7 +37,7 @@ export const ventasService = {
   abrirCaja: (montoInicial: number): Promise<ApiResponse<SesionCaja>> =>
     salesRepository.abrirCaja(montoInicial),
 
-  cerrarCaja: (id: number, montoFinal: number): Promise<ApiResponse<SesionCaja>> =>
+  cerrarCaja: (id: number, montoFinal: number, _observaciones?: string): Promise<ApiResponse<SesionCaja>> =>
     salesRepository.cerrarCaja(id, montoFinal),
 
   getMovimientosCaja: (sesionId?: number): Promise<ApiResponse<MovimientoCaja[]>> =>
@@ -40,6 +48,9 @@ export const ventasService = {
     tipo: TipoMovimientoCaja
     monto: number
     descripcion: string
+    metodo_pago?: MetodoPagoVenta
+    empleado_id?: number
   }): Promise<ApiResponse<MovimientoCaja>> =>
     salesRepository.registrarMovimientoCaja(data),
 }
+

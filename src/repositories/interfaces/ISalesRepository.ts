@@ -14,12 +14,14 @@ export interface ISalesRepository {
   cancelarVenta(id: number): Promise<ApiResponse<Venta>>
   getSesionActual(): Promise<ApiResponse<SesionCaja | null>>
   abrirCaja(montoInicial: number): Promise<ApiResponse<SesionCaja>>
-  cerrarCaja(id: number, montoFinal: number): Promise<ApiResponse<SesionCaja>>
+  cerrarCaja(id: number, montoFinal: number, observaciones?: string): Promise<ApiResponse<SesionCaja>>
   getMovimientosCaja(sesionId?: number): Promise<ApiResponse<MovimientoCaja[]>>
   registrarMovimientoCaja(data: {
     sesion_id?: number
     tipo: TipoMovimientoCaja
     monto: number
     descripcion: string
+    metodo_pago?: import('@/types').MetodoPagoVenta
+    empleado_id?: number
   }): Promise<ApiResponse<MovimientoCaja>>
 }

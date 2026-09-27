@@ -8,6 +8,7 @@ interface EmptyStateProps {
   description?: string
   actionLabel?: string
   onAction?: () => void
+  action?: React.ReactNode
 }
 
 export function EmptyState({
@@ -16,6 +17,7 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  action,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-10 text-center card bg-white dark:bg-slate-800/60 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
@@ -28,11 +30,13 @@ export function EmptyState({
           {description}
         </p>
       )}
-      {actionLabel && onAction && (
+      {action ? (
+        <div className="mt-5">{action}</div>
+      ) : actionLabel && onAction ? (
         <Button onClick={onAction} className="mt-5" size="sm">
           {actionLabel}
         </Button>
-      )}
+      ) : null}
     </div>
   )
 }

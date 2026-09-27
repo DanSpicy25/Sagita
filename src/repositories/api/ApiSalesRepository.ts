@@ -38,8 +38,8 @@ export class ApiSalesRepository implements ISalesRepository {
     return apiClient.post<SesionCaja>('/caja/abrir', { monto_inicial: montoInicial })
   }
 
-  cerrarCaja(id: number, montoFinal: number): Promise<ApiResponse<SesionCaja>> {
-    return apiClient.post<SesionCaja>(`/caja/${id}/cerrar`, { monto_final: montoFinal })
+  cerrarCaja(id: number, montoFinal: number, observaciones?: string): Promise<ApiResponse<SesionCaja>> {
+    return apiClient.post<SesionCaja>(`/caja/${id}/cerrar`, { monto_final: montoFinal, observaciones })
   }
 
   getMovimientosCaja(sesionId?: number): Promise<ApiResponse<MovimientoCaja[]>> {
@@ -52,6 +52,8 @@ export class ApiSalesRepository implements ISalesRepository {
     tipo: TipoMovimientoCaja
     monto: number
     descripcion: string
+    metodo_pago?: import('@/types').MetodoPagoVenta
+    empleado_id?: number
   }): Promise<ApiResponse<MovimientoCaja>> {
     return apiClient.post<MovimientoCaja>('/caja/movimientos', data)
   }

@@ -4,7 +4,7 @@ export const USUARIOS_INICIALES: UsuarioGestion[] = [
   {
     id: 1,
     nombre: 'Auditor Supremo',
-    email: 'supremo@sagitta.app',
+    email: 'supremo@demo.app',
     password: 'Supremo123!',
     rol: 'superadmin',
     activo: true,
@@ -16,7 +16,7 @@ export const USUARIOS_INICIALES: UsuarioGestion[] = [
   {
     id: 2,
     nombre: 'Administrador Principal',
-    email: 'admin@sagitta.com',
+    email: 'admin@demo.app',
     password: 'Admin123!',
     rol: 'admin',
     activo: true,
@@ -99,9 +99,16 @@ export const usuariosService = {
   ): { user: UsuarioGestion; tokens: AuthTokens } | null => {
     const list = getStorageUsuarios()
     const cleanEmail = email.toLowerCase().trim()
-    const encontrado = list.find(
-      (u) => u.email.toLowerCase() === cleanEmail && u.activo
-    )
+    const matchEmail = (uEmail: string) => {
+      const ue = uEmail.toLowerCase()
+      if (ue === cleanEmail) return true
+      if (cleanEmail === 'supremo@demo.app' && ue === 'supremo@sagitta.app') return true
+      if (cleanEmail === 'admin@demo.app' && ue === 'admin@sagitta.com') return true
+      if (cleanEmail === 'supremo@sagitta.app' && ue === 'supremo@demo.app') return true
+      if (cleanEmail === 'admin@sagitta.com' && ue === 'admin@demo.app') return true
+      return false
+    }
+    const encontrado = list.find((u) => matchEmail(u.email) && u.activo)
 
     if (!encontrado) return null
 

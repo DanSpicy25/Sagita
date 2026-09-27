@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { ConfiguracionMarcaBlanca } from '@/types'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 export const CONFIGURACION_DEFAULT: ConfiguracionMarcaBlanca = {
   id: 1,

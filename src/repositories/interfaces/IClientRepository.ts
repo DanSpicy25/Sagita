@@ -5,4 +5,5 @@ export interface IClientRepository {
   getById(id: number): Promise<ApiResponse<Cliente>>
   create(data: Partial<Cliente>): Promise<ApiResponse<Cliente>>
   update(id: number, data: Partial<Cliente>): Promise<ApiResponse<Cliente>>
+  delete(id: number): Promise<ApiResponse<void>>
 }

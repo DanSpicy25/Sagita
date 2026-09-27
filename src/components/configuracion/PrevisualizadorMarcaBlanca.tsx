@@ -18,6 +18,9 @@ export function PrevisualizadorMarcaBlanca({ configuracion }: Props) {
     mostrar_powered_by,
     texto_powered_by,
     fuente_tipografica,
+    sombras,
+    densidad,
+    preset_nombre,
   } = configuracion
 
   // Determinar clases de radio
@@ -28,6 +31,18 @@ export function PrevisualizadorMarcaBlanca({ configuracion }: Props) {
     pronunciado: 'rounded-2xl',
   }[radio_esquinas] ?? 'rounded-xl'
 
+  const shadowClass = {
+    none: 'shadow-none',
+    subtle: 'shadow-sm',
+    elevated: 'shadow-lg',
+  }[sombras || 'subtle'] ?? 'shadow-sm'
+
+  const densityPadding = {
+    compact: 'p-3 space-y-3',
+    comfortable: 'p-4 space-y-4',
+    spacious: 'p-5 space-y-5',
+  }[densidad || 'comfortable'] ?? 'p-4 space-y-4'
+
   return (
     <div className="card border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-card overflow-hidden">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -36,6 +51,11 @@ export function PrevisualizadorMarcaBlanca({ configuracion }: Props) {
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
             Vista Previa de Marca Blanca
           </h3>
+          {preset_nombre && (
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300">
+              {preset_nombre}
+            </span>
+          )}
         </div>
         {marca_blanca_activa && ocultar_marca_sistema && (
           <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
@@ -45,7 +65,7 @@ export function PrevisualizadorMarcaBlanca({ configuracion }: Props) {
       </div>
 
       {/* Simulación de Ventana de Navegador */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 overflow-hidden shadow-sm">
+      <div className={`rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 overflow-hidden ${shadowClass}`}>
         {/* Barra superior de pestañas */}
         <div className="bg-slate-200 dark:bg-slate-800 px-3 py-2 flex items-center gap-2">
           <div className="flex gap-1.5">
@@ -61,7 +81,7 @@ export function PrevisualizadorMarcaBlanca({ configuracion }: Props) {
 
         {/* Contenido Simulado de la App */}
         <div
-          className="p-4 bg-white dark:bg-slate-950 space-y-4"
+          className={`bg-white dark:bg-slate-950 ${densityPadding}`}
           style={{ fontFamily: `"${fuente_tipografica}", sans-serif` }}
         >
           {/* Header Simulado */}

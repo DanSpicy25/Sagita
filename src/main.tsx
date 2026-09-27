@@ -2,10 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { USE_MOCKS } from '@/config/environment'
 
 async function bootstrap() {
   // Activar MSW en desarrollo y demo salvo que se desactive explícitamente
-  if (import.meta.env.VITE_USE_MOCKS !== 'false') {
+  if (USE_MOCKS) {
     try {
       const { worker } = await import('./mocks/browser')
       await worker.start({

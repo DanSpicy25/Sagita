@@ -83,7 +83,7 @@ export function CuponInput({
         <form onSubmit={handleValidar} className="flex gap-2">
           <input
             type="text"
-            placeholder="Ej: SAGITTA20, BIENVENIDA10..."
+            placeholder="Ej: PROMO20, BIENVENIDA10..."
             value={codigo}
             onChange={(e) => {
               setCodigo(e.target.value.toUpperCase())

@@ -97,17 +97,65 @@ export interface Servicio {
   categoria_id?: number
   categoria?: CategoriaServicio
   duracion_base_min: number
+  duracion_minutos?: number
   precio_base: number
+  precio?: number
   duraciones?: DuracionServicio[]
   color?: string
   imagen?: string
   activo: boolean
   buffer_antes_min: number
   buffer_despues_min: number
+  recurso_requerido_tipo?: TipoRecurso
+  capacidad_maxima?: number
+  // Campos Comerciales y Políticas
+  visible_portal_publico?: boolean
+  requiere_deposito?: boolean
+  tipo_deposito?: 'porcentaje' | 'monto_fijo'
+  monto_deposito?: number
+  porcentaje_anticipo?: number
+  impuesto_porcentaje?: number
+  precio_incluye_impuesto?: boolean
+  anticipacion_minima_horas?: number
+  anticipacion_maxima_dias?: number
+  horas_anticipacion_cancelacion?: number
+  politica_cancelacion_horas?: number
+  penalizacion_cancelacion_porcentaje?: number
+  penalizacion_cancelacion_tardia?: boolean | number
+  capacidad_simultanea?: number
+  duracion_buffer_previo?: number
+  duracion_buffer_posterior?: number
+  precios_por_nivel?: { nivel: string; precio: number }[]
+  empleados_asignados_ids?: number[]
+  empleados_compatibles_ids?: number[]
+  recursos_requeridos_ids?: number[]
 }
 
-// ─── Fase 2: Empleados / Profesionales ────────────────────────────────────
+// ─── Fase 3 (Booking Engine): Recursos Físicos y Genéricos ────────────────
+export type TipoRecurso = 'sala' | 'cabina' | 'silla' | 'equipo' | 'generico'
+export type EstadoRecurso = 'disponible' | 'en_uso' | 'mantenimiento' | 'inactivo'
+
+export interface Recurso {
+  id: number
+  nombre: string
+  tipo: TipoRecurso
+  descripcion?: string
+  capacidad: number
+  ubicacion_id?: number
+  servicios_compatibles_ids?: number[]
+  estado: EstadoRecurso
+  activo: boolean
+}
+
+// ─── Fase 2 & 3: Empleados / Profesionales y Pausas ───────────────────────
 export type DiaSemana = 0 | 1 | 2 | 3 | 4 | 5 | 6  // 0=Domingo
+
+export interface PausaHorario {
+  id?: string
+  nombre?: string
+  hora_inicio: string  // "HH:mm"
+  hora_fin: string     // "HH:mm"
+}
 
 export interface HorarioEmpleado {
   id: number
@@ -115,6 +163,7 @@ export interface HorarioEmpleado {
   dia_semana: DiaSemana
   hora_inicio: string  // "HH:mm"
   hora_fin: string     // "HH:mm"
+  pausas?: PausaHorario[]
   activo: boolean
 }
 
@@ -129,7 +178,11 @@ export interface Empleado {
   id: number
   usuario_id: number
   nombre: string
+  apellido?: string
   email: string
+  telefono?: string
+  rol?: string
+  cargo?: string
   bio?: string
   foto?: string
   especialidad?: string
@@ -141,11 +194,58 @@ export interface Empleado {
   activo: boolean
 }
 
+// ─── Fase 3: Bloqueos de Horario, Feriados y Excepciones ──────────────────
+export type TipoBloqueo = 'feriado' | 'mantenimiento' | 'capacitacion' | 'personal' | 'bloqueo_general'
+
+export interface BloqueoHorario {
+  id: number
+  titulo: string
+  fecha_inicio: string  // "YYYY-MM-DD HH:mm" o "YYYY-MM-DD"
+  fecha_fin: string
+  tipo: TipoBloqueo
+  empleado_id?: number
+  recurso_id?: number
+  todo_el_dia: boolean
+  motivo?: string
+}
+
+export interface ExcepcionHorario {
+  id: number
+  fecha: string  // "YYYY-MM-DD"
+  empleado_id?: number
+  hora_inicio: string  // "HH:mm"
+  hora_fin: string     // "HH:mm"
+  cerrado: boolean
+  motivo?: string
+}
+
+// ─── Fase 3: Verificación de Conflictos ────────────────────────────────────
+export interface ConflictoReserva {
+  hayConflicto: boolean
+  motivo?:
+    | 'empleado_ocupado'
+    | 'recurso_ocupado'
+    | 'fuera_de_horario'
+    | 'pausa_laboral'
+    | 'bloqueo_horario'
+    | 'feriado'
+    | 'dia_libre'
+  mensaje?: string
+  detalles?: {
+    citaConflictivaId?: number
+    bloqueoId?: number
+    recursoNombre?: string
+    empleadoNombre?: string
+  }
+}
+
 // ─── Fase 2: Disponibilidad ───────────────────────────────────────────────
 export interface SlotDisponible {
   hora_inicio: string  // "HH:mm"
   hora_fin: string
   disponible: boolean
+  motivo_no_disponible?: string
+  recurso_id?: number
 }
 
 export interface DisponibilidadDia {
@@ -153,15 +253,67 @@ export interface DisponibilidadDia {
   slots: SlotDisponible[]
 }
 
-// ─── Fase 2: Clientes ─────────────────────────────────────────────────────
+// ─── Fase 2: Clientes & CRM ───────────────────────────────────────────────
+export type TipoDocumentoCliente = 'CI' | 'DNI' | 'RIF' | 'pasaporte' | 'otro'
+export type GeneroCliente = 'femenino' | 'masculino' | 'otro' | 'prefiero_no_decir'
+export type CanalContactoCliente = 'whatsapp' | 'email' | 'telefono' | 'sms'
+
+export interface NotaCliente {
+  id: string
+  fecha?: string
+  autor?: string
+  texto?: string
+  contenido?: string
+  created_at?: string
+}
+
+export interface ArchivoCliente {
+  id: string
+  nombre: string
+  url: string
+  tipo?: string
+  size?: number
+  tamano?: string
+  fecha?: string
+  created_at?: string
+}
+
+export interface ConsentimientoCliente {
+  id: string
+  titulo: string
+  firmado: boolean
+  aceptado?: boolean
+  fecha?: string
+  fecha_firma?: string
+  firmado_por?: string
+  version?: string
+  archivo_url?: string
+  firma_url?: string
+}
+
 export interface Cliente {
   id: number
   usuario_id?: number
   nombre: string
+  apellido?: string
   email: string
   telefono?: string
-  timezone?: string
+  telefono_secundario?: string
+  tipo_documento?: TipoDocumentoCliente
+  documento_identidad?: string
+  fecha_nacimiento?: string
+  genero?: GeneroCliente
+  ciudad?: string
+  direccion?: string
+  canal_contacto_preferido?: CanalContactoCliente
+  empleado_preferido_id?: number
+  etiquetas?: string[]
+  total_gastado?: number
   notas?: string
+  notas_historial?: NotaCliente[]
+  archivos?: ArchivoCliente[]
+  consentimientos?: ConsentimientoCliente[]
+  extensiones_vertical?: Record<string, unknown>
   total_citas: number
   created_at: string
 }
@@ -184,7 +336,7 @@ export interface RespuestaCampo {
   valor: string | boolean
 }
 
-// ─── Fase 2: Recurrencia ──────────────────────────────────────────────────
+// ─── Fase 2 & 3: Recurrencia Segura ───────────────────────────────────────
 export type TipoRecurrencia = 'diaria' | 'semanal' | 'mensual' | 'anual'
 
 export interface Recurrencia {
@@ -192,10 +344,41 @@ export interface Recurrencia {
   tipo: TipoRecurrencia
   intervalo: number   // cada N días/semanas/meses/años
   fecha_fin?: string
+  max_repeticiones?: number
 }
 
-// ─── Fase 2: Citas ────────────────────────────────────────────────────────
-export type EstadoCita = 'pendiente' | 'confirmada' | 'cancelada' | 'completada' | 'no_asistio'
+// ─── Fase 3: Walk-In y Cola de Espera en Vivo ─────────────────────────────
+export type EstadoTurnoCola = 'en_espera' | 'llamado' | 'en_atencion' | 'completado' | 'cancelado' | 'no_asistio'
+
+export interface TurnoCola {
+  id: number
+  codigo_turno: string  // ej: "W-01", "W-02"
+  cliente_nombre: string
+  cliente_telefono?: string
+  cliente_id?: number
+  servicio_id: number
+  servicio_nombre: string
+  empleado_id?: number
+  empleado_nombre?: string
+  recurso_id?: number
+  recurso_nombre?: string
+  hora_llegada: string
+  hora_estimada_inicio?: string
+  estado: EstadoTurnoCola
+  cita_id?: number
+  notas?: string
+}
+
+// ─── Fase 2 & 3: Citas y Estados de Reserva ───────────────────────────────
+export type EstadoCita =
+  | 'pendiente'
+  | 'confirmada'
+  | 'en_cola'
+  | 'en_atencion'
+  | 'completada'
+  | 'cancelada'
+  | 'no_asistio'
+  | 'reprogramada'
 
 export interface Cita {
   id: number
@@ -205,11 +388,13 @@ export interface Cita {
   empleado?: Empleado
   servicio_id: number
   servicio?: Servicio
+  recurso_id?: number
+  recurso?: Recurso
   duracion_id?: number
   duracion?: DuracionServicio
   ubicacion_id?: number
   ubicacion?: Ubicacion
-  fecha_inicio: string  // ISO 8601
+  fecha_inicio: string  // ISO 8601 o "YYYY-MM-DD HH:mm"
   fecha_fin: string
   estado: EstadoCita
   notas?: string
@@ -221,6 +406,14 @@ export interface Cita {
   enlace_videollamada?: string
   plataforma_videollamada?: 'meet' | 'zoom'
   google_calendar_event_id?: string
+  es_walk_in?: boolean
+  hora_llegada_cola?: string
+  hora_inicio_atencion?: string
+  hora_fin_atencion?: string
+  motivo_cancelacion?: string
+  cita_origen_reprogramada_id?: number
+  fecha?: string
+  hora?: string
   created_at: string
 }
 
@@ -334,10 +527,58 @@ export interface PaqueteServicio {
   descripcion: string
   precio_total: number
   precio_original: number
+  total_sesiones?: number
+  validez_dias?: number
   servicios_ids: number[]
   servicios?: Servicio[]
   descuento_porcentaje: number
   activo: boolean
+}
+
+export interface ClientePaquete {
+  id: number
+  cliente_id: number
+  paquete_id: number
+  paquete?: PaqueteServicio
+  total_sesiones: number
+  sesiones_totales?: number
+  sesiones_consumidas: number
+  sesiones_usadas?: number
+  sesiones_restantes: number
+  fecha_compra: string
+  fecha_expiracion?: string
+  fecha_vencimiento?: string
+  estado: 'activo' | 'agotado' | 'expirado'
+}
+
+export type PeriodicidadMembresia = 'mensual' | 'trimestral' | 'anual'
+
+export interface PlanMembresia {
+  id: number
+  codigo?: string
+  nombre: string
+  descripcion?: string
+  precio?: number
+  precio_recurrente: number
+  periodicidad?: PeriodicidadMembresia
+  frecuencia: PeriodicidadMembresia
+  descuento_servicios_porcentaje?: number
+  descuento_servicios_extra_porcentaje?: number
+  descuento_productos_porcentaje?: number
+  servicios_incluidos?: { servicio_id: number; sesiones_por_periodo: number }[]
+  beneficios?: string[]
+  activo: boolean
+}
+
+export interface ClienteMembresia {
+  id: number
+  cliente_id: number
+  plan_id: number
+  plan?: PlanMembresia
+  estado: 'activa' | 'pausada' | 'cancelada'
+  fecha_inicio: string
+  fecha_proxima_renovacion?: string
+  fecha_renovacion?: string
 }
 
 // ─── Fase 3: Lista de Espera ─────────────────────────────────────────────
@@ -372,6 +613,7 @@ export interface Integracion {
   cuenta_vinculada?: string
   sincronizacion_automatica?: boolean
   ultima_sync?: string
+  ultima_sincronizacion?: string
 }
 
 export type EventoWebhook =
@@ -401,6 +643,7 @@ export interface Notificacion {
   tipo: TipoNotificacion
   leida: boolean
   fecha: string
+  created_at?: string
   enlace?: string
 }
 
@@ -450,6 +693,64 @@ export type FuenteTipografica =
   | 'Outfit'
 
 export type RadioEsquinas = 'cuadrado' | 'suave' | 'moderno' | 'pronunciado'
+export type Densidad = 'compact' | 'comfortable' | 'spacious'
+export type EstiloSombras = 'none' | 'subtle' | 'elevated'
+export type ModoVisual = 'light' | 'dark' | 'system'
+
+export interface ThemeBrand {
+  name: string
+  tagline: string
+  footerText: string
+  showPoweredBy: boolean
+  poweredByText: string
+  supportEmail: string
+  supportPhone: string
+  websiteUrl: string
+  termsUrl?: string
+  privacyUrl?: string
+}
+
+export interface ThemeColors {
+  primary: string
+  primaryHover?: string
+  primarySoft?: string
+  secondary?: string
+  accent?: string
+  success?: string
+  warning?: string
+  danger?: string
+  info?: string
+  palettePredefinida?: PaletaColor
+}
+
+export interface ThemeTypography {
+  fontBody: FuenteTipografica
+  fontHeading?: FuenteTipografica
+  fontMono?: string
+}
+
+export interface ThemeAssets {
+  logoUrl?: string
+  logoDarkUrl?: string
+  logoIconoUrl?: string
+  faviconUrl?: string
+}
+
+export interface TemaConfig {
+  id?: string
+  version: string
+  presetName?: string
+  brand: ThemeBrand
+  colors: ThemeColors
+  typography: ThemeTypography
+  radius: RadioEsquinas
+  shadows: EstiloSombras
+  density: Densidad
+  mode: ModoVisual
+  assets: ThemeAssets
+  whiteLabelActive: boolean
+  hideSystemBranding: boolean
+}
 
 export interface ConfiguracionMarcaBlanca {
   id: number
@@ -463,6 +764,10 @@ export interface ConfiguracionMarcaBlanca {
   paleta_predefinida: PaletaColor
   fuente_tipografica: FuenteTipografica
   radio_esquinas: RadioEsquinas
+  densidad?: Densidad
+  sombras?: EstiloSombras
+  modo_visual?: ModoVisual
+  preset_nombre?: string
   marca_blanca_activa: boolean
   ocultar_marca_sistema: boolean
   texto_pie_pagina: string
@@ -561,12 +866,21 @@ export interface Rol {
 }
 
 // ─── Inventario ───────────────────────────────────────────────────────────────
-export type MovimientoInventario = 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'RETURN' | 'LOSS' | 'TRANSFER'
+export type MovimientoInventario =
+  | 'PURCHASE'
+  | 'SALE'
+  | 'ADJUSTMENT'
+  | 'RETURN'
+  | 'LOSS'
+  | 'TRANSFER'
+  | 'SERVICE_CONSUMPTION'
+
 export type EstadoProducto = 'activo' | 'inactivo' | 'sin_stock'
 
 export interface Producto {
   id: number
   sku: string
+  codigo_barras?: string
   nombre: string
   descripcion?: string
   categoria: string
@@ -574,10 +888,13 @@ export interface Producto {
   precio_costo: number
   stock_actual: number
   stock_minimo: number
+  stock_maximo?: number
   unidad: string
   activo: boolean
   imagen?: string
   proveedor?: string
+  proveedor_id?: number
+  ubicacion?: string
   created_at: string
 }
 
@@ -602,19 +919,94 @@ export interface AlertaStock {
   stock_minimo: number
 }
 
+// ─── Proveedores y Compras ───────────────────────────────────────────────────
+export interface Proveedor {
+  id: number
+  nombre: string
+  rnc_rif?: string
+  contacto: string
+  email: string
+  telefono: string
+  direccion?: string
+  activo: boolean
+  created_at?: string
+}
+
+export type EstadoOrdenCompra = 'borrador' | 'ordenada' | 'recibida' | 'cancelada'
+
+export interface ItemOrdenCompra {
+  producto_id: number
+  producto_nombre: string
+  cantidad: number
+  costo_unitario: number
+  total: number
+}
+
+export interface OrdenCompra {
+  id: number
+  numero: string
+  proveedor_id: number
+  proveedor_nombre: string
+  items: ItemOrdenCompra[]
+  subtotal: number
+  impuesto: number
+  total: number
+  estado: EstadoOrdenCompra
+  fecha_creacion: string
+  fecha_recepcion?: string
+  notas?: string
+}
+
+// ─── Receta / BOM de Servicio (Consumo por Servicio) ─────────────────────────
+export interface InsumoServicio {
+  id: string
+  producto_id: number
+  producto_nombre: string
+  cantidad: number
+  unidad: string
+  costo_estimado?: number
+}
+
+export interface RecetaServicio {
+  servicio_id: number
+  servicio_nombre?: string
+  insumos: InsumoServicio[]
+  activo: boolean
+}
+
 // ─── Ventas / POS ─────────────────────────────────────────────────────────────
 export type EstadoVenta = 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED'
-export type MetodoPagoVenta = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
+export type MetodoPagoVenta =
+  | 'efectivo'
+  | 'tarjeta'
+  | 'transferencia'
+  | 'pago_movil'
+  | 'zelle'
+  | 'stripe'
+  | 'deposito'
+  | 'gift_card'
+  | 'mixto'
 
 export interface ItemVenta {
   id: string
-  tipo: 'servicio' | 'producto'
+  tipo: 'servicio' | 'producto' | 'paquete' | 'gift_card'
   referencia_id: number
   nombre: string
   precio_unitario: number
   cantidad: number
   descuento_item: number
   total: number
+  profesional_id?: number
+  profesional_nombre?: string
+  impuesto_porcentaje?: number
+  impuesto_monto?: number
+}
+
+export interface PagoSplit {
+  metodo: MetodoPagoVenta
+  monto: number
+  referencia?: string
+  gift_card_codigo?: string
 }
 
 export interface Venta {
@@ -625,23 +1017,40 @@ export interface Venta {
   items: ItemVenta[]
   subtotal: number
   descuento_global: number
+  descuento?: number
   impuesto: number
   total: number
   metodo_pago: MetodoPagoVenta
+  pagos_split?: PagoSplit[]
+  propina?: number
+  propina_profesional_id?: number
   estado: EstadoVenta
   notas?: string
   cita_id?: number
+  origen?: 'pos' | 'cita' | 'portal'
+  devuelto_monto?: number
+  motivo_devolucion?: string
+  promocion_aplicada?: string
   created_at: string
 }
 
 // ─── Caja ────────────────────────────────────────────────────────────────────
-export type TipoMovimientoCaja = 'apertura' | 'ingreso' | 'egreso' | 'cierre'
+export type TipoMovimientoCaja =
+  | 'apertura'
+  | 'ingreso'
+  | 'egreso'
+  | 'cierre'
+  | 'devolucion'
+  | 'propina'
 
 export interface MovimientoCaja {
   id: number
   tipo: TipoMovimientoCaja
   monto: number
   descripcion: string
+  metodo_pago?: MetodoPagoVenta
+  venta_id?: number
+  empleado_id?: number
   usuario?: string
   created_at: string
 }
@@ -655,8 +1064,239 @@ export interface SesionCaja {
   total_ventas: number
   total_ingresos: number
   total_egresos: number
+  total_efectivo?: number
+  total_tarjeta?: number
+  total_transferencia?: number
+  total_otros?: number
+  total_propinas?: number
+  total_devoluciones?: number
   diferencia?: number
+  observaciones?: string
   usuario: string
   estado: 'abierta' | 'cerrada'
   movimientos: MovimientoCaja[]
 }
+
+// ─── Comisiones ──────────────────────────────────────────────────────────────
+export type TipoCalculoComision = 'porcentaje' | 'monto_fijo'
+export type AlcanceComision = 'general' | 'servicio' | 'profesional' | 'categoria'
+export type EstadoComision = 'pendiente' | 'liquidada' | 'cancelada'
+
+export interface ReglaComision {
+  id: number
+  nombre: string
+  tipo_calculo: TipoCalculoComision
+  valor: number // e.g. 20 (20%) or 15 ($15 fijo)
+  aplicar_a: AlcanceComision
+  referencia_id?: number // servicio_id o empleado_id
+  categoria?: string
+  activo: boolean
+}
+
+export interface ComisionVenta {
+  id: number
+  venta_id: number
+  venta_numero?: string
+  item_id: string
+  concepto: string
+  profesional_id: number
+  profesional_nombre: string
+  base_calculo: number
+  regla_id?: number
+  porcentaje?: number
+  monto_comision: number
+  periodo: string // e.g. '2026-09'
+  estado: EstadoComision
+  fecha_generacion: string
+  fecha_liquidacion?: string
+}
+
+// ─── Promociones ─────────────────────────────────────────────────────────────
+export type TipoPromocion = 'porcentaje' | 'monto_fijo'
+export type AlcancePromocion = 'todos' | 'servicio' | 'categoria'
+
+export interface Promocion {
+  id: number
+  nombre: string
+  codigo?: string
+  tipo: TipoPromocion
+  valor: number
+  alcance: AlcancePromocion
+  referencia_id?: number
+  categoria?: string
+  solo_primera_compra: boolean
+  hora_inicio?: string // ej '14:00'
+  hora_fin?: string // ej '18:00'
+  fecha_inicio?: string
+  fecha_fin?: string
+  usos_max?: number
+  usos_actuales: number
+  activo: boolean
+}
+
+// ─── Gift Cards ──────────────────────────────────────────────────────────────
+export interface MovimientoGiftCard {
+  id: string
+  tipo: 'emision' | 'consumo' | 'recarga'
+  monto: number
+  saldo_resultante: number
+  referencia?: string
+  fecha: string
+}
+
+export interface GiftCard {
+  id: number
+  codigo: string
+  saldo_inicial: number
+  saldo_actual: number
+  cliente_comprador_id?: number
+  cliente_destinatario_nombre?: string
+  cliente_destinatario_email?: string
+  fecha_emision: string
+  fecha_expiracion?: string
+  estado: 'activa' | 'agotada' | 'expirada' | 'anulada'
+  movimientos: MovimientoGiftCard[]
+}
+
+// ─── Fase 6: Automatizaciones y Comunicación (Automation + Communication Engine) ───
+
+export type TipoTriggerAutomatizacion =
+  | 'reserva_creada'
+  | 'reserva_confirmada'
+  | 'reserva_cancelada'
+  | 'reserva_reprogramada'
+  | 'recordatorio_pendiente'
+  | 'cliente_creado'
+  | 'venta_completada'
+  | 'pago_recibido'
+  | 'no_show'
+  | 'cumpleanos'
+  | 'stock_bajo'
+
+export type CanalComunicacion = 'email' | 'sms' | 'whatsapp' | 'push' | 'in_app'
+
+export type TipoAccionAutomatizacion =
+  | 'enviar_email'
+  | 'notificacion_interna'
+  | 'enviar_push'
+  | 'ejecutar_webhook'
+  | 'enviar_sms'
+  | 'enviar_whatsapp'
+  | 'crear_tarea'
+  | 'aplicar_etiqueta'
+
+export interface CondicionAutomatizacion {
+  id?: string
+  campo:
+    | 'tenant_id'
+    | 'sucursal_id'
+    | 'servicio_id'
+    | 'empleado_id'
+    | 'cliente_id'
+    | 'horario_inicio'
+    | 'horario_fin'
+    | 'estado'
+    | 'etiquetas'
+    | 'monto_minimo'
+  operador: 'igual' | 'no_igual' | 'contiene' | 'no_contiene' | 'mayor_que' | 'menor_que' | 'entre'
+  valor: string | number | string[]
+}
+
+export interface AccionAutomatizacion {
+  id: string
+  tipo: TipoAccionAutomatizacion
+  canal?: CanalComunicacion
+  plantilla_id?: number
+  plantilla_cuerpo_custom?: string
+  asunto?: string
+  destinatario_tipo: 'cliente' | 'profesional' | 'admin' | 'webhook_url' | 'custom'
+  destinatario_custom?: string
+  webhook_url?: string
+  webhook_metodo?: 'POST' | 'GET' | 'PUT'
+  tarea_titulo?: string
+  etiqueta_nombre?: string
+  delay_minutos?: number
+}
+
+export interface ReglaAutomatizacion {
+  id: number
+  nombre: string
+  descripcion?: string
+  trigger: TipoTriggerAutomatizacion
+  condiciones: CondicionAutomatizacion[]
+  acciones: AccionAutomatizacion[]
+  activo: boolean
+  tenant_id?: string
+  sucursal_id?: string
+  ejecuciones_totales: number
+  ultima_ejecucion?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DetalleAccionEjecutada {
+  tipo: TipoAccionAutomatizacion
+  canal?: CanalComunicacion
+  destinatario?: string
+  estado: 'enviado' | 'simulado_no_conectado' | 'fallido' | 'creado' | 'omitido_horario_silencioso'
+  mensaje?: string
+}
+
+export interface EjecucionLogAutomatizacion {
+  id: string
+  regla_id: number
+  regla_nombre: string
+  trigger: TipoTriggerAutomatizacion
+  exito: boolean
+  detalles: string
+  fecha: string
+  entidad_tipo?: 'cita' | 'cliente' | 'venta' | 'pago' | 'producto' | 'general'
+  entidad_id?: string | number
+  acciones_ejecutadas: DetalleAccionEjecutada[]
+}
+
+export interface CanalConfiguracion {
+  canal: CanalComunicacion
+  conectado: boolean
+  proveedor: string
+  activo: boolean
+  horario_silencioso_activo: boolean
+  horario_silencioso_inicio: string
+  horario_silencioso_fin: string
+  permitir_urgentes_en_silencio?: boolean
+  max_mensajes_por_dia_cliente?: number
+}
+
+export interface PreferenciaComunicacionTenant {
+  tenant_id: string
+  canales: Record<CanalComunicacion, CanalConfiguracion>
+  idioma_predeterminado: string
+  nombre_remitente: string
+  email_remitente?: string
+  whatsapp_remitente?: string
+  sms_remitente?: string
+}
+
+export interface PagoAutomatizacion {
+  id?: string | number
+  monto: number
+  metodo_pago?: string
+  referencia?: string
+  estado?: string
+  fecha?: string
+}
+
+export interface ContextoEventoAutomatizacion {
+  cita?: Cita
+  cliente?: Cliente
+  servicio?: Servicio
+  empleado?: Empleado
+  venta?: Venta
+  pago?: PagoAutomatizacion
+  producto?: Producto
+  tenant_id?: string
+  sucursal_id?: string
+  etiquetas?: string[]
+  metadata?: Record<string, unknown>
+}
+

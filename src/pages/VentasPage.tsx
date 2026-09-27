@@ -23,6 +23,8 @@ import {
   ArrowLeftRight,
   Layers,
   AlertTriangle,
+  Gift,
+  Smartphone,
 } from 'lucide-react'
 import {
   ItemVenta,
@@ -64,6 +66,11 @@ const metodoPagoLabel: Record<MetodoPagoVenta, string> = {
   efectivo:      'Efectivo',
   tarjeta:       'Tarjeta',
   transferencia: 'Transferencia',
+  stripe:        'Stripe',
+  pago_movil:    'Pago Móvil',
+  zelle:         'Zelle',
+  deposito:      'Depósito Bancario',
+  gift_card:     'Gift Card',
   mixto:         'Mixto',
 }
 
@@ -71,6 +78,11 @@ const metodoPagoIcon: Record<MetodoPagoVenta, React.ReactNode> = {
   efectivo:      <Banknote className="w-4 h-4" />,
   tarjeta:       <CreditCard className="w-4 h-4" />,
   transferencia: <ArrowLeftRight className="w-4 h-4" />,
+  stripe:        <CreditCard className="w-4 h-4 text-indigo-500" />,
+  pago_movil:    <Smartphone className="w-4 h-4 text-emerald-500" />,
+  zelle:         <Smartphone className="w-4 h-4 text-purple-500" />,
+  deposito:      <Landmark className="w-4 h-4 text-blue-500" />,
+  gift_card:     <Gift className="w-4 h-4 text-amber-500" />,
   mixto:         <Layers className="w-4 h-4" />,
 }
 

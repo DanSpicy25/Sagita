@@ -15,6 +15,9 @@ const estadoBadges: Record<EstadoCita, { variant: 'warning' | 'success' | 'dange
   cancelada: { variant: 'danger', label: 'Cancelada' },
   completada: { variant: 'default', label: 'Completada' },
   no_asistio: { variant: 'danger', label: 'No asistió' },
+  en_atencion: { variant: 'info', label: 'En atención' },
+  en_cola: { variant: 'warning', label: 'En cola' },
+  reprogramada: { variant: 'info', label: 'Reprogramada' },
 }
 
 export function VistaLista({ citas, onSeleccionarCita, onCancelarCita }: VistaListaProps) {

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { Permiso, Rol } from '@/types'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+import { API_BASE_URL as BASE } from '@/config/environment'
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────
 

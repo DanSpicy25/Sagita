@@ -14,10 +14,11 @@ import {
   Sparkles,
   Calendar,
   MessageSquare,
-  FileText,
   ShieldCheck,
   AlertCircle,
   Scissors,
+  FileDown,
+  Printer,
 } from 'lucide-react'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { TenantSelector } from '@/components/crm/TenantSelector'
@@ -34,6 +35,8 @@ import {
   descargarArchivoIcs,
   generarUrlGoogleCalendar,
   generarUrlWhatsApp,
+  descargarCitaPdf,
+  visualizarCitaPdf,
 } from '@/utils/calendar'
 
 function formatLocalDate(date: Date): string {
@@ -1029,10 +1032,30 @@ export default function PortalReservaPage() {
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                onClick={() => descargarArchivoIcs(citaConfirmada)}
+                onClick={() => descargarArchivoIcs(citaConfirmada, configuracion.nombre_negocio)}
               >
-                <FileText className="w-4 h-4 text-primary-600" />
+                <Calendar className="w-4 h-4 text-primary-600" />
                 <span>Descargar (.ics)</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => descargarCitaPdf(citaConfirmada, configuracion)}
+              >
+                <FileDown className="w-4 h-4 text-primary-600" />
+                <span>Descargar PDF</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => visualizarCitaPdf(citaConfirmada, configuracion)}
+              >
+                <Printer className="w-4 h-4 text-primary-600" />
+                <span>Ver / Imprimir Comprobante</span>
               </Button>
 
               {configuracion.telefono_soporte && (

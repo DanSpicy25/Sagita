@@ -11,6 +11,7 @@ import {
   CheckSquare,
   Square,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react'
 import { Badge, Button, Loader, Modal, Input, Textarea, EmptyState } from '@/components/ui'
 import { rolesService } from '@/services/roles.service'
@@ -58,67 +59,69 @@ interface RolCardProps {
 
 function RolCard({ rol, selected, onSelect, onEdit, onDelete }: RolCardProps) {
   return (
-    <div
-      onClick={onSelect}
-      className={`rounded-xl p-4 border cursor-pointer transition-all ${
-        selected
-          ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/20 shadow-sm'
-          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {rol.es_sistema ? (
-            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" />
-          ) : (
-            <Shield className="w-4 h-4 text-primary-500 flex-shrink-0" />
-          )}
-          <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
-            {rol.nombre}
-          </h3>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <Badge variant={rol.activo ? 'success' : 'default'} size="sm">
-            {rol.activo ? 'Activo' : 'Inactivo'}
-          </Badge>
-        </div>
-      </div>
-
-      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2">
-        {rol.descripcion}
-      </p>
-
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-          <Users className="w-3.5 h-3.5" />
-          <span>{rol.usuarios_count} usuario{rol.usuarios_count !== 1 ? 's' : ''}</span>
-        </div>
+    <article className={`rounded-lg border transition-colors ${
+      selected
+        ? 'border-primary-500 bg-primary-50/60 shadow-sm dark:bg-primary-900/20'
+        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/40 dark:hover:border-slate-600'
+    }`}>
+      <div className="flex items-center gap-3 p-3.5">
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-pressed={selected}
+          className="flex min-w-0 flex-1 items-start gap-3 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        >
+          <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
+            rol.es_sistema
+              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+              : 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+          }`}>
+            {rol.es_sistema ? <Lock className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {rol.nombre}
+              </span>
+              <Badge variant={rol.activo ? 'success' : 'default'} size="sm">
+                {rol.activo ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </span>
+            <span className="mt-1 block line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              {rol.descripcion}
+            </span>
+            <span className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <Users className="h-3.5 w-3.5" />
+              {rol.usuarios_count} usuario{rol.usuarios_count !== 1 ? 's' : ''}
+              {rol.es_sistema && <span className="text-slate-400">· Sistema</span>}
+            </span>
+          </span>
+        </button>
 
         {!rol.es_sistema && (
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 self-start">
             <button
-              onClick={(e) => { e.stopPropagation(); onEdit() }}
-              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-primary-600 transition-colors"
-              title="Editar"
+              type="button"
+              onClick={onEdit}
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-700 dark:hover:bg-slate-700"
+              title={`Editar ${rol.nombre}`}
+              aria-label={`Editar ${rol.nombre}`}
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <Edit2 className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete() }}
-              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-600 transition-colors"
-              title="Eliminar"
+              type="button"
+              onClick={onDelete}
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+              title={`Eliminar ${rol.nombre}`}
+              aria-label={`Eliminar ${rol.nombre}`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
         )}
-        {rol.es_sistema && (
-          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Sistema
-          </span>
-        )}
       </div>
-    </div>
+    </article>
   )
 }
 
@@ -189,7 +192,7 @@ function PermissionEditor({ rol, permisos, onSave, saving }: PermissionEditorPro
       </div>
 
       {rol.es_sistema && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 mb-4">
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/20">
           <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <p className="text-xs text-amber-700 dark:text-amber-300">
             Los roles del sistema son de solo lectura y no pueden modificarse.
@@ -197,7 +200,7 @@ function PermissionEditor({ rol, permisos, onSave, saving }: PermissionEditorPro
         </div>
       )}
 
-      <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
         {MODULO_ORDER.map((modulo) => {
           const mPermisos = groups[modulo]
           if (!mPermisos || mPermisos.length === 0) return null
@@ -205,7 +208,7 @@ function PermissionEditor({ rol, permisos, onSave, saving }: PermissionEditorPro
           const someChecked = mPermisos.some((p) => selected.has(p.id))
 
           return (
-            <div key={modulo} className="card border border-slate-100 dark:border-slate-800 p-4">
+            <div key={modulo} className="border-b border-slate-200 pb-4 last:border-0 last:pb-0 dark:border-slate-700">
               {/* Module header */}
               <button
                 onClick={() => toggleModulo(modulo)}
@@ -306,7 +309,7 @@ function RolModal({ open, onClose, onSubmit, initial, title, submitting }: RolMo
           rows={3}
           placeholder="Describe brevemente las responsabilidades de este rol…"
         />
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 border-t border-slate-200 pt-4 dark:border-slate-700">
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
             <X className="w-4 h-4 mr-1" /> Cancelar
           </Button>
@@ -461,37 +464,67 @@ export default function RolesPage() {
 
   if (error) {
     return (
-      <EmptyState
-        title="Error al cargar roles"
-        description={error}
-        icon={<AlertCircle className="w-10 h-10 text-red-400" />}
-      />
+      <section className="mx-auto max-w-2xl rounded-lg border border-red-200 bg-white p-5 dark:border-red-900 dark:bg-slate-900 sm:p-7" aria-live="polite">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+            <AlertCircle className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">No se pudieron cargar los roles</h1>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{error}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Comprueba la conexión con la API y vuelve a intentarlo.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              onClick={() => {
+                setError(null)
+                setCargando(true)
+                void load()
+              }}
+              className="mt-4"
+            >
+              Reintentar
+            </Button>
+          </div>
+        </div>
+      </section>
     )
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5 animate-fade-in">
+      <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Roles y Permisos</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-            Define qué puede hacer cada rol dentro del sistema
+          <p className="text-[10px] font-semibold uppercase text-primary-700 dark:text-primary-300">Acceso y seguridad</p>
+          <h1 className="mt-1 font-display text-[30px] leading-tight text-slate-900 dark:text-slate-100">Roles y permisos</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Administra el acceso de cada equipo a Sagitta.
           </p>
         </div>
-        <Button
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => setShowCreate(true)}
-          size="sm"
-        >
-          Nuevo Rol
-        </Button>
-      </div>
+        <div className="flex items-center justify-between gap-4 sm:justify-end">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">{roles.length}</span> roles
+          </p>
+          <Button
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => setShowCreate(true)}
+            size="sm"
+          >
+            Crear rol
+          </Button>
+        </div>
+      </header>
 
-      {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left: Roles list */}
-        <div className="lg:col-span-2 space-y-3">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.6fr)]">
+        <section className="min-w-0" aria-label="Lista de roles">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Roles disponibles</h2>
+            <span className="text-xs text-slate-400">{roles.length}</span>
+          </div>
           {roles.length === 0 ? (
             <EmptyState
               title="Sin roles"
@@ -510,12 +543,11 @@ export default function RolesPage() {
               />
             ))
           )}
-        </div>
+        </section>
 
-        {/* Right: Permission editor */}
-        <div className="lg:col-span-3">
+        <section className="min-w-0" aria-label="Permisos del rol seleccionado">
           {selectedRol ? (
-            <div className="card border border-slate-100 dark:border-slate-800 p-5 sticky top-20">
+            <div className="card rounded-lg p-4 sm:p-5 lg:sticky lg:top-20">
               <PermissionEditor
                 rol={selectedRol}
                 permisos={permisos}
@@ -531,7 +563,7 @@ export default function RolesPage() {
               </p>
             </div>
           )}
-        </div>
+        </section>
       </div>
 
       {/* Modals */}

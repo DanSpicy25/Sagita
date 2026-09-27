@@ -177,7 +177,7 @@ export default function LoginPage() {
               {/* Botón Admin Supremo */}
               <button
                 type="button"
-                onClick={() => handleAutoCompletar('supremo@sagitta.app', 'Supremo123!')}
+                onClick={() => handleAutoCompletar('supremo@demo.app', 'Supremo123!')}
                 className="p-2.5 rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100/70 dark:hover:bg-purple-900/40 text-left transition-all group"
               >
                 <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300 font-bold text-xs mb-0.5">
@@ -185,14 +185,14 @@ export default function LoginPage() {
                   <span>Supremo</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  supremo@sagitta.app
+                  supremo@demo.app
                 </p>
               </button>
 
               {/* Botón Admin Tienda */}
               <button
                 type="button"
-                onClick={() => handleAutoCompletar('admin@sagitta.com', 'Admin123!')}
+                onClick={() => handleAutoCompletar('admin@demo.app', 'Admin123!')}
                 className="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/30 hover:bg-blue-100/70 dark:hover:bg-blue-900/40 text-left transition-all group"
               >
                 <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-xs mb-0.5">
@@ -200,7 +200,7 @@ export default function LoginPage() {
                   <span>Admin Tienda</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  admin@sagitta.com
+                  admin@demo.app
                 </p>
               </button>
 

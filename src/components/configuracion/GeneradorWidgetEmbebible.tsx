@@ -29,14 +29,20 @@ export function GeneradorWidgetEmbebible({ configuracion }: Props) {
   title="Reserva tu cita en ${configuracion.nombre_negocio}"
 ></iframe>`
 
-  const codigoScript = `<!-- Sagitta White-Label Booking Widget -->
-<div id="sagitta-booking-root"></div>
+  const brandSlug = (configuracion.nombre_negocio || 'booking')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'portal'
+
+  const codigoScript = `<!-- ${configuracion.nombre_negocio || 'Online'} Booking Widget -->
+<div id="${brandSlug}-booking-root"></div>
 <script
   src="${baseUrl}/widget.js"
   data-brand-name="${configuracion.nombre_negocio}"
   data-primary-color="${configuracion.color_primario}"
   data-theme="${temaWidget}"
-  data-target="#sagitta-booking-root"
+  data-target="#${brandSlug}-booking-root"
   async
 ></script>`
 

@@ -18,4 +18,8 @@ export class ApiClientRepository implements IClientRepository {
   update(id: number, data: Partial<Cliente>): Promise<ApiResponse<Cliente>> {
     return apiClient.put<Cliente>(`/clientes/${id}`, data)
   }
+
+  delete(id: number): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`/clientes/${id}`)
+  }
 }
