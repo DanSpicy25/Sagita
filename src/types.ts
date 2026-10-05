@@ -1300,3 +1300,154 @@ export interface ContextoEventoAutomatizacion {
   metadata?: Record<string, unknown>
 }
 
+// ─── Plataforma modular: módulos, complementos, sectores y perfil de negocio ──
+// Jerarquía: CORE → módulo → complemento (addon) → configuración.
+// Resolución de visibilidad: flag de plataforma → plan → perfil del negocio → permiso del usuario.
+
+/** Interruptores globales de plataforma (build/entorno). Ver src/config/features.ts */
+export type PlatformFlag =
+  | 'appointments'
+  | 'clients'
+  | 'services'
+  | 'employees'
+  | 'sales'
+  | 'inventory'
+  | 'billing'
+  | 'reports'
+  | 'crm'
+  | 'notifications'
+  | 'settings'
+  | 'roles'
+
+export type ModuleCategory =
+  | 'inicio'
+  | 'operaciones'
+  | 'clientes'
+  | 'ventas'
+  | 'inventario'
+  | 'marketing'
+  | 'analitica'
+  | 'configuracion'
+
+export type ModuleId =
+  // Disponibles
+  | 'dashboard'
+  | 'reservas'
+  | 'recepcion'
+  | 'servicios'
+  | 'profesionales'
+  | 'recursos'
+  | 'clientes'
+  | 'pos'
+  | 'finanzas'
+  | 'inventario'
+  | 'automatizaciones'
+  | 'reportes'
+  | 'usuarios'
+  | 'roles'
+  | 'integraciones'
+  | 'desarrolladores'
+  | 'modulos'
+  | 'ajustes'
+  // Planificados (hoja de ruta, sin ruta todavía)
+  | 'crm'
+  | 'compras'
+  | 'fidelizacion'
+  | 'marketing'
+  | 'portal_cliente'
+
+/** disponible = usable · parcial = usable con huecos · planificado = solo hoja de ruta */
+export type ModuleAvailability = 'disponible' | 'parcial' | 'planificado'
+
+/** Estado real de la capa de datos para evitar presentar mocks como funcionalidad real */
+export type BackendReadiness = 'frontend_ready' | 'backend_required' | 'integration_required' | 'mock'
+
+/** Términos de dominio que cambian según el sector (p. ej. Cita → Clase, Cliente → Paciente) */
+export type TermKey =
+  | 'cita'
+  | 'citas'
+  | 'cliente'
+  | 'clientes'
+  | 'profesional'
+  | 'profesionales'
+  | 'servicio'
+  | 'servicios'
+  | 'recurso'
+  | 'recursos'
+
+export interface ModuleAddon {
+  /** Clave completa `modulo.complemento`, p. ej. `recepcion.walk_in` */
+  key: string
+  label: string
+  description: string
+  defaultEnabled: boolean
+  availability: ModuleAvailability
+}
+
+export interface ModuleDependencies {
+  /** Sin estos módulos el módulo no funciona (se activan/desactivan en cascada) */
+  technical?: ModuleId[]
+  /** Recomendados para sacarle valor, no obligatorios */
+  functional?: ModuleId[]
+}
+
+export interface ModuleDefinition {
+  id: ModuleId
+  label: string
+  description: string
+  category: ModuleCategory
+  /** Ruta principal. Los módulos sin ruta no aparecen en la navegación */
+  route?: string
+  /** Permiso mínimo de lectura (UI). La autorización real es responsabilidad del backend */
+  permission?: string
+  platformFlag?: PlatformFlag
+  /** El término de sector que sustituye la etiqueta en navegación */
+  termKey?: TermKey
+  /** Los módulos core no pueden desactivarse */
+  core: boolean
+  availability: ModuleAvailability
+  backend: BackendReadiness
+  /** Dependencia comercial: plan mínimo de la sucursal */
+  minPlan: TenantPlan
+  dependencies?: ModuleDependencies
+  addons?: ModuleAddon[]
+  /** Capacidades principales (resumen para la pantalla de módulos) */
+  capabilities: string[]
+}
+
+export type IndustryId =
+  | 'general'
+  | 'belleza'
+  | 'salud'
+  | 'fitness'
+  | 'automotriz'
+  | 'educacion'
+  | 'profesional'
+  | 'creativo'
+  | 'gastronomia'
+  | 'hogar'
+  | 'mascotas'
+  | 'espacios'
+
+export interface IndustryPreset {
+  id: IndustryId
+  label: string
+  description: string
+  examples: string[]
+  /** Módulos no-core activados por el preset */
+  modules: ModuleId[]
+  /** Complementos activados por el preset (claves `modulo.complemento`) */
+  addons: string[]
+  terms: Partial<Record<TermKey, string>>
+}
+
+/** Perfil de negocio por sucursal/tenant: qué módulos y complementos usa */
+export interface BusinessProfile {
+  id: string
+  tenant_id: string
+  industria: IndustryId
+  modulos: ModuleId[]
+  complementos: string[]
+  updated_at: string
+}
+

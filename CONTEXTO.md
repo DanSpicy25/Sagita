@@ -193,7 +193,28 @@
   * `src/pages/DashboardPage.tsx`: Conectado a servicios de datos reales (citas, clientes, facturación) con KPIs operativos, próximas citas y accesos rápidos a todos los módulos.
   * `src/config/features.ts`: Sistema de Feature Flags desacoplado.
   * `docs/ARCHITECTURE.md` y `docs/BACKEND-HANDOFF.md`: Especificaciones completas de arquitectura, contratos API, entidades, payloads de error y guía de conexión para el backend.
-  * Optimización de compilación en `vite.config.ts`: Code-splitting mediante `manualChunks` para React y Lucide.
+### ✅ Plataforma Empresarial Modular, Adaptable y Extensible (Completada)
+* **Entregables:**
+  * **Catálogo Maestro y Auditoría de Capacidades:**
+    * `docs/product/CAPABILITY_CATALOG.md`: Clasificación integral de capacidades en 18 módulos y su estado (Implementado, Parcial, Mock, Huérfano, Ausente).
+    * `docs/product/MODULE_MAP.md`: Descomposición jerárquica de módulos, submódulos, capacidades, complementos y dependencias.
+    * `docs/product/INDUSTRY_MATRIX.md`: Matriz de adaptación para 12 verticales (Belleza, Salud, Fitness, Automotriz, Educación, Profesional, Creativo, Gastronomía, Hogar, Mascotas, Espacios, General).
+    * `docs/product/FEATURE_DEPENDENCIES.md`: Grafo de dependencias técnicas, funcionales, comerciales y cascada de activación.
+    * `docs/architecture/MODULAR_ARCHITECTURE.md`: Especificación de arquitectura y principios rectores.
+  * **Motor y Registro de Módulos:**
+    * `src/config/modules.ts`: Registro maestro de módulos (`MODULES`), categorías, planes mínimos y dependencias técnicas.
+    * `src/config/industries.ts`: Presets de industria (`INDUSTRY_PRESETS`) con terminología de dominio adaptativa.
+    * `src/context/ModulesContext.tsx` y `src/hooks/useModules.ts`: Proveedor de perfil de negocio por sucursal con resolución de dependencias y persistencia en `LocalStorageAdapter`.
+  * **Conexión de Componentes Previamente Huérfanos:**
+    * Integración de `TableroColaWalkIn` y `GestionListaEspera` en `src/pages/RecepcionPage.tsx` (`/recepcion`).
+    * Integración de `GestionRecursos` y `GestionBloqueos` en `src/pages/RecursosPage.tsx` (`/recursos`).
+    * Integración de `ModalReprogramarCita` en `src/pages/CitasPage.tsx` con acción en el detalle de la cita y refresco reactivo.
+  * **Módulo de Adaptabilidad e Industria:**
+    * `src/pages/ModulosPage.tsx` (`/modulos`): Panel de control visual para activar/desactivar módulos, complementos y aplicar presets por industria.
+  * **Navegación Inteligente y Jerárquica:**
+    * `src/components/layout/Sidebar.tsx`: Reorganizada por categorías lógicas (Inicio, Operaciones, Clientes, Ventas, Inventario, Marketing, Analítica, Configuración) filtrando dinámicamente módulos inactivos o sin permiso y adaptando etiquetas al sector activo.
+  * **Validación:**
+    * Compilación `tsc -b && vite build` ejecutada con 0 errores TypeScript y PWA generada exitosamente.
 
 ---
 

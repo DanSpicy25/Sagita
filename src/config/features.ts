@@ -1,4 +1,11 @@
-export const FEATURES = {
+import type { PlatformFlag } from '@/types'
+
+/**
+ * Interruptores globales de plataforma (nivel build/entorno).
+ * Apagan una capacidad para TODOS los negocios. La activación por negocio vive en
+ * el perfil de negocio (`ModulesContext`) y el catálogo en `src/config/modules.ts`.
+ */
+export const FEATURES: Record<PlatformFlag, boolean> = {
   appointments: true,
   clients: true,
   services: true,
@@ -11,9 +18,9 @@ export const FEATURES = {
   notifications: true,
   settings: true,
   roles: true,
-} as const
+}
 
-export type FeatureKey = keyof typeof FEATURES
+export type FeatureKey = PlatformFlag
 
 export function isFeatureEnabled(key: FeatureKey): boolean {
   return FEATURES[key]

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Receipt, FileDown, Printer } from 'lucide-react'
+import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Receipt, FileDown, Printer, RefreshCw } from 'lucide-react'
 import { Cita, VistaCalendario, EstadoCita, Factura } from '@/types'
 import { citasService } from '@/services/citas.service'
 import { pagosService } from '@/services/pagos.service'
@@ -10,6 +10,7 @@ import {
   VistaLista,
 } from '@/components/calendario'
 import { FacturaModal } from '@/components/pagos/FacturaModal'
+import { ModalReprogramarCita } from '@/components/reservas'
 import { Button, Loader, Modal, Badge } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useConfiguracion } from '@/context/ConfiguracionContext'
@@ -21,6 +22,7 @@ export default function CitasPage() {
   const [cargando, setCargando] = useState(true)
   const [vista, setVista] = useState<VistaCalendario>('mes')
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null)
+  const [citaParaReprogramar, setCitaParaReprogramar] = useState<Cita | null>(null)
   const [facturaModal, setFacturaModal] = useState<Factura | null>(null)
   const { toast } = useToast()
 
@@ -235,6 +237,20 @@ export default function CitasPage() {
                   Imprimir
                 </Button>
 
+                {citaSeleccionada.estado !== 'cancelada' && citaSeleccionada.estado !== 'completada' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCitaParaReprogramar(citaSeleccionada)
+                      setCitaSeleccionada(null)
+                    }}
+                    leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+                  >
+                    Reprogramar
+                  </Button>
+                )}
+
                 {citaSeleccionada.estado !== 'cancelada' && (
                   <Button
                     variant="danger"
@@ -312,6 +328,18 @@ export default function CitasPage() {
         factura={facturaModal}
         isOpen={!!facturaModal}
         onClose={() => setFacturaModal(null)}
+      />
+
+      {/* Modal Reprogramación Asistida */}
+      <ModalReprogramarCita
+        cita={citaParaReprogramar}
+        isOpen={!!citaParaReprogramar}
+        onClose={() => setCitaParaReprogramar(null)}
+        onCitaReprogramada={() => {
+          setCitaParaReprogramar(null)
+          cargarCitas()
+          toast.success('Cita reprogramada', 'La cita fue reprogramada correctamente')
+        }}
       />
     </div>
   )

@@ -4,6 +4,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { AppProvider } from '@/context/AppContext'
 import { ConfiguracionProvider } from '@/context/ConfiguracionContext'
 import { TenantProvider } from '@/context/TenantContext'
+import { ModulesProvider } from '@/context/ModulesContext'
 import { I18nProvider } from '@/context/I18nContext'
 import { PageWrapper } from '@/components/layout'
 import { Loader } from '@/components/ui'
@@ -13,13 +14,16 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const CitasPage = lazy(() => import('@/pages/CitasPage'))
 const NuevaCitaPage = lazy(() => import('@/pages/NuevaCitaPage'))
+const RecepcionPage = lazy(() => import('@/pages/RecepcionPage'))
 const ServiciosPage = lazy(() => import('@/pages/ServiciosPage'))
 const EmpleadosPage = lazy(() => import('@/pages/EmpleadosPage'))
+const RecursosPage = lazy(() => import('@/pages/RecursosPage'))
 const ClientesPage = lazy(() => import('@/pages/ClientesPage'))
 const PagosPage = lazy(() => import('@/pages/PagosPage'))
 const IntegracionesPage = lazy(() => import('@/pages/IntegracionesPage'))
 const ConfiguracionPage = lazy(() => import('@/pages/ConfiguracionPage'))
 const CrmDesarrolladoresPage = lazy(() => import('@/pages/CrmDesarrolladoresPage'))
+const ModulosPage = lazy(() => import('@/pages/ModulosPage'))
 const PortalReservaPage = lazy(() => import('@/pages/PortalReservaPage'))
 const UsuariosPage = lazy(() => import('@/pages/UsuariosPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
@@ -80,6 +84,16 @@ function AppRoutes() {
         }
       />
 
+      {/* Módulo Recepción / Mostrador (Walk-in y Lista de espera) */}
+      <Route
+        path="/recepcion"
+        element={
+          <PrivateRoute>
+            <RecepcionPage />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/servicios"
         element={
@@ -94,6 +108,16 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <EmpleadosPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Módulo Recursos y Bloqueos de Agenda */}
+      <Route
+        path="/recursos"
+        element={
+          <PrivateRoute>
+            <RecursosPage />
           </PrivateRoute>
         }
       />
@@ -134,6 +158,16 @@ function AppRoutes() {
         }
       />
 
+      {/* Módulo Automatizaciones directas */}
+      <Route
+        path="/automatizaciones"
+        element={
+          <PrivateRoute>
+            <IntegracionesPage defaultTab="automatizaciones" />
+          </PrivateRoute>
+        }
+      />
+
       {/* Fase 5: Configuración y Marca Blanca */}
       <Route
         path="/ajustes"
@@ -144,7 +178,17 @@ function AppRoutes() {
         }
       />
 
-      {/* Fase 6: Escalabilidad, Multi-Tenant y CRM */}
+      {/* Adaptabilidad y Gestión de Módulos */}
+      <Route
+        path="/modulos"
+        element={
+          <PrivateRoute>
+            <ModulosPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Fase 6: Escalabilidad, Multi-Tenant y Desarrolladores */}
       <Route
         path="/crm"
         element={
@@ -201,17 +245,19 @@ function AppRoutes() {
 export default function App() {
   return (
     <TenantProvider>
-      <I18nProvider>
-        <ConfiguracionProvider>
-          <AppProvider>
-            <AuthProvider>
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </AuthProvider>
-          </AppProvider>
-        </ConfiguracionProvider>
-      </I18nProvider>
+      <ModulesProvider>
+        <I18nProvider>
+          <ConfiguracionProvider>
+            <AppProvider>
+              <AuthProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </AuthProvider>
+            </AppProvider>
+          </ConfiguracionProvider>
+        </I18nProvider>
+      </ModulesProvider>
     </TenantProvider>
   )
 }
