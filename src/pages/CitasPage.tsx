@@ -14,6 +14,7 @@ import { ModalReprogramarCita } from '@/components/reservas'
 import { Button, Loader, Modal, Badge } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useConfiguracion } from '@/context/ConfiguracionContext'
+import { useModules } from '@/context/ModulesContext'
 import { descargarArchivoIcs, descargarCitaPdf, visualizarCitaPdf } from '@/utils/calendar'
 
 export default function CitasPage() {
@@ -25,6 +26,9 @@ export default function CitasPage() {
   const [citaParaReprogramar, setCitaParaReprogramar] = useState<Cita | null>(null)
   const [facturaModal, setFacturaModal] = useState<Factura | null>(null)
   const { toast } = useToast()
+  const { tTerm } = useModules()
+  const citaTerm = tTerm('cita', 'Cita')
+  const citasTerm = tTerm('citas', 'Citas')
 
   const cargarCitas = () => {
     setCargando(true)
@@ -34,7 +38,7 @@ export default function CitasPage() {
         if (res.data) setCitas(res.data)
       })
       .catch((err) => {
-        toast.error('Error al cargar citas', err instanceof Error ? err.message : 'Error')
+        toast.error(`Error al cargar ${citasTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
       })
       .finally(() => setCargando(false))
   }
@@ -46,18 +50,18 @@ export default function CitasPage() {
   const handleCancelarCita = async (id: number) => {
     try {
       await citasService.cancel(id)
-      toast.success('Cita cancelada', 'La cita fue cancelada exitosamente')
+      toast.success(`${citaTerm} cancelada`, `La ${citaTerm.toLowerCase()} fue cancelada exitosamente`)
       setCitaSeleccionada(null)
       cargarCitas()
     } catch (err) {
-      toast.error('Error al cancelar cita', err instanceof Error ? err.message : 'Error')
+      toast.error(`Error al cancelar ${citaTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
     }
   }
 
   const handleCambiarEstado = async (id: number, nuevoEstado: EstadoCita) => {
     try {
       await citasService.update(id, { estado: nuevoEstado })
-      toast.success('Estado actualizado', `La cita ahora está ${nuevoEstado}`)
+      toast.success('Estado actualizado', `La ${citaTerm.toLowerCase()} ahora está ${nuevoEstado}`)
       setCitaSeleccionada(null)
       cargarCitas()
     } catch (err) {
@@ -71,10 +75,10 @@ export default function CitasPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Agenda de Citas
+            Agenda de {citasTerm}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Administra tus citas en calendario mensual, semanal o vista en lista
+            Administra tus {citasTerm.toLowerCase()} en calendario mensual, semanal o vista en lista
           </p>
         </div>
 
@@ -121,7 +125,7 @@ export default function CitasPage() {
 
           <Link to="/citas/nueva">
             <Button leftIcon={<Plus className="w-4 h-4" />}>
-              Nueva Cita
+              Nueva {citaTerm}
             </Button>
           </Link>
         </div>
@@ -129,7 +133,7 @@ export default function CitasPage() {
 
       {/* Vistas del Calendario */}
       {cargando ? (
-        <Loader text="Cargando citas..." />
+        <Loader text={`Cargando ${citasTerm.toLowerCase()}...`} />
       ) : vista === 'mes' ? (
         <CalendarioMensual
           citas={citas}
@@ -153,7 +157,7 @@ export default function CitasPage() {
         <Modal
           isOpen={true}
           onClose={() => setCitaSeleccionada(null)}
-          title="Detalles de la Cita"
+          title={`Detalles de la ${citaTerm}`}
           footer={
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">

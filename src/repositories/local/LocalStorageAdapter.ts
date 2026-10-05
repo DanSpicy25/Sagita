@@ -68,6 +68,14 @@ export class LocalStorageAdapter {
     }
   }
 
+  static get<T>(collection: string, seedData?: T, tenantId?: string): T {
+    return this.getCollection<any>(collection, seedData as any, tenantId) as any
+  }
+
+  static set<T>(collection: string, items: T, tenantId?: string): void {
+    this.setCollection<any>(collection, items as any, tenantId)
+  }
+
   /**
    * Inserta un elemento en una colección
    */

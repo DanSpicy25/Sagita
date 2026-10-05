@@ -96,6 +96,11 @@ export const CONFIGURACION_DEFAULT: ConfiguracionMarcaBlanca = {
   zona_horaria: 'America/New_York',
   formato_hora: '12h',
   formato_fecha: 'DD/MM/YYYY',
+  escala_fuente: 'normal',
+  titulo_pestana: 'Sagitta Platform · Sistema de Gestión',
+  ticket_ancho: 80,
+  ticket_pie: '¡Gracias por su preferencia! Vuelva pronto.',
+  ticket_abrir_cajon: true,
   url_terminos: 'https://sagitta.com/terminos',
   url_privacidad: 'https://sagitta.com/privacidad',
 }

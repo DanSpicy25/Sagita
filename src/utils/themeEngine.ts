@@ -92,9 +92,19 @@ export function applyTheme(tema: TemaConfig, isDarkOverride?: boolean): void {
     root.style.setProperty('--color-info', tema.colors.info)
   }
 
-  // 6. Tipografía dinámica
+  // 6. Tipografía dinámica y escala
   const fontBody = tema.typography?.fontBody || 'Inter'
   const fontHeading = tema.typography?.fontHeading || fontBody
+  const fontScale = tema.typography?.fontScale || 'normal'
+
+  root.setAttribute('data-font-scale', fontScale)
+  const scaleMap: Record<string, string> = {
+    compacto: '13px',
+    normal: '14px',
+    comodo: '15px',
+    grande: '16px',
+  }
+  root.style.fontSize = scaleMap[fontScale] || '14px'
 
   // Cargar Google Fonts si difiere del sistema estándar
   const fontFamilies = Array.from(new Set([fontBody, fontHeading])).filter(
@@ -120,7 +130,6 @@ export function applyTheme(tema: TemaConfig, isDarkOverride?: boolean): void {
       fontLink.href = fontUrl
     }
   } else if (fontLink) {
-    // Si vuelve a Inter puro, remover el link dinámico
     fontLink.remove()
   }
 
@@ -130,12 +139,15 @@ export function applyTheme(tema: TemaConfig, isDarkOverride?: boolean): void {
     root.style.setProperty('--font-heading', `"${fontHeading}", sans-serif`)
   }
 
-  // 7. Título de página (Brand)
+  // 7. Título de página (Brand & Browser Tab)
   if (tema.brand?.name) {
-    document.title = tema.brand.name
+    const titleText = tema.brand.tagline
+      ? `${tema.brand.name} · ${tema.brand.tagline}`
+      : tema.brand.name
+    document.title = titleText
   }
 
-  // 8. Favicon dinámico
+  // 8. Favicon dinámico en esquina de pestaña
   if (tema.assets?.faviconUrl) {
     let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null
     if (!link) {
@@ -174,6 +186,7 @@ export function configuracionToTema(cfg: ConfiguracionMarcaBlanca): TemaConfig {
     typography: {
       fontBody: (cfg.fuente_tipografica as FuenteTipografica) || 'Inter',
       fontHeading: (cfg.fuente_tipografica as FuenteTipografica) || 'Inter',
+      fontScale: cfg.escala_fuente || 'normal',
     },
     radius: cfg.radio_esquinas || 'moderno',
     shadows: cfg.sombras || 'subtle',
@@ -208,6 +221,8 @@ export function temaToConfiguracion(
     color_primario: tema.colors.primary,
     paleta_predefinida: tema.colors.palettePredefinida || 'custom',
     fuente_tipografica: tema.typography.fontBody,
+    escala_fuente: tema.typography.fontScale || 'normal',
+    titulo_pestana: prev?.titulo_pestana || `${tema.brand.name} · ${tema.brand.tagline || 'Sagitta'}`,
     radio_esquinas: tema.radius,
     densidad: tema.density,
     sombras: tema.shadows,

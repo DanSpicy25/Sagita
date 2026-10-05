@@ -7,6 +7,7 @@ import {
 } from '@/types'
 
 import { API_BASE_URL as BASE } from '@/config/environment'
+import { LocalStorageAdapter } from '@/repositories/local/LocalStorageAdapter'
 
 export const MOCK_TENANTS: Tenant[] = [
   {
@@ -255,17 +256,20 @@ export const crmHandlers = [
   http.post(`${BASE}/crm/conectores/:id/sync`, ({ params }) => {
     const { id } = params
     const index = crmConfigs.findIndex((c) => c.id === id)
+    const clientesReales = LocalStorageAdapter.getCollection<any>('clientes', []).length
+    const totalSincronizados = clientesReales > 0 ? clientesReales : 15
+
     if (index !== -1) {
       crmConfigs[index].ultima_sync = new Date().toISOString()
-      crmConfigs[index].total_sincronizados += 12
+      crmConfigs[index].total_sincronizados = totalSincronizados
     }
     return HttpResponse.json({
       success: true,
       data: {
-        sincronizados: 12,
+        sincronizados: totalSincronizados,
         timestamp: new Date().toISOString(),
       },
-      message: 'Sincronización completada con éxito',
+      message: `Sincronización completada con éxito: ${totalSincronizados} contactos vinculados`,
     })
   }),
 

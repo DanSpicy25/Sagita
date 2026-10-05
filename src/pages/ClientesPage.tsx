@@ -12,9 +12,11 @@ import {
 } from 'lucide-react'
 import { Cliente, TipoDocumentoCliente, CanalContactoCliente } from '@/types'
 import { clientesService } from '@/services/clientes.service'
-import { Button, Input, Select, Modal, Loader, EmptyState } from '@/components/ui'
+import { Button, Input, Select, Modal, Loader, EmptyState, Pagination } from '@/components/ui'
 import { ModalExpedienteCliente } from '@/components/clientes/ModalExpedienteCliente'
 import { useToast } from '@/hooks/useToast'
+import { useModules } from '@/context/ModulesContext'
+import { sanitizeText } from '@/utils/sanitize'
 import { formatTelefonoVE, handleOnlyNumbersKeyDown } from '@/utils/phone'
 
 export default function ClientesPage() {
@@ -45,6 +47,13 @@ export default function ClientesPage() {
   const [tagInput, setTagInput] = useState('')
 
   const { toast } = useToast()
+  const { tTerm } = useModules()
+  const clienteTerm = tTerm('cliente', 'Cliente')
+  const clientesTerm = tTerm('clientes', 'Clientes')
+  const citasTerm = tTerm('citas', 'Citas')
+
+  const [pagina, setPagina] = useState(1)
+  const ITEMS_POR_PAGINA = 9
 
   const cargarClientes = (q?: string) => {
     setCargando(true)
@@ -60,11 +69,12 @@ export default function ClientesPage() {
   }
 
   useEffect(() => {
+    setPagina(1)
     const timer = setTimeout(() => {
       cargarClientes(busqueda)
     }, 300)
     return () => clearTimeout(timer)
-  }, [busqueda])
+  }, [busqueda, filtroTag])
 
   // Obtener lista única de tags para filtros
   const tagsDisponibles = useMemo(() => {
@@ -80,6 +90,11 @@ export default function ClientesPage() {
     return clientes.filter((c) => c.etiquetas?.includes(filtroTag))
   }, [clientes, filtroTag])
 
+  const totalPaginas = Math.ceil(clientesFiltrados.length / ITEMS_POR_PAGINA)
+  const clientesPaginados = useMemo(() => {
+    return clientesFiltrados.slice((pagina - 1) * ITEMS_POR_PAGINA, pagina * ITEMS_POR_PAGINA)
+  }, [clientesFiltrados, pagina])
+
   const handleCrear = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nuevoCliente.nombre?.trim() || !nuevoCliente.email?.trim()) {
@@ -88,8 +103,16 @@ export default function ClientesPage() {
     }
 
     try {
-      await clientesService.create(nuevoCliente)
-      toast.success('Cliente registrado', 'El cliente fue agregado al directorio con éxito')
+      const clienteSanitizado = {
+        ...nuevoCliente,
+        nombre: sanitizeText(nuevoCliente.nombre),
+        apellido: sanitizeText(nuevoCliente.apellido),
+        direccion: sanitizeText(nuevoCliente.direccion),
+        ciudad: sanitizeText(nuevoCliente.ciudad),
+        notas: sanitizeText(nuevoCliente.notas),
+      }
+      await clientesService.create(clienteSanitizado)
+      toast.success(`${clienteTerm} registrado`, `El ${clienteTerm.toLowerCase()} fue agregado al directorio con éxito`)
       setModalNuevoAbierto(false)
       setNuevoCliente({
         nombre: '',
@@ -107,7 +130,7 @@ export default function ClientesPage() {
       setTagInput('')
       cargarClientes()
     } catch (err) {
-      toast.error('Error al registrar cliente', err instanceof Error ? err.message : 'Error')
+      toast.error('Error al registrar', err instanceof Error ? err.message : 'Error')
     }
   }
 
@@ -129,10 +152,10 @@ export default function ClientesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Directorio Comercial de Clientes
+            Directorio de {clientesTerm}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Expediente 360°, historial de citas, paquetes de sesiones, membresías y preferencias
+            Expediente 360°, historial de atención, paquetes de sesiones, membresías y preferencias
           </p>
         </div>
 
@@ -152,7 +175,7 @@ export default function ClientesPage() {
             onClick={() => setModalNuevoAbierto(true)}
             leftIcon={<Plus className="w-4 h-4" />}
           >
-            Nuevo Cliente
+            Nuevo {clienteTerm}
           </Button>
         </div>
       </div>
@@ -197,89 +220,99 @@ export default function ClientesPage() {
 
       {/* Grid de clientes */}
       {cargando ? (
-        <Loader text="Cargando directorio de clientes..." />
+        <Loader text={`Cargando directorio de ${clientesTerm.toLowerCase()}...`} />
       ) : clientesFiltrados.length === 0 ? (
         <EmptyState
-          title="No se encontraron clientes"
-          description="Agrega nuevos clientes para llevar su historial de citas, membresías y datos comerciales."
-          actionLabel="Agregar Cliente"
+          title={`No se encontraron ${clientesTerm.toLowerCase()}`}
+          description={`Agrega nuevos ${clientesTerm.toLowerCase()} para llevar su historial de ${citasTerm.toLowerCase()}, membresías y datos comerciales.`}
+          actionLabel={`Agregar ${clienteTerm}`}
           onAction={() => setModalNuevoAbierto(true)}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clientesFiltrados.map((c) => (
-            <div
-              key={c.id}
-              onClick={() => handleAbrirExpediente(c)}
-              className="card p-5 flex flex-col justify-between hover:shadow-lg transition-all border border-slate-100 dark:border-slate-800 cursor-pointer group"
-            >
-              <div>
-                <div className="flex items-start gap-3.5 mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 flex items-center justify-center font-bold text-sm flex-shrink-0 group-hover:bg-primary-600 group-hover:text-white transition-colors shadow-sm">
-                    {c.nombre.slice(0, 1)}
-                    {c.apellido ? c.apellido.slice(0, 1) : ''}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate group-hover:text-primary-600 transition-colors">
-                        {c.nombre} {c.apellido || ''}
-                      </h4>
-                      {c.documento_identidad && (
-                        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                          {c.documento_identidad}
-                        </span>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clientesPaginados.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => handleAbrirExpediente(c)}
+                className="card p-5 flex flex-col justify-between hover:shadow-lg transition-all border border-slate-100 dark:border-slate-800 cursor-pointer group"
+              >
+                <div>
+                  <div className="flex items-start gap-3.5 mb-3">
+                    <div className="w-11 h-11 rounded-2xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 flex items-center justify-center font-bold text-sm flex-shrink-0 group-hover:bg-primary-600 group-hover:text-white transition-colors shadow-sm">
+                      {c.nombre.slice(0, 1)}
+                      {c.apellido ? c.apellido.slice(0, 1) : ''}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate group-hover:text-primary-600 transition-colors">
+                          {c.nombre} {c.apellido || ''}
+                        </h4>
+                        {c.documento_identidad && (
+                          <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {c.documento_identidad}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        {c.email}
+                      </p>
+                      {c.telefono && (
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 flex-shrink-0" />
+                          {c.telefono}
+                        </p>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 truncate flex items-center gap-1 mt-0.5">
-                      <Mail className="w-3 h-3 flex-shrink-0" />
-                      {c.email}
-                    </p>
-                    {c.telefono && (
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 flex-shrink-0" />
-                        {c.telefono}
-                      </p>
-                    )}
                   </div>
+
+                  {/* Etiquetas */}
+                  {c.etiquetas && c.etiquetas.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {c.etiquetas.map((t) => (
+                        <span
+                          key={t}
+                          className="text-[10px] font-semibold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-md border border-primary-200/60 dark:border-primary-800/60"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Etiquetas */}
-                {c.etiquetas && c.etiquetas.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {c.etiquetas.map((t) => (
-                      <span
-                        key={t}
-                        className="text-[10px] font-semibold bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-md border border-primary-200/60 dark:border-primary-800/60"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Footer de métricas */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                <span className="flex items-center gap-1 font-semibold text-primary-600 dark:text-primary-400">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {c.total_citas} citas
-                </span>
-
-                {c.total_gastado !== undefined && (
-                  <span className="flex items-center gap-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    {c.total_gastado} total
+                {/* Footer de métricas */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                  <span className="flex items-center gap-1 font-semibold text-primary-600 dark:text-primary-400">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {c.total_citas} {citasTerm.toLowerCase()}
                   </span>
-                )}
 
-                <span className="text-slate-400 text-[11px] group-hover:text-primary-500 font-medium flex items-center gap-0.5">
-                  <Eye className="w-3 h-3" />
-                  Expediente
-                </span>
+                  {c.total_gastado !== undefined && (
+                    <span className="flex items-center gap-0.5 font-bold text-emerald-600 dark:text-emerald-400">
+                      <DollarSign className="w-3.5 h-3.5" />
+                      {c.total_gastado} total
+                    </span>
+                  )}
+
+                  <span className="text-slate-400 text-[11px] group-hover:text-primary-500 font-medium flex items-center gap-0.5">
+                    <Eye className="w-3 h-3" />
+                    Expediente
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <Pagination
+            currentPage={pagina}
+            totalPages={totalPaginas}
+            onPageChange={setPagina}
+            totalItems={clientesFiltrados.length}
+            itemsPerPage={ITEMS_POR_PAGINA}
+          />
+        </>
       )}
 
       {/* Modal Expediente 360° */}
@@ -297,7 +330,7 @@ export default function ClientesPage() {
       <Modal
         isOpen={modalNuevoAbierto}
         onClose={() => setModalNuevoAbierto(false)}
-        title="Registrar Nuevo Cliente en el Directorio"
+        title={`Registrar Nuevo ${clienteTerm} en el Directorio`}
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCrear} className="space-y-4">

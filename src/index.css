@@ -150,3 +150,32 @@
     background-color: var(--color-border-subtle);
   }
 }
+
+/* ─── Reglas de Impresión Térmica ESC/POS (80mm / 58mm) ─── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #ticket-termico-impresion,
+  #ticket-termico-impresion * {
+    visibility: visible;
+  }
+  #ticket-termico-impresion {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 2mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}
+

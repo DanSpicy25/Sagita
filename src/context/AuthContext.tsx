@@ -5,12 +5,13 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import { User, LoginPayload, UserRole } from '@/types'
+import { User, LoginPayload, Rol } from '@/types'
 import { authService, apiClient } from '@/services/api.client'
+import { LocalStorageAdapter } from '@/repositories/local/LocalStorageAdapter'
 
 // ─── Tipos del contexto ────────────────────────────────────────────────────
 
-export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+export const ROLE_PERMISSIONS: Record<string, string[]> = {
   superadmin: ['*'],
   admin: [
     'appointments.read', 'appointments.create', 'appointments.update', 'appointments.delete',
@@ -94,6 +95,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const permissions = useMemo<string[]>(() => {
     if (!user) return []
     if (user.permisos && user.permisos.length > 0) return user.permisos
+
+    // Evaluar permisos dinámicos del rol persistido
+    try {
+      const storedRoles = LocalStorageAdapter.getCollection<Rol>('roles', [])
+      const matchedRole = storedRoles.find(
+        (r) => r.nombre.toLowerCase() === user.rol.toLowerCase()
+      )
+      if (matchedRole && matchedRole.permisos && matchedRole.permisos.length > 0) {
+        return matchedRole.permisos
+      }
+    } catch {
+      // Continuar con fallback estático
+    }
+
     return ROLE_PERMISSIONS[user.rol] || []
   }, [user])
 

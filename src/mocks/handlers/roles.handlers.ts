@@ -41,7 +41,7 @@ export const MOCK_PERMISOS: Permiso[] = [
 
 const ALL_PERM_IDS = MOCK_PERMISOS.map((p) => p.id)
 
-export let MOCK_ROLES: Rol[] = [
+export const MOCK_ROLES: Rol[] = [
   {
     id: 1,
     nombre: 'Superadmin',
@@ -91,6 +91,18 @@ export let MOCK_ROLES: Rol[] = [
   },
 ]
 
+import { LocalStorageAdapter } from '@/repositories/local/LocalStorageAdapter'
+
+const COLLECTION_ROLES = 'roles'
+
+function getStoredRoles(): Rol[] {
+  return LocalStorageAdapter.getCollection<Rol>(COLLECTION_ROLES, MOCK_ROLES)
+}
+
+function saveStoredRoles(roles: Rol[]): void {
+  LocalStorageAdapter.setCollection(COLLECTION_ROLES, roles)
+}
+
 // ─── Handlers ──────────────────────────────────────────────────────────────
 
 export const rolesHandlers = [
@@ -101,12 +113,13 @@ export const rolesHandlers = [
 
   // Roles list
   http.get(`${BASE}/roles`, () =>
-    HttpResponse.json({ success: true, message: 'OK', data: MOCK_ROLES })
+    HttpResponse.json({ success: true, message: 'OK', data: getStoredRoles() })
   ),
 
   // Rol by id
   http.get(`${BASE}/roles/:id`, ({ params }) => {
-    const rol = MOCK_ROLES.find((r) => r.id === Number(params.id))
+    const roles = getStoredRoles()
+    const rol = roles.find((r) => r.id === Number(params.id))
     if (!rol) return HttpResponse.json({ success: false, message: 'No encontrado' }, { status: 404 })
     return HttpResponse.json({ success: true, message: 'OK', data: rol })
   }),
@@ -114,6 +127,7 @@ export const rolesHandlers = [
   // Create rol
   http.post(`${BASE}/roles`, async ({ request }) => {
     const body = (await request.json()) as Partial<Rol>
+    const roles = getStoredRoles()
     const nuevo: Rol = {
       id: Date.now(),
       nombre: body.nombre ?? 'Nuevo Rol',
@@ -124,27 +138,32 @@ export const rolesHandlers = [
       created_at: new Date().toISOString(),
       es_sistema: false,
     }
-    MOCK_ROLES.push(nuevo)
+    roles.push(nuevo)
+    saveStoredRoles(roles)
     return HttpResponse.json({ success: true, message: 'Rol creado', data: nuevo }, { status: 201 })
   }),
 
   // Update rol
   http.put(`${BASE}/roles/:id`, async ({ params, request }) => {
     const body = (await request.json()) as Partial<Rol>
-    const idx = MOCK_ROLES.findIndex((r) => r.id === Number(params.id))
+    const roles = getStoredRoles()
+    const idx = roles.findIndex((r) => r.id === Number(params.id))
     if (idx === -1)
       return HttpResponse.json({ success: false, message: 'No encontrado' }, { status: 404 })
-    MOCK_ROLES[idx] = { ...MOCK_ROLES[idx], ...body }
-    return HttpResponse.json({ success: true, message: 'Rol actualizado', data: MOCK_ROLES[idx] })
+    roles[idx] = { ...roles[idx], ...body }
+    saveStoredRoles(roles)
+    return HttpResponse.json({ success: true, message: 'Rol actualizado', data: roles[idx] })
   }),
 
   // Delete rol
   http.delete(`${BASE}/roles/:id`, ({ params }) => {
-    const rol = MOCK_ROLES.find((r) => r.id === Number(params.id))
+    const roles = getStoredRoles()
+    const rol = roles.find((r) => r.id === Number(params.id))
     if (!rol) return HttpResponse.json({ success: false, message: 'No encontrado' }, { status: 404 })
     if (rol.es_sistema)
       return HttpResponse.json({ success: false, message: 'No se puede eliminar un rol del sistema' }, { status: 403 })
-    MOCK_ROLES = MOCK_ROLES.filter((r) => r.id !== Number(params.id))
+    const filtered = roles.filter((r) => r.id !== Number(params.id))
+    saveStoredRoles(filtered)
     return HttpResponse.json({ success: true, message: 'Rol eliminado' })
   }),
 ]

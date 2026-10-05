@@ -1,5 +1,12 @@
 // ─── Usuarios y Auth ───────────────────────────────────────────────────────
-export type UserRole = 'superadmin' | 'admin' | 'gerente' | 'empleado' | 'recepcionista' | 'cliente'
+export type UserRole =
+  | 'superadmin'
+  | 'admin'
+  | 'gerente'
+  | 'empleado'
+  | 'recepcionista'
+  | 'cliente'
+  | (string & {})
 
 export interface User {
   id: number
@@ -691,6 +698,11 @@ export type FuenteTipografica =
   | 'Poppins'
   | 'Montserrat'
   | 'Outfit'
+  | 'Plus Jakarta Sans'
+  | 'DM Sans'
+  | 'Geist'
+
+export type EscalaFuente = 'compacto' | 'normal' | 'comodo' | 'grande'
 
 export type RadioEsquinas = 'cuadrado' | 'suave' | 'moderno' | 'pronunciado'
 export type Densidad = 'compact' | 'comfortable' | 'spacious'
@@ -727,6 +739,7 @@ export interface ThemeTypography {
   fontBody: FuenteTipografica
   fontHeading?: FuenteTipografica
   fontMono?: string
+  fontScale?: EscalaFuente
 }
 
 export interface ThemeAssets {
@@ -783,6 +796,14 @@ export interface ConfiguracionMarcaBlanca {
   formato_fecha: 'DD/MM/YYYY' | 'YYYY-MM-DD'
   url_terminos?: string
   url_privacidad?: string
+  direccion?: string
+  telefono?: string
+  rut_empresa?: string
+  ticket_ancho?: 58 | 80
+  ticket_pie?: string
+  ticket_abrir_cajon?: boolean
+  escala_fuente?: EscalaFuente
+  titulo_pestana?: string
   updated_at?: string
 }
 
@@ -924,10 +945,11 @@ export interface Proveedor {
   id: number
   nombre: string
   rnc_rif?: string
-  contacto: string
-  email: string
-  telefono: string
+  contacto?: string
+  email?: string
+  telefono?: string
   direccion?: string
+  plazo_pago_dias?: number
   activo: boolean
   created_at?: string
 }
@@ -1349,6 +1371,7 @@ export type ModuleId =
   | 'desarrolladores'
   | 'modulos'
   | 'ajustes'
+  | 'hardware'
   // Planificados (hoja de ruta, sin ruta todavía)
   | 'crm'
   | 'compras'

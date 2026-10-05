@@ -22,6 +22,7 @@ import {
   Gift,
   Megaphone,
   UserCircle,
+  Printer,
   type LucideIcon,
 } from 'lucide-react'
 import type { ModuleCategory, ModuleDefinition, ModuleId, TenantPlan } from '@/types'
@@ -271,6 +272,25 @@ export const MODULES: ModuleDefinition[] = [
       { key: 'finanzas.fiscal', label: 'Facturación electrónica', description: 'Timbrado según país.', defaultEnabled: false, availability: 'planificado' },
     ],
   },
+  {
+    id: 'hardware',
+    label: 'Hardware y POS',
+    description: 'Impresoras térmicas ESC/POS, Bluetooth, gaveta de dinero y escáneres.',
+    category: 'ventas',
+    route: '/hardware',
+    permission: 'settings.manage',
+    core: false,
+    availability: 'disponible',
+    backend: 'frontend_ready',
+    minPlan: 'starter',
+    dependencies: { functional: ['pos'] },
+    capabilities: [
+      'Impresoras térmicas 58mm y 80mm',
+      'Conexión Web Bluetooth directa ESC/POS',
+      'Apertura de cajón monedero',
+      'Lector de códigos de barras HID',
+    ],
+  },
 
   // ─── Inventario ────────────────────────────────────────────────────────────
   {
@@ -458,6 +478,7 @@ export const MODULE_ICONS: Record<ModuleId, LucideIcon> = {
   integraciones: Share2,
   desarrolladores: Code2,
   ajustes: Settings,
+  hardware: Printer,
 }
 
 const MODULE_INDEX = new Map<ModuleId, ModuleDefinition>(MODULES.map((m) => [m.id, m]))

@@ -29,6 +29,7 @@ const UsuariosPage = lazy(() => import('@/pages/UsuariosPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 const InventarioPage = lazy(() => import('@/pages/InventarioPage'))
 const VentasPage = lazy(() => import('@/pages/VentasPage'))
+const HardwarePage = lazy(() => import('@/pages/HardwarePage'))
 const ReportesPage = lazy(() => import('@/pages/ReportesPage'))
 const RolesPage = lazy(() => import('@/pages/RolesPage'))
 
@@ -204,6 +205,15 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <VentasPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/hardware"
+        element={
+          <PrivateRoute>
+            <HardwarePage />
           </PrivateRoute>
         }
       />

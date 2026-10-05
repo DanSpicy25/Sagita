@@ -19,13 +19,15 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { Button, Input, Modal, Badge, Loader } from '@/components/ui'
 import { usuariosService } from '@/services/usuarios.service'
-import { UsuarioGestion, UserRole, CrearUsuarioPayload } from '@/types'
+import { rolesService } from '@/services/roles.service'
+import { UsuarioGestion, UserRole, CrearUsuarioPayload, Rol } from '@/types'
 
 export default function UsuariosPage() {
   const { user: currentUser } = useAuth()
   const { toast } = useToast()
 
   const [usuarios, setUsuarios] = useState<UsuarioGestion[]>([])
+  const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [filtroRol, setFiltroRol] = useState<string>('todos')
@@ -40,14 +42,20 @@ export default function UsuariosPage() {
   const [nuevoTelefono, setNuevoTelefono] = useState('')
   const [nuevaSucursal, setNuevaSucursal] = useState<number>(1)
 
-  // Cargar lista de usuarios
+  // Cargar lista de usuarios y roles
   const cargarUsuarios = async () => {
     setCargando(true)
     try {
-      const res = await usuariosService.getAll()
-      setUsuarios(res.data ?? [])
+      const [resUsers, resRoles] = await Promise.all([
+        usuariosService.getAll(),
+        rolesService.getRoles(),
+      ])
+      setUsuarios(resUsers.data ?? [])
+      if (resRoles.data) {
+        setRolesDisponibles(resRoles.data)
+      }
     } catch (err) {
-      toast.error('Error al cargar usuarios', err instanceof Error ? err.message : '')
+      toast.error('Error al cargar datos de usuarios', err instanceof Error ? err.message : '')
     } finally {
       setCargando(false)
     }
@@ -398,12 +406,30 @@ export default function UsuariosPage() {
                 onChange={(e) => setNuevoRol(e.target.value as UserRole)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium focus:ring-2 focus:ring-primary-500 focus:outline-none"
               >
-                {currentUser?.rol === 'superadmin' && (
-                  <option value="superadmin">🛡️ Auditor Supremo / Superadmin</option>
+                {rolesDisponibles.length > 0 ? (
+                  rolesDisponibles
+                    .filter((r) => r.activo)
+                    .map((r) => {
+                      const val = r.nombre.toLowerCase() as UserRole
+                      if (val === 'superadmin' && currentUser?.rol !== 'superadmin') {
+                        return null
+                      }
+                      return (
+                        <option key={r.id} value={val}>
+                          {r.nombre} {r.es_sistema ? '(Sistema)' : '(Personalizado)'}
+                        </option>
+                      )
+                    })
+                ) : (
+                  <>
+                    {currentUser?.rol === 'superadmin' && (
+                      <option value="superadmin">🛡️ Auditor Supremo / Superadmin</option>
+                    )}
+                    <option value="admin">🏢 Administrador de Tienda</option>
+                    <option value="empleado">💼 Trabajador / Profesional</option>
+                    <option value="recepcionista">🛎️ Recepcionista</option>
+                  </>
                 )}
-                <option value="admin">🏢 Administrador de Tienda</option>
-                <option value="empleado">💼 Trabajador / Profesional</option>
-                <option value="recepcionista">🛎️ Recepcionista</option>
               </select>
             </div>
 

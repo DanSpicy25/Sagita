@@ -19,6 +19,7 @@ import {
   Sliders,
   FileJson,
   AlertCircle,
+  Printer,
 } from 'lucide-react'
 import {
   useConfiguracion,
@@ -29,6 +30,7 @@ import {
   ConfiguracionMarcaBlanca,
   PaletaColor,
   FuenteTipografica,
+  EscalaFuente,
   RadioEsquinas,
   EstiloSombras,
   Densidad,
@@ -48,10 +50,20 @@ type TabConfig = 'marca_blanca' | 'apariencia' | 'widget' | 'negocio'
 
 const FUENTES_DISPONIBLES: { id: FuenteTipografica; nombre: string; ejemplo: string }[] = [
   { id: 'Inter', nombre: 'Inter (Por defecto)', ejemplo: 'Moderna, técnica y altamente legible' },
+  { id: 'Plus Jakarta Sans', nombre: 'Plus Jakarta Sans', ejemplo: 'Moderna, estética premium y startups' },
+  { id: 'DM Sans', nombre: 'DM Sans', ejemplo: 'Geométrica, ultra-legible y minimalista' },
+  { id: 'Geist', nombre: 'Geist Sans', ejemplo: 'Técnica, desarrollada para software y dashboards' },
   { id: 'Roboto', nombre: 'Roboto', ejemplo: 'Limpia, geométrica y balanceada' },
   { id: 'Poppins', nombre: 'Poppins', ejemplo: 'Amigable, redondeada y contemporánea' },
   { id: 'Montserrat', nombre: 'Montserrat', ejemplo: 'Elegante, estructurada y corporativa' },
   { id: 'Outfit', nombre: 'Outfit', ejemplo: 'Vanguardista, fresca y premium' },
+]
+
+const ESCALAS_DISPONIBLES: { id: EscalaFuente; nombre: string; desc: string; size: string }[] = [
+  { id: 'compacto', nombre: 'Compacto (13px)', desc: 'Alta densidad. Ideal para cajas POS y pantallas con muchos datos.', size: '13px' },
+  { id: 'normal', nombre: 'Normal (14px)', desc: 'Estándar empresarial equilibrado.', size: '14px' },
+  { id: 'comodo', nombre: 'Cómodo (15px)', desc: 'Lectura descansada y agradable para tablets.', size: '15px' },
+  { id: 'grande', nombre: 'Grande (16px)', desc: 'Tipografía agrandada para kioscos táctiles y accesibilidad.', size: '16px' },
 ]
 
 const RADIOS_DISPONIBLES: { id: RadioEsquinas; nombre: string; clase: string; px: string }[] = [
@@ -499,13 +511,148 @@ export default function ConfiguracionPage() {
                       hint="Visible cuando la barra lateral está colapsada"
                     />
 
-                    <Input
-                      label="URL Favicon (.ico o .svg)"
-                      value={formData.favicon_url}
-                      onChange={(e) => handleChange('favicon_url', e.target.value)}
-                      placeholder="https://ejemplo.com/favicon.ico"
-                      hint="Icono de la pestaña del navegador"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        label="URL Favicon (.ico o .svg)"
+                        value={formData.favicon_url}
+                        onChange={(e) => handleChange('favicon_url', e.target.value)}
+                        placeholder="https://ejemplo.com/favicon.ico"
+                        hint="Icono que se muestra en la esquina de la pestaña"
+                      />
+                      {/* Presets Rápidos de Favicon */}
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        <span className="text-[10px] text-slate-400 font-medium">Presets rápidos:</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              'favicon_url',
+                              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
+                            )
+                          }
+                          className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 text-slate-600 dark:text-slate-300 transition-colors"
+                        >
+                          ⚡ Sagitta
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              'favicon_url',
+                              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2310b981"><circle cx="12" cy="12" r="10"/><path fill="white" d="M12 6v12M6 12h12"/></svg>'
+                            )
+                          }
+                          className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 text-slate-600 dark:text-slate-300 transition-colors"
+                        >
+                          🏥 Salud
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              'favicon_url',
+                              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f59e0b"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'
+                            )
+                          }
+                          className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 text-slate-600 dark:text-slate-300 transition-colors"
+                        >
+                          🛍️ Comercio
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              'favicon_url',
+                              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ec4899"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>'
+                            )
+                          }
+                          className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-pink-50 text-slate-600 dark:text-slate-300 transition-colors"
+                        >
+                          ✨ Belleza
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Input Título de Pestaña */}
+                  <Input
+                    label="Título en la Pestaña del Navegador"
+                    value={formData.titulo_pestana || ''}
+                    onChange={(e) => handleChange('titulo_pestana', e.target.value)}
+                    placeholder="Mi Tienda · Sagitta POS"
+                    hint="Texto que aparece en la parte superior del navegador"
+                  />
+
+                  {/* Simulador Interactivo de Pestaña del Navegador */}
+                  <div className="mt-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-900/90 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-primary-600" />
+                        Simulador de Pestaña del Navegador (Chrome / Safari / Edge)
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                        ✓ Vista Previa Realista
+                      </span>
+                    </div>
+
+                    {/* Marco del Navegador */}
+                    <div className="rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800/80 overflow-hidden shadow-sm">
+                      {/* Fila de Pestañas */}
+                      <div className="flex items-center px-3 pt-2 gap-2 bg-slate-300/60 dark:bg-slate-900">
+                        {/* Botones de Ventana */}
+                        <div className="flex items-center gap-1.5 mr-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        </div>
+
+                        {/* Pestaña Activa con Favicon y Título */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg bg-white dark:bg-slate-800 border-t border-x border-slate-300 dark:border-slate-700 max-w-[260px] shadow-sm">
+                          {formData.favicon_url ? (
+                            <img
+                              src={formData.favicon_url}
+                              alt="Favicon"
+                              className="w-4 h-4 rounded-sm object-contain shrink-0"
+                              onError={(e) => {
+                                // Fallback icon si URL falla
+                                (e.target as HTMLElement).style.display = 'none'
+                              }}
+                            />
+                          ) : (
+                            <div className="w-4 h-4 rounded-sm bg-primary-600 flex items-center justify-center shrink-0">
+                              <Sparkles className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          )}
+                          <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                            {formData.titulo_pestana || formData.nombre_negocio || 'Sagitta Store'}
+                          </span>
+                          <span className="text-slate-400 hover:text-slate-600 text-xs ml-auto cursor-pointer">
+                            ×
+                          </span>
+                        </div>
+
+                        {/* Botón Nueva Pestaña */}
+                        <span className="text-slate-400 text-sm px-1 cursor-pointer hover:text-slate-600">+</span>
+                      </div>
+
+                      {/* Barra de Direcciones URL */}
+                      <div className="px-3 py-2 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 font-mono">
+                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                            🔒 https://
+                          </span>
+                          <span className="truncate">
+                            pos.{formData.nombre_negocio.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mitienda'}.com/ventas
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      💡 Al guardar los ajustes, este favicon y título se inyectan directamente en el elemento{' '}
+                      <code className="text-primary-600">&lt;link rel="icon"&gt;</code> y{' '}
+                      <code className="text-primary-600">document.title</code> de la aplicación.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -707,6 +854,44 @@ export default function ConfiguracionPage() {
                       </button>
                     )
                   })}
+                </div>
+
+                {/* Escala de Tamaño de Fuente Global */}
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="mb-3">
+                    <h4 className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+                      Escala y Tamaño de Fuente Global
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Ajusta el tamaño base de la tipografía para optimizar la densidad visual en monitores o tablets táctiles.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {ESCALAS_DISPONIBLES.map((esc) => {
+                      const activo = (formData.escala_fuente || 'normal') === esc.id
+                      return (
+                        <button
+                          key={esc.id}
+                          type="button"
+                          onClick={() => handleChange('escala_fuente', esc.id)}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            activo
+                              ? 'border-primary-500 bg-primary-50/20 dark:bg-primary-950/20 ring-1 ring-primary-500'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-xs text-slate-900 dark:text-slate-100 font-mono">
+                              {esc.size}
+                            </span>
+                            {activo && <Check className="w-3.5 h-3.5 text-primary-600" />}
+                          </div>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{esc.nombre}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{esc.desc}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -1035,6 +1220,87 @@ export default function ConfiguracionPage() {
                     onChange={(e) => handleChange('url_privacidad', e.target.value)}
                     placeholder="https://tunegocio.com/privacidad"
                   />
+                </div>
+              </div>
+
+              {/* Impresión Térmica & Tickets POS */}
+              <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Printer className="w-4 h-4 text-primary-500" />
+                    <span>Personalización de Ticket Térmico (58mm / 80mm & Bluetooth)</span>
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-600 border border-primary-200 dark:border-primary-800">
+                    ESC/POS Compatible
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Identificador Fiscal / RUT / RFC"
+                    value={formData.rut_empresa ?? ''}
+                    onChange={(e) => handleChange('rut_empresa', e.target.value)}
+                    placeholder="Ej. RUT 76.543.210-K / RFC XYZ123456"
+                  />
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Ancho de Rollo Térmico por Defecto
+                    </label>
+                    <div className="flex gap-2">
+                      {([80, 58] as const).map((ancho) => (
+                        <button
+                          key={ancho}
+                          type="button"
+                          onClick={() => handleChange('ticket_ancho', ancho)}
+                          className={[
+                            'flex-1 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer',
+                            (formData.ticket_ancho || 80) === ancho
+                              ? 'border-primary-500 bg-primary-50/20 text-primary-600 font-bold'
+                              : 'border-slate-200 dark:border-slate-800 text-slate-500',
+                          ].join(' ')}
+                        >
+                          {ancho} mm {ancho === 80 ? '(Mostrador)' : '(Portátil)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Dirección Física del Local (Encabezado Ticket)"
+                    value={formData.direccion ?? ''}
+                    onChange={(e) => handleChange('direccion', e.target.value)}
+                    placeholder="Av. Providencia 1234, Local 5"
+                  />
+
+                  <Input
+                    label="Teléfono en Ticket"
+                    value={formData.telefono ?? ''}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
+                    placeholder="+56 9 8765 4321"
+                  />
+                </div>
+
+                <Input
+                  label="Mensaje al Pie del Ticket"
+                  value={formData.ticket_pie ?? ''}
+                  onChange={(e) => handleChange('ticket_pie', e.target.value)}
+                  placeholder="¡Gracias por su visita! Wi-Fi: Local2026 | @milocal en Instagram"
+                />
+
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <input
+                    type="checkbox"
+                    id="ticket_abrir_cajon"
+                    checked={formData.ticket_abrir_cajon ?? true}
+                    onChange={(e) => handleChange('ticket_abrir_cajon', e.target.checked)}
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 cursor-pointer"
+                  />
+                  <label htmlFor="ticket_abrir_cajon" className="text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                    Abrir cajón portamonedas automáticamente (pulso RJ11) al confirmar cobro
+                  </label>
                 </div>
               </div>
             </div>

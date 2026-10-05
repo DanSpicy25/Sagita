@@ -7,6 +7,7 @@ import { useModules } from '@/hooks/useModules'
 import { Button } from '@/components/ui'
 import { MODULES, MODULE_CATEGORIES, MODULE_ICONS } from '@/config/modules'
 import type { ModuleDefinition } from '@/types'
+import { TenantSelector } from '@/components/crm'
 
 export function Sidebar() {
   const app = useContext(AppContext)
@@ -37,6 +38,13 @@ export function Sidebar() {
       aria-label="Navegación principal"
     >
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        {/* Selector de Sede para Dispositivos Móviles */}
+        <div className="block md:hidden pb-3 border-b border-border">
+          <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+            Sede Activa
+          </p>
+          <TenantSelector />
+        </div>
         {activeCategories.map((cat) => {
           const categoryModules = visibleModules.filter((m) => m.category === cat.id)
           if (categoryModules.length === 0) return null

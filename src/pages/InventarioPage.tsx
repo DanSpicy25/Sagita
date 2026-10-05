@@ -15,15 +15,19 @@ import {
   RotateCcw,
   ArrowLeftRight,
   ChevronDown,
+  Truck,
+  Layers,
 } from 'lucide-react'
 import { Producto, MovimientoStock, AlertaStock, MovimientoInventario } from '@/types'
 import { inventarioService } from '@/services/inventario.service'
-import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState } from '@/components/ui'
+import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState, Pagination } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
+import { GestionProveedoresCompras } from '@/components/inventario/GestionProveedoresCompras'
+import { GestionRecetasBOM } from '@/components/inventario/GestionRecetasBOM'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type TabInventario = 'productos' | 'movimientos' | 'alertas'
+type TabInventario = 'productos' | 'movimientos' | 'alertas' | 'proveedores' | 'recetas'
 
 const CATEGORIAS = [
   'Productos de Belleza',
@@ -130,6 +134,8 @@ export default function InventarioPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [paginaProductos, setPaginaProductos] = useState(1)
+  const [paginaMovimientos, setPaginaMovimientos] = useState(1)
 
   // Modals
   const [modalProductoAbierto, setModalProductoAbierto] = useState(false)
@@ -170,11 +176,16 @@ export default function InventarioPage() {
 
   const productosFiltrados = useMemo(() => {
     return productos.filter((p) => {
+      const q = busqueda.toLowerCase().trim()
+      const idFormatted = `#prd-${String(p.id).padStart(4, '0')}`.toLowerCase()
       const matchBusqueda =
-        !busqueda ||
-        p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        p.sku.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (p.proveedor ?? '').toLowerCase().includes(busqueda.toLowerCase())
+        !q ||
+        p.nombre.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        idFormatted.includes(q) ||
+        String(p.id) === q ||
+        (p.codigo_barras && p.codigo_barras.toLowerCase().includes(q)) ||
+        (p.proveedor ?? '').toLowerCase().includes(q)
 
       const matchCategoria = !filtroCategoria || p.categoria === filtroCategoria
 
@@ -187,6 +198,23 @@ export default function InventarioPage() {
       return matchBusqueda && matchCategoria && matchEstado
     })
   }, [productos, busqueda, filtroCategoria, filtroEstado])
+
+  const ITEMS_POR_PAGINA = 10
+  const totalPaginasProductos = Math.ceil(productosFiltrados.length / ITEMS_POR_PAGINA)
+  const productosPaginados = useMemo(() => {
+    return productosFiltrados.slice(
+      (paginaProductos - 1) * ITEMS_POR_PAGINA,
+      paginaProductos * ITEMS_POR_PAGINA
+    )
+  }, [productosFiltrados, paginaProductos])
+
+  const totalPaginasMovimientos = Math.ceil(movimientos.length / ITEMS_POR_PAGINA)
+  const movimientosPaginados = useMemo(() => {
+    return movimientos.slice(
+      (paginaMovimientos - 1) * ITEMS_POR_PAGINA,
+      paginaMovimientos * ITEMS_POR_PAGINA
+    )
+  }, [movimientos, paginaMovimientos])
 
   const kpiStockCritico = productos.filter((p) => p.activo && p.stock_actual <= p.stock_minimo).length
   const kpiValorInventario = productos.reduce((acc, p) => acc + p.precio_costo * p.stock_actual, 0)
@@ -374,6 +402,14 @@ export default function InventarioPage() {
             </span>
           )}
         </button>
+        <button onClick={() => setTab('proveedores')} className={tabClass('proveedores')}>
+          <Truck className="w-4 h-4" />
+          Proveedores y Compras
+        </button>
+        <button onClick={() => setTab('recetas')} className={tabClass('recetas')}>
+          <Layers className="w-4 h-4" />
+          Fórmulas y Recetas (BOM)
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -432,11 +468,12 @@ export default function InventarioPage() {
                 {productosFiltrados.length === 0 ? (
                   <EmptyState title="No se encontraron productos" description="Prueba ajustando los filtros o agrega un nuevo producto." />
                 ) : (
-                  <div className="overflow-x-auto">
+                  <>
+                    <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 uppercase font-semibold border-b border-slate-100 dark:border-slate-800">
                         <tr>
-                          <th className="py-3 px-4">SKU</th>
+                          <th className="py-3 px-4">Código / ID</th>
                           <th className="py-3 px-4">Nombre</th>
                           <th className="py-3 px-4">Categoría</th>
                           <th className="py-3 px-4 text-center">Stock</th>
@@ -446,13 +483,25 @@ export default function InventarioPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-slate-300">
-                        {productosFiltrados.map((p) => (
+                        {productosPaginados.map((p) => (
                           <tr
                             key={p.id}
                             className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
                           >
-                            <td className="py-3 px-4 font-mono font-semibold text-primary-600 text-[11px]">
-                              {p.sku}
+                            <td className="py-3 px-4">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-mono font-bold text-xs text-slate-900 dark:text-slate-100">
+                                  #PRD-{String(p.id).padStart(4, '0')}
+                                </span>
+                                <span className="font-mono text-[10px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded w-fit">
+                                  {p.sku ? `SKU: ${p.sku}` : 'Sin SKU'}
+                                </span>
+                                {p.codigo_barras && (
+                                  <span className="font-mono text-[9px] text-slate-400">
+                                    EAN: {p.codigo_barras}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-3 px-4">
                               <p className="font-medium text-slate-900 dark:text-slate-100">{p.nombre}</p>
@@ -512,23 +561,34 @@ export default function InventarioPage() {
                       </tbody>
                     </table>
                   </div>
-                )}
-              </div>
+
+                  <Pagination
+                    currentPage={paginaProductos}
+                    totalPages={totalPaginasProductos}
+                    onPageChange={setPaginaProductos}
+                    totalItems={productosFiltrados.length}
+                    itemsPerPage={ITEMS_POR_PAGINA}
+                    className="px-4"
+                  />
+                </>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── TAB: MOVIMIENTOS ───────────────────────────────────────────── */}
-          {tab === 'movimientos' && (
-            <div className="card shadow-card overflow-hidden">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                  Historial de Movimientos de Stock
-                </h3>
-              </div>
+        {/* ── TAB: MOVIMIENTOS ───────────────────────────────────────────── */}
+        {tab === 'movimientos' && (
+          <div className="card shadow-card overflow-hidden">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                Historial de Movimientos de Stock
+              </h3>
+            </div>
 
-              {movimientos.length === 0 ? (
-                <EmptyState title="No hay movimientos registrados" />
-              ) : (
+            {movimientos.length === 0 ? (
+              <EmptyState title="No hay movimientos registrados" />
+            ) : (
+              <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 uppercase font-semibold border-b border-slate-100 dark:border-slate-800">
@@ -543,7 +603,7 @@ export default function InventarioPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-slate-300">
-                      {movimientos.map((m) => {
+                      {movimientosPaginados.map((m) => {
                         const esSalida =
                           m.tipo === 'SALE' || m.tipo === 'LOSS' || m.tipo === 'TRANSFER'
                         return (
@@ -599,9 +659,19 @@ export default function InventarioPage() {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          )}
+
+                <Pagination
+                  currentPage={paginaMovimientos}
+                  totalPages={totalPaginasMovimientos}
+                  onPageChange={setPaginaMovimientos}
+                  totalItems={movimientos.length}
+                  itemsPerPage={ITEMS_POR_PAGINA}
+                  className="px-4"
+                />
+              </>
+            )}
+          </div>
+        )}
 
           {/* ── TAB: ALERTAS ───────────────────────────────────────────────── */}
           {tab === 'alertas' && (
@@ -709,6 +779,20 @@ export default function InventarioPage() {
               )}
             </div>
           )}
+
+          {/* ── TAB: PROVEEDORES Y COMPRAS ────────────────────────────── */}
+          {tab === 'proveedores' && (
+            <div className="pt-2">
+              <GestionProveedoresCompras />
+            </div>
+          )}
+
+          {/* ── TAB: RECETAS Y FÓRMULAS BOM ────────────────────────────── */}
+          {tab === 'recetas' && (
+            <div className="pt-2">
+              <GestionRecetasBOM />
+            </div>
+          )}
         </>
       )}
 
@@ -719,14 +803,47 @@ export default function InventarioPage() {
         title={productoEditando ? 'Editar Producto' : 'Nuevo Producto'}
       >
         <form onSubmit={handleGuardarProducto} className="space-y-4">
+          {/* Identificador Oficial del Producto */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Identificador Oficial de Sistema
+              </span>
+              <span className="font-mono font-bold text-sm text-primary-600">
+                #PRD-{String(productoEditando?.id || productos.length + 1).padStart(4, '0')}
+              </span>
+            </div>
+            <Badge variant="primary" size="sm">
+              {productoEditando ? 'ID Asignado' : 'Próximo ID Autoincremental'}
+            </Badge>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="SKU"
-              placeholder="BEL-001"
-              value={formProducto.sku ?? ''}
-              onChange={(e) => setFormProducto({ ...formProducto, sku: e.target.value })}
-              required
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  SKU
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormProducto({
+                      ...formProducto,
+                      sku: `PRD-${Math.floor(1000 + Math.random() * 9000)}`,
+                    })
+                  }
+                  className="text-[10px] text-primary-600 hover:underline font-mono"
+                >
+                  ⚡ Auto-generar
+                </button>
+              </div>
+              <Input
+                placeholder="BEL-001"
+                value={formProducto.sku ?? ''}
+                onChange={(e) => setFormProducto({ ...formProducto, sku: e.target.value })}
+                required
+              />
+            </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Categoría
@@ -744,13 +861,39 @@ export default function InventarioPage() {
             </div>
           </div>
 
-          <Input
-            label="Nombre del Producto"
-            placeholder="Ej: Serum Vitamina C 30ml"
-            value={formProducto.nombre ?? ''}
-            onChange={(e) => setFormProducto({ ...formProducto, nombre: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Nombre del Producto"
+              placeholder="Ej: Serum Vitamina C 30ml"
+              value={formProducto.nombre ?? ''}
+              onChange={(e) => setFormProducto({ ...formProducto, nombre: e.target.value })}
+              required
+            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Código de Barras / EAN-13
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormProducto({
+                      ...formProducto,
+                      codigo_barras: `750${Math.floor(100000000 + Math.random() * 900000000)}`,
+                    })
+                  }
+                  className="text-[10px] text-primary-600 hover:underline font-mono"
+                >
+                  ⚡ Generar EAN
+                </button>
+              </div>
+              <Input
+                placeholder="7501234567890"
+                value={formProducto.codigo_barras ?? ''}
+                onChange={(e) => setFormProducto({ ...formProducto, codigo_barras: e.target.value })}
+              />
+            </div>
+          </div>
 
           <Textarea
             label="Descripción (opcional)"

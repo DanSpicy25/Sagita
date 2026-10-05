@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Gift,
   Smartphone,
+  RotateCcw,
 } from 'lucide-react'
 import {
   ItemVenta,
@@ -32,12 +33,19 @@ import {
   SesionCaja,
   MovimientoCaja,
   MetodoPagoVenta,
+  PagoSplit,
   EstadoVenta,
+  Empleado,
 } from '@/types'
 import { ventasService } from '@/services/ventas.service'
 import { serviciosService } from '@/services/servicios.service'
 import { inventarioService } from '@/services/inventario.service'
-import { Button, Badge, Loader, Modal, Input, Textarea, EmptyState } from '@/components/ui'
+import { empleadosService } from '@/services/empleados.service'
+import { DatosVentaPayload } from '@/services/commerceEngine.service'
+import { Button, Badge, Loader, Modal, Input, Textarea, EmptyState, Pagination } from '@/components/ui'
+import { ModalCobroPOS } from '@/components/ventas/ModalCobroPOS'
+import { ModalDevolucionVenta } from '@/components/ventas/ModalDevolucionVenta'
+import { TicketTermicoModal } from '@/components/ventas/TicketTermicoModal'
 import { useToast } from '@/hooks/useToast'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -50,6 +58,9 @@ interface CatalogoItem {
   nombre: string
   precio: number
   tipo: 'servicio' | 'producto'
+  stock?: number
+  sku?: string
+  codigo_barras?: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -92,10 +103,12 @@ const fmt = (n: number) => `$${n.toFixed(2)}`
 
 function CartItemRow({
   item,
+  empleados = [],
   onUpdate,
   onRemove,
 }: {
   item: ItemVenta
+  empleados?: Empleado[]
   onUpdate: (id: string, changes: Partial<ItemVenta>) => void
   onRemove: (id: string) => void
 }) {
@@ -105,7 +118,19 @@ function CartItemRow({
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{item.nombre}</p>
-          <p className="text-[11px] text-slate-400">{fmt(item.precio_unitario)} c/u</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[11px] text-slate-400">{fmt(item.precio_unitario)} c/u</span>
+            {item.tipo === 'servicio' && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-medium">
+                Servicio
+              </span>
+            )}
+            {item.tipo === 'producto' && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-medium">
+                Producto
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={() => onRemove(item.id)}
@@ -115,7 +140,7 @@ function CartItemRow({
         </button>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Quantity */}
         <div className="flex items-center gap-1">
           <button
@@ -134,7 +159,7 @@ function CartItemRow({
         </div>
 
         {/* Item discount */}
-        <div className="flex items-center gap-1 flex-1">
+        <div className="flex items-center gap-1">
           <span className="text-[11px] text-slate-400 whitespace-nowrap">Dto.</span>
           <input
             type="number"
@@ -142,11 +167,35 @@ function CartItemRow({
             step="0.01"
             value={item.descuento_item}
             onChange={(e) => onUpdate(item.id, { descuento_item: Math.max(0, Number(e.target.value)) })}
-            className="w-16 text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="w-14 text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
 
-        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">{fmt(sub)}</span>
+        {/* Profesional asignado */}
+        {empleados.length > 0 && (
+          <select
+            value={item.profesional_id || ''}
+            onChange={(e) => {
+              const empId = Number(e.target.value) || undefined
+              const emp = empleados.find((ep) => ep.id === empId)
+              onUpdate(item.id, {
+                profesional_id: empId,
+                profesional_nombre: emp ? emp.nombre : undefined,
+              })
+            }}
+            className="text-[11px] px-1.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 focus:outline-none max-w-[130px]"
+            title="Asignar profesional para cálculo de comisión"
+          >
+            <option value="">👤 (Comisión)</option>
+            {empleados.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.nombre}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 ml-auto">{fmt(sub)}</span>
       </div>
     </div>
   )
@@ -171,13 +220,17 @@ export default function VentasPage() {
   const [clienteNombre, setClienteNombre] = useState('')
   const [procesandoVenta, setProcesandoVenta] = useState(false)
   const [ventaExitosa, setVentaExitosa] = useState<Venta | null>(null)
+  const [ventaParaTicket, setVentaParaTicket] = useState<Venta | null>(null)
+  const [modalCobroAbierto, setModalCobroAbierto] = useState(false)
 
   // ── Historial State ────────────────────────────────────────────────────────
   const [ventas, setVentas] = useState<Venta[]>([])
   const [cargandoVentas, setCargandoVentas] = useState(false)
   const [busquedaHistorial, setBusquedaHistorial] = useState('')
   const [filtroFecha, setFiltroFecha] = useState('')
+  const [paginaHistorial, setPaginaHistorial] = useState(1)
   const [ventaDetalle, setVentaDetalle] = useState<Venta | null>(null)
+  const [ventaParaDevolucion, setVentaParaDevolucion] = useState<Venta | null>(null)
 
   // ── Caja State ─────────────────────────────────────────────────────────────
   const [sesion, setSesion] = useState<SesionCaja | null>(null)
@@ -189,8 +242,10 @@ export default function VentasPage() {
   const [movMonto, setMovMonto] = useState('')
   const [movDescripcion, setMovDescripcion] = useState('')
 
-  // ─── Load catalogue ────────────────────────────────────────────────────────
-  useEffect(() => {
+  // ─── Staff & Catalogue loading ──────────────────────────────────────────
+  const [empleados, setEmpleados] = useState<Empleado[]>([])
+
+  const cargarCatalogo = useCallback(() => {
     serviciosService.getAll()
       .then((res) => {
         if (res.data) {
@@ -215,12 +270,25 @@ export default function VentasPage() {
               nombre: p.nombre,
               precio: p.precio_venta,
               tipo: 'producto' as const,
+              stock: p.stock_actual,
+              sku: p.sku,
+              codigo_barras: p.codigo_barras,
             }))
           setCatalogoProductos(mapped)
         }
       })
       .catch(() => {})
+
+    empleadosService.getAll({ activo: 'true' })
+      .then((res) => {
+        if (res.data) setEmpleados(res.data)
+      })
+      .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    cargarCatalogo()
+  }, [cargarCatalogo])
 
   // ─── Load ventas ───────────────────────────────────────────────────────────
   const cargarVentas = useCallback(() => {
@@ -245,11 +313,20 @@ export default function VentasPage() {
     if (tab === 'caja') cargarCaja()
   }, [tab, cargarVentas, cargarCaja])
 
-  // ─── POS: Add to cart ──────────────────────────────────────────────────────
+  // ─── POS: Add to cart with Stock Check ──────────────────────────────────────
   const agregarAlCarrito = (item: CatalogoItem) => {
+    if (item.tipo === 'producto' && item.stock !== undefined && item.stock <= 0) {
+      toast.warning('Sin existencias', `El producto "${item.nombre}" está agotado en inventario`)
+      return
+    }
+
     setCartItems((prev) => {
       const existing = prev.find((i) => i.referencia_id === item.id && i.tipo === item.tipo)
       if (existing) {
+        if (item.tipo === 'producto' && item.stock !== undefined && existing.cantidad >= item.stock) {
+          toast.warning('Tope de stock', `Solo hay ${item.stock} unidades disponibles en inventario`)
+          return prev
+        }
         return prev.map((i) =>
           i.id === existing.id ? { ...i, cantidad: i.cantidad + 1, total: (i.precio_unitario - i.descuento_item) * (i.cantidad + 1) } : i
         )
@@ -299,31 +376,63 @@ export default function VentasPage() {
   const impuestoAmt = (baseImponible * tasaImpuesto) / 100
   const total = baseImponible + impuestoAmt
 
-  // ─── Complete sale ─────────────────────────────────────────────────────────
-  const completarVenta = async () => {
+  // ─── Complete sale (commerceEngine integration) ───────────────────────────
+  const completarVenta = async (
+    metodoOverride?: MetodoPagoVenta,
+    pagosSplit?: PagoSplit[],
+    propinaOverride?: number
+  ) => {
     if (cartItems.length === 0) {
       toast.error('Carrito vacío', 'Agrega al menos un ítem para continuar')
       return
     }
     setProcesandoVenta(true)
     try {
-      const payload: Partial<Venta> = {
+      const payload: DatosVentaPayload = {
+        cliente: clienteNombre
+          ? {
+              id: 0,
+              nombre: clienteNombre,
+              email: '',
+              telefono: '',
+              total_citas: 0,
+              created_at: new Date().toISOString(),
+            }
+          : undefined,
         items: cartItems,
         subtotal,
         descuento_global: descuentoGlobal,
         impuesto: impuestoAmt,
-        total,
-        metodo_pago: metodoPago,
+        total: total + (propinaOverride || 0),
+        metodo_pago: metodoOverride || metodoPago,
+        pagos_split: pagosSplit,
+        propina: propinaOverride,
         notas: notasVenta || undefined,
-        estado: 'PAID',
+        origen: 'pos',
       }
-      const res = await ventasService.createVenta(payload)
+      const res = await ventasService.procesarVentaCompleta(payload)
       if (res.data) {
-        setVentaExitosa(res.data)
+        setVentaExitosa(res.data.venta)
         limpiarCarrito()
+        cargarVentas()
+        cargarCaja()
+        cargarCatalogo()
+        const detalles: string[] = []
+        if (res.data.insumosConsumidosTotal > 0) {
+          detalles.push(`${res.data.insumosConsumidosTotal} insumos BOM consumidos`)
+        }
+        if (res.data.comisionesGeneradasTotal > 0) {
+          detalles.push(`${res.data.comisionesGeneradasTotal} comisiones asignadas`)
+        }
+        toast.success(
+          'Venta registrada',
+          `Venta ${res.data.venta.numero} completada. Stock de inventario y caja sincronizados.${
+            detalles.length > 0 ? ` (${detalles.join(', ')})` : ''
+          }`
+        )
       }
     } catch {
-      toast.error('Error', 'No se pudo registrar la venta')
+      toast.error('Error', 'No se pudo procesar la venta comercial')
     } finally {
       setProcesandoVenta(false)
     }
@@ -396,9 +505,19 @@ export default function VentasPage() {
 
   // ─── Filtered catalogue ────────────────────────────────────────────────────
   const catalogo = subTabPOS === 'servicios' ? catalogoServicios : catalogoProductos
-  const catalogoFiltrado = catalogo.filter((i) =>
-    i.nombre.toLowerCase().includes(busquedaPOS.toLowerCase())
-  )
+  const catalogoFiltrado = catalogo.filter((i) => {
+    const q = busquedaPOS.toLowerCase().trim()
+    if (!q) return true
+    const prefix = i.tipo === 'producto' ? 'prd' : 'srv'
+    const idFormatted = `#${prefix}-${String(i.id).padStart(4, '0')}`.toLowerCase()
+    return (
+      i.nombre.toLowerCase().includes(q) ||
+      idFormatted.includes(q) ||
+      String(i.id) === q ||
+      (i.sku && i.sku.toLowerCase().includes(q)) ||
+      (i.codigo_barras && i.codigo_barras.toLowerCase().includes(q))
+    )
+  })
 
   // ─── Filtered ventas ───────────────────────────────────────────────────────
   const ventasFiltradas = ventas.filter((v) => {
@@ -409,6 +528,13 @@ export default function VentasPage() {
       v.created_at.startsWith(filtroFecha)
     return matchBusq && matchFecha
   })
+
+  const ITEMS_POR_PAGINA_HISTORIAL = 10
+  const totalPaginasHistorial = Math.ceil(ventasFiltradas.length / ITEMS_POR_PAGINA_HISTORIAL)
+  const ventasPaginadas = ventasFiltradas.slice(
+    (paginaHistorial - 1) * ITEMS_POR_PAGINA_HISTORIAL,
+    paginaHistorial * ITEMS_POR_PAGINA_HISTORIAL
+  )
 
   // ─── Saldo actual caja ─────────────────────────────────────────────────────
   const saldoActual = sesion
@@ -508,16 +634,41 @@ export default function VentasPage() {
                     onClick={() => agregarAlCarrito(item)}
                     className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-950/20 text-left transition-all group"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center mb-2">
-                      {item.tipo === 'servicio'
-                        ? <Scissors className="w-4 h-4 text-primary-600" />
-                        : <Package className="w-4 h-4 text-primary-600" />
-                      }
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center">
+                        {item.tipo === 'servicio'
+                          ? <Scissors className="w-3.5 h-3.5 text-primary-600" />
+                          : <Package className="w-3.5 h-3.5 text-primary-600" />
+                        }
+                      </div>
+                      <span className="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                        #{item.tipo === 'producto' ? 'PRD' : 'SRV'}-{String(item.id).padStart(4, '0')}
+                      </span>
                     </div>
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 mb-1 group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 mb-0.5 group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">
                       {item.nombre}
                     </p>
-                    <p className="text-sm font-black text-primary-600">{fmt(item.precio)}</p>
+                    {item.sku && (
+                      <p className="font-mono text-[10px] text-slate-400 mb-1">
+                        SKU: {item.sku}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-sm font-black text-primary-600">{fmt(item.precio)}</p>
+                      {item.tipo === 'producto' && item.stock !== undefined && (
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            item.stock <= 0
+                              ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                              : item.stock <= 5
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          }`}
+                        >
+                          {item.stock <= 0 ? 'Agotado' : `Stock: ${item.stock}`}
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-2 flex items-center gap-1 text-[11px] text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Plus className="w-3 h-3" /> Agregar
                     </div>
@@ -561,6 +712,7 @@ export default function VentasPage() {
                   <CartItemRow
                     key={item.id}
                     item={item}
+                    empleados={empleados}
                     onUpdate={actualizarItemCarrito}
                     onRemove={eliminarItemCarrito}
                   />
@@ -662,16 +814,16 @@ export default function VentasPage() {
 
               {/* CTA */}
               <button
-                onClick={completarVenta}
+                onClick={() => setModalCobroAbierto(true)}
                 disabled={cartItems.length === 0 || procesandoVenta}
                 className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-600/20"
               >
                 {procesandoVenta ? (
                   <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
                 ) : (
-                  <CheckCircle2 className="w-5 h-5" />
+                  <CreditCard className="w-5 h-5" />
                 )}
-                Completar Venta • {fmt(total)}
+                Cobrar y Finalizar • {fmt(total)}
               </button>
             </div>
           </div>
@@ -709,59 +861,91 @@ export default function VentasPage() {
               {ventasFiltradas.length === 0 ? (
                 <EmptyState title="No hay ventas registradas" />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 uppercase font-semibold border-b border-slate-100 dark:border-slate-800">
-                      <tr>
-                        <th className="py-3 px-4">Número</th>
-                        <th className="py-3 px-4">Cliente</th>
-                        <th className="py-3 px-4 text-center">Ítems</th>
-                        <th className="py-3 px-4">Método</th>
-                        <th className="py-3 px-4">Estado</th>
-                        <th className="py-3 px-4">Fecha</th>
-                        <th className="py-3 px-4 text-right">Total</th>
-                        <th className="py-3 px-4 text-center">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                      {ventasFiltradas.map((v) => {
-                        const badge = estadoVentaBadge[v.estado]
-                        return (
-                          <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                            <td className="py-3 px-4 font-bold text-primary-600">{v.numero}</td>
-                            <td className="py-3 px-4 font-medium">{v.cliente?.nombre ?? '—'}</td>
-                            <td className="py-3 px-4 text-center">{v.items.length}</td>
-                            <td className="py-3 px-4 flex items-center gap-1.5 capitalize">
-                              {metodoPagoIcon[v.metodo_pago]}
-                              {metodoPagoLabel[v.metodo_pago]}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant={badge.variant} size="sm" dot>{badge.label}</Badge>
-                            </td>
-                            <td className="py-3 px-4 text-slate-400">
-                              {new Date(v.created_at).toLocaleDateString('es-ES', {
-                                day: 'numeric', month: 'short', year: 'numeric',
-                              })}
-                            </td>
-                            <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100">
-                              {fmt(v.total)}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                leftIcon={<Eye className="w-3.5 h-3.5" />}
-                                onClick={() => setVentaDetalle(v)}
-                              >
-                                Ver
-                              </Button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 uppercase font-semibold border-b border-slate-100 dark:border-slate-800">
+                        <tr>
+                          <th className="py-3 px-4">Número</th>
+                          <th className="py-3 px-4">Cliente</th>
+                          <th className="py-3 px-4 text-center">Ítems</th>
+                          <th className="py-3 px-4">Método</th>
+                          <th className="py-3 px-4">Estado</th>
+                          <th className="py-3 px-4">Fecha</th>
+                          <th className="py-3 px-4 text-right">Total</th>
+                          <th className="py-3 px-4 text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                        {ventasPaginadas.map((v) => {
+                          const badge = estadoVentaBadge[v.estado]
+                          return (
+                            <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                              <td className="py-3 px-4 font-bold text-primary-600">{v.numero}</td>
+                              <td className="py-3 px-4 font-medium">{v.cliente?.nombre ?? '—'}</td>
+                              <td className="py-3 px-4 text-center">{v.items.length}</td>
+                              <td className="py-3 px-4 flex items-center gap-1.5 capitalize">
+                                {metodoPagoIcon[v.metodo_pago]}
+                                {metodoPagoLabel[v.metodo_pago]}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge variant={badge.variant} size="sm" dot>{badge.label}</Badge>
+                              </td>
+                              <td className="py-3 px-4 text-slate-400">
+                                {new Date(v.created_at).toLocaleDateString('es-ES', {
+                                  day: 'numeric', month: 'short', year: 'numeric',
+                                })}
+                              </td>
+                              <td className="py-3 px-4 text-right font-bold text-slate-900 dark:text-slate-100">
+                                {fmt(v.total)}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    leftIcon={<Eye className="w-3.5 h-3.5" />}
+                                    onClick={() => setVentaDetalle(v)}
+                                  >
+                                    Ver
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    leftIcon={<Printer className="w-3.5 h-3.5" />}
+                                    title="Imprimir ticket térmico"
+                                    onClick={() => setVentaParaTicket(v)}
+                                  >
+                                    Ticket
+                                  </Button>
+                                  {v.estado === 'PAID' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                      leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                                      onClick={() => setVentaParaDevolucion(v)}
+                                    >
+                                      Devolución
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <Pagination
+                    currentPage={paginaHistorial}
+                    totalPages={totalPaginasHistorial}
+                    onPageChange={setPaginaHistorial}
+                    totalItems={ventasFiltradas.length}
+                    itemsPerPage={ITEMS_POR_PAGINA_HISTORIAL}
+                  />
+                </>
               )}
             </div>
           )}
@@ -964,9 +1148,11 @@ export default function VentasPage() {
                 variant="secondary"
                 className="flex-1 justify-center"
                 leftIcon={<Printer className="w-4 h-4" />}
-                onClick={() => window.print()}
+                onClick={() => {
+                  setVentaParaTicket(ventaExitosa)
+                }}
               >
-                Imprimir
+                Imprimir Ticket
               </Button>
               <Button
                 className="flex-1 justify-center"
@@ -1153,6 +1339,43 @@ export default function VentasPage() {
           </div>
         </form>
       </Modal>
+
+      {/* ════════════════════════════════════════════════════════════════
+          MODAL: Cobro Asistido POS (Multi-pago, Gift Card, Vuelto)
+      ════════════════════════════════════════════════════════════════ */}
+      <ModalCobroPOS
+        isOpen={modalCobroAbierto}
+        onClose={() => setModalCobroAbierto(false)}
+        total={total}
+        subtotal={subtotal}
+        descuento={descuentoAmt}
+        onConfirmar={async (metodo: MetodoPagoVenta, pagosSplit?: PagoSplit[], propina?: number) => {
+          await completarVenta(metodo, pagosSplit, propina)
+        }}
+      />
+
+      {/* ════════════════════════════════════════════════════════════════
+          MODAL: Devolución de Venta / Nota de Crédito
+      ════════════════════════════════════════════════════════════════ */}
+      <ModalDevolucionVenta
+        venta={ventaParaDevolucion}
+        isOpen={!!ventaParaDevolucion}
+        onClose={() => setVentaParaDevolucion(null)}
+        onDevolucionExitosa={() => {
+          cargarVentas()
+          cargarCaja()
+          cargarCatalogo()
+        }}
+      />
+
+      {/* ════════════════════════════════════════════════════════════════
+          MODAL: Ticket Térmico de Venta y Comanda ESC/POS / Bluetooth
+      ════════════════════════════════════════════════════════════════ */}
+      <TicketTermicoModal
+        isOpen={!!ventaParaTicket}
+        onClose={() => setVentaParaTicket(null)}
+        venta={ventaParaTicket}
+      />
     </div>
   )
 }

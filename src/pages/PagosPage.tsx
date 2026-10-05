@@ -7,22 +7,26 @@ import {
   Plus,
   DollarSign,
   Trash2,
-  Bell,
   Eye,
+  Gift,
+  Flame,
+  Users,
 } from 'lucide-react'
 import {
   Factura,
   Cupon,
   Reembolso,
   PaqueteServicio,
-  ItemListaEspera,
 } from '@/types'
 import { pagosService } from '@/services/pagos.service'
 import { Button, Badge, Loader, Modal, Input, Select, Textarea, EmptyState } from '@/components/ui'
 import { FacturaModal } from '@/components/pagos/FacturaModal'
 import { useToast } from '@/hooks/useToast'
+import { GestionComisiones } from '@/components/pagos/GestionComisiones'
+import { GestionGiftCards } from '@/components/pagos/GestionGiftCards'
+import { GestionPromociones } from '@/components/pagos/GestionPromociones'
 
-type TabFinanzas = 'facturas' | 'cupones' | 'reembolsos' | 'paquetes' | 'espera'
+type TabFinanzas = 'facturas' | 'cupones' | 'reembolsos' | 'paquetes' | 'comisiones' | 'giftcards' | 'promociones'
 
 export default function PagosPage() {
   const [tabActivo, setTabActivo] = useState<TabFinanzas>('facturas')
@@ -30,7 +34,6 @@ export default function PagosPage() {
   const [cupones, setCupones] = useState<Cupon[]>([])
   const [reembolsos, setReembolsos] = useState<Reembolso[]>([])
   const [paquetes, setPaquetes] = useState<PaqueteServicio[]>([])
-  const [listaEspera, setListaEspera] = useState<ItemListaEspera[]>([])
   const [cargando, setCargando] = useState(true)
 
   // Modales
@@ -57,14 +60,12 @@ export default function PagosPage() {
       pagosService.getCupones(),
       pagosService.getReembolsos(),
       pagosService.getPaquetes(),
-      pagosService.getListaEspera(),
     ])
-      .then(([facRes, cupRes, reemRes, paqRes, espRes]) => {
+      .then(([facRes, cupRes, reemRes, paqRes]) => {
         if (facRes.data) setFacturas(facRes.data)
         if (cupRes.data) setCupones(cupRes.data)
         if (reemRes.data) setReembolsos(reemRes.data)
         if (paqRes.data) setPaquetes(paqRes.data)
-        if (espRes.data) setListaEspera(espRes.data)
       })
       .catch((err) => {
         toast.error('Error al cargar datos financieros', err instanceof Error ? err.message : 'Error')
@@ -282,16 +283,42 @@ export default function PagosPage() {
         </button>
 
         <button
-          onClick={() => setTabActivo('espera')}
+          onClick={() => setTabActivo('comisiones')}
           className={[
             'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'espera'
+            tabActivo === 'comisiones'
               ? 'bg-primary-600 text-white shadow-sm'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
           ].join(' ')}
         >
-          <Bell className="w-4 h-4" />
-          Lista de Espera ({listaEspera.length})
+          <Users className="w-4 h-4" />
+          Comisiones
+        </button>
+
+        <button
+          onClick={() => setTabActivo('giftcards')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'giftcards'
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <Gift className="w-4 h-4" />
+          Gift Cards
+        </button>
+
+        <button
+          onClick={() => setTabActivo('promociones')}
+          className={[
+            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+            tabActivo === 'promociones'
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <Flame className="w-4 h-4" />
+          Promociones
         </button>
       </div>
 
@@ -533,55 +560,24 @@ export default function PagosPage() {
             </div>
           )}
 
-          {/* TAB 5: LISTA DE ESPERA */}
-          {tabActivo === 'espera' && (
-            <div className="card shadow-card overflow-hidden">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">
-                  Clientes en Lista de Espera por Cancelaciones
-                </h3>
-              </div>
+          {/* TAB 5: COMISIONES */}
+          {tabActivo === 'comisiones' && (
+            <div className="pt-1">
+              <GestionComisiones />
+            </div>
+          )}
 
-              {listaEspera.length === 0 ? (
-                <EmptyState title="No hay clientes en lista de espera" />
-              ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {listaEspera.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {item.cliente?.nombre ?? 'Cliente'}
-                          </span>
-                          <Badge variant="warning" size="sm" dot>
-                            {item.estado}
-                          </Badge>
-                        </div>
-                        <p className="text-slate-500 mt-0.5">
-                          Servicio: <strong>{item.servicio?.nombre ?? 'Consulta'}</strong> • Fecha deseada: {item.fecha_deseada} {item.hora_preferente ? `a las ${item.hora_preferente}` : ''}
-                        </p>
-                        {item.notas && (
-                          <p className="text-[11px] text-slate-400 italic mt-0.5">
-                            "{item.notas}"
-                          </p>
-                        )}
-                      </div>
+          {/* TAB 6: GIFT CARDS */}
+          {tabActivo === 'giftcards' && (
+            <div className="pt-1">
+              <GestionGiftCards />
+            </div>
+          )}
 
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => toast.success('Notificación enviada', `Se avisó a ${item.cliente?.nombre} del turno libre`)}
-                        >
-                          Notificar Turno Libre
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* TAB 7: PROMOCIONES */}
+          {tabActivo === 'promociones' && (
+            <div className="pt-1">
+              <GestionPromociones />
             </div>
           )}
         </div>

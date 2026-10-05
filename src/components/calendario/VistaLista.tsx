@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Calendar, Clock, User, Phone, Search } from 'lucide-react'
 import { Cita, EstadoCita } from '@/types'
-import { Badge, Button, EmptyState } from '@/components/ui'
+import { Badge, Button, EmptyState, Pagination } from '@/components/ui'
+import { useModules } from '@/context/ModulesContext'
 
 interface VistaListaProps {
   citas: Cita[]
@@ -21,17 +22,35 @@ const estadoBadges: Record<EstadoCita, { variant: 'warning' | 'success' | 'dange
 }
 
 export function VistaLista({ citas, onSeleccionarCita, onCancelarCita }: VistaListaProps) {
+  const { tTerm } = useModules()
+  const citasTerm = tTerm('citas', 'Citas')
+  const clienteTerm = tTerm('cliente', 'Cliente')
+  const servicioTerm = tTerm('servicio', 'Servicio')
+
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
+  const [pagina, setPagina] = useState(1)
+  const ITEMS_POR_PAGINA = 8
 
-  const citasFiltradas = citas.filter((c) => {
-    const coincideTexto =
-      c.cliente?.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.servicio?.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.empleado?.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    const coincideEstado = filtroEstado === 'todos' || c.estado === filtroEstado
-    return coincideTexto && coincideEstado
-  })
+  useEffect(() => {
+    setPagina(1)
+  }, [busqueda, filtroEstado])
+
+  const citasFiltradas = useMemo(() => {
+    return citas.filter((c) => {
+      const coincideTexto =
+        c.cliente?.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        c.servicio?.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        c.empleado?.nombre.toLowerCase().includes(busqueda.toLowerCase())
+      const coincideEstado = filtroEstado === 'todos' || c.estado === filtroEstado
+      return coincideTexto && coincideEstado
+    })
+  }, [citas, busqueda, filtroEstado])
+
+  const totalPaginas = Math.ceil(citasFiltradas.length / ITEMS_POR_PAGINA)
+  const citasPaginadas = useMemo(() => {
+    return citasFiltradas.slice((pagina - 1) * ITEMS_POR_PAGINA, pagina * ITEMS_POR_PAGINA)
+  }, [citasFiltradas, pagina])
 
   return (
     <div className="space-y-4">
@@ -70,82 +89,92 @@ export function VistaLista({ citas, onSeleccionarCita, onCancelarCita }: VistaLi
       {/* Lista de citas */}
       {citasFiltradas.length === 0 ? (
         <EmptyState
-          title="No se encontraron citas"
+          title={`No se encontraron ${citasTerm.toLowerCase()}`}
           description="Intenta cambiar los filtros o los términos de búsqueda."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {citasFiltradas.map((cita) => {
-            const badge = estadoBadges[cita.estado] ?? { variant: 'default', label: cita.estado }
-            return (
-              <div
-                key={cita.id}
-                className="card p-4 hover:border-primary-300 dark:hover:border-primary-800 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    {cita.fecha_inicio.slice(11, 16)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">
-                        {cita.servicio?.nombre ?? 'Servicio'}
-                      </h4>
-                      <Badge variant={badge.variant} dot>
-                        {badge.label}
-                      </Badge>
+        <>
+          <div className="grid grid-cols-1 gap-3">
+            {citasPaginadas.map((cita) => {
+              const badge = estadoBadges[cita.estado] ?? { variant: 'default', label: cita.estado }
+              return (
+                <div
+                  key={cita.id}
+                  className="card p-4 hover:border-primary-300 dark:hover:border-primary-800 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                      {cita.fecha_inicio.slice(11, 16)}
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">
+                          {cita.servicio?.nombre ?? servicioTerm}
+                        </h4>
+                        <Badge variant={badge.variant} dot>
+                          {badge.label}
+                        </Badge>
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3.5 h-3.5" />
-                        {cita.cliente?.nombre}
-                      </span>
-                      {cita.cliente?.telefono && (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
-                          <Phone className="w-3.5 h-3.5" />
-                          {cita.cliente.telefono}
+                          <User className="w-3.5 h-3.5" />
+                          {cita.cliente?.nombre ?? clienteTerm}
                         </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(cita.fecha_inicio).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {cita.servicio?.duracion_base_min ?? 30} min
-                      </span>
+                        {cita.cliente?.telefono && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5" />
+                            {cita.cliente.telefono}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(cita.fecha_inicio).toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {cita.servicio?.duracion_base_min ?? 30} min
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Acciones */}
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onSeleccionarCita?.(cita)}
-                  >
-                    Detalles
-                  </Button>
-                  {cita.estado !== 'cancelada' && onCancelarCita && (
+                  {/* Acciones */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
                     <Button
-                      variant="danger"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => onCancelarCita(cita.id)}
+                      onClick={() => onSeleccionarCita?.(cita)}
                     >
-                      Cancelar
+                      Detalles
                     </Button>
-                  )}
+                    {cita.estado !== 'cancelada' && onCancelarCita && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onCancelarCita(cita.id)}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+
+          <Pagination
+            currentPage={pagina}
+            totalPages={totalPaginas}
+            onPageChange={setPagina}
+            totalItems={citasFiltradas.length}
+            itemsPerPage={ITEMS_POR_PAGINA}
+          />
+        </>
       )}
     </div>
   )

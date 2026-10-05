@@ -17,6 +17,7 @@ import {
   Activity,
 } from 'lucide-react'
 import { Badge, Loader, EmptyState } from '@/components/ui'
+import { useToast } from '@/hooks/useToast'
 import { reportesService } from '@/services/reportes.service'
 import { Cita, Cliente, Servicio, Factura, EstadoCita } from '@/types'
 
@@ -675,6 +676,93 @@ export default function ReportesPage() {
       .finally(() => setCargando(false))
   }, [])
 
+  const { toast } = useToast()
+
+  const exportarReporte = () => {
+    try {
+      let csvContent = ''
+      const fechaStr = new Date().toISOString().slice(0, 10)
+      const filename = `sagitta_${activeTab}_${fechaStr}.csv`
+
+      if (activeTab === 'citas') {
+        const header = ['ID', 'Fecha', 'Hora', 'Cliente', 'Servicio', 'Profesional', 'Estado', 'Precio']
+        const rows = citas.map((c) => [
+          c.id,
+          c.fecha,
+          c.hora,
+          `"${c.cliente?.nombre || ''}"`,
+          `"${c.servicio?.nombre || ''}"`,
+          `"${c.empleado?.nombre || ''}"`,
+          c.estado,
+          c.precio_total || c.servicio?.precio_base || 0,
+        ])
+        csvContent = [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+      } else if (activeTab === 'ventas') {
+        const header = ['ID', 'Número', 'Fecha', 'Cliente', 'Subtotal', 'Descuento', 'Total', 'Método', 'Estado']
+        const rows = facturas.map((f) => [
+          f.id,
+          f.numero,
+          f.created_at || '',
+          `"${f.cliente?.nombre || ''}"`,
+          f.subtotal,
+          f.descuento || 0,
+          f.total,
+          f.metodo_pago,
+          f.estado,
+        ])
+        csvContent = [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+      } else if (activeTab === 'clientes') {
+        const header = ['ID', 'Nombre', 'Email', 'Teléfono', 'Total Citas']
+        const rows = clientes.map((cl) => [
+          cl.id,
+          `"${cl.nombre}"`,
+          `"${cl.email || ''}"`,
+          `"${cl.telefono || ''}"`,
+          cl.total_citas || 0,
+        ])
+        csvContent = [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+      } else if (activeTab === 'servicios') {
+        const header = ['ID', 'Nombre', 'Duración (min)', 'Precio Base', 'Estado']
+        const rows = servicios.map((s) => [
+          s.id,
+          `"${s.nombre}"`,
+          s.duracion_base_min || 0,
+          s.precio_base || 0,
+          s.activo ? 'Activo' : 'Inactivo',
+        ])
+        csvContent = [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+      } else {
+        const totalFacturado = facturas.reduce((acc, f) => acc + (f.total || 0), 0)
+        const totalCitasCompletadas = citas.filter((c) => c.estado === 'completada').length
+        const totalCitasCanceladas = citas.filter((c) => c.estado === 'cancelada').length
+        const header = ['Métrica', 'Valor']
+        const rows = [
+          ['Total Ingresos Registrados', `$${totalFacturado}`],
+          ['Total Citas Registradas', citas.length],
+          ['Citas Completadas', totalCitasCompletadas],
+          ['Citas Canceladas', totalCitasCanceladas],
+          ['Clientes Registrados', clientes.length],
+          ['Servicios en Catálogo', servicios.length],
+        ]
+        csvContent = [header.join(','), ...rows.map((r) => r.join(','))].join('\n')
+      }
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Reporte exportado', `Archivo ${filename} generado exitosamente`)
+    } catch {
+      toast.error('Error al exportar', 'No se pudo generar el archivo de reporte')
+    }
+  }
+
   if (cargando) return <Loader text="Cargando reportes..." />
 
   if (error) {
@@ -697,9 +785,12 @@ export default function ReportesPage() {
             Análisis de rendimiento y métricas del negocio
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <button
+          onClick={exportarReporte}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+        >
           <Download className="w-4 h-4" />
-          Exportar
+          Exportar CSV
         </button>
       </div>
 

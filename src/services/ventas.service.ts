@@ -25,6 +25,9 @@ export const ventasService = {
   procesarDevolucionVenta: (ventaId: number, motivo: string, monto?: number): Promise<ApiResponse<Venta>> =>
     commerceEngine.procesarDevolucion(ventaId, motivo, monto),
 
+  reembolsarVenta: (ventaId: number, motivo: string, monto?: number): Promise<ApiResponse<Venta>> =>
+    commerceEngine.procesarDevolucion(ventaId, motivo, monto),
+
   updateVenta: (id: number, data: Partial<Venta>): Promise<ApiResponse<Venta>> =>
     salesRepository.updateVenta(id, data),
 

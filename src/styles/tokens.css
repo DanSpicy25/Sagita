@@ -211,3 +211,21 @@
   --shadow-card: 0 2px 6px 0 rgba(0, 0, 0, 0.1);
 }
 
+/* ─── Font Scale Variants ───────────────────────────────────────────────── */
+[data-font-scale='compacto'] {
+  font-size: 13px;
+}
+
+[data-font-scale='normal'] {
+  font-size: 14px;
+}
+
+[data-font-scale='comodo'] {
+  font-size: 15px;
+}
+
+[data-font-scale='grande'] {
+  font-size: 16px;
+}
+
+
