@@ -341,51 +341,102 @@ export function PortalWizardReserva({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {serviciosFiltrados.map((serv) => (
-                  <div
-                    key={serv.id}
-                    className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 hover:border-primary-500/60 hover:shadow-lg transition-all flex flex-col justify-between group"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                          {serv.nombre}
-                        </h3>
-                        <span className="font-extrabold text-base text-primary-600 dark:text-primary-400 shrink-0">
-                          {formatearMoneda(serv.precio_base)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                        {serv.descripcion || 'Servicio profesional garantizado por nuestro equipo.'}
-                      </p>
-
-                      {/* Indicador de aditamentos disponibles */}
-                      {extrasPorServicio[serv.id] && extrasPorServicio[serv.id].length > 0 && (
-                        <div className="mb-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200/60 dark:border-primary-800/40">
-                            <Sparkles className="w-3 h-3 text-primary-500 shrink-0" />
-                            <span>{extrasPorServicio[serv.id].length} aditamentos disponibles</span>
+                {serviciosFiltrados.map((serv) => {
+                  const isSelected = servicioSel?.id === serv.id
+                  return (
+                    <div
+                      key={serv.id}
+                      onClick={() => setServicioSel(serv)}
+                      className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 transition-all flex flex-col justify-between group cursor-pointer ${
+                        isSelected
+                          ? 'border-neutral-900 dark:border-white ring-2 ring-neutral-900/15 dark:ring-white/20 shadow-lg bg-neutral-50/50 dark:bg-neutral-800/40'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-neutral-400 dark:hover:border-neutral-600 hover:shadow-md'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3
+                            className={`font-bold text-base transition-colors ${
+                              isSelected
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400'
+                            }`}
+                          >
+                            {serv.nombre}
+                          </h3>
+                          <span className="font-extrabold text-base text-primary-600 dark:text-primary-400 shrink-0">
+                            {formatearMoneda(serv.precio_base)}
                           </span>
                         </div>
-                      )}
-                    </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                          {serv.descripcion || 'Servicio profesional garantizado por nuestro equipo.'}
+                        </p>
 
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        <Clock className="w-3.5 h-3.5 text-primary-500" />
-                        <span>{serv.duracion_base_min} minutos</span>
+                        {/* Indicador de aditamentos disponibles */}
+                        {extrasPorServicio[serv.id] && extrasPorServicio[serv.id].length > 0 && (
+                          <div className="mb-4">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200/60 dark:border-primary-800/40">
+                              <Sparkles className="w-3 h-3 text-primary-500 shrink-0" />
+                              <span>{extrasPorServicio[serv.id].length} aditamentos disponibles</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSeleccionarServicio(serv)}
-                        className="rounded-xl text-xs font-semibold"
-                      >
-                        <span>Reservar</span>
-                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                      </Button>
+
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          <Clock className="w-3.5 h-3.5 text-primary-500" />
+                          <span>{serv.duracion_base_min} minutos</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSeleccionarServicio(serv)
+                          }}
+                          className={`rounded-xl text-xs font-semibold ${
+                            isSelected ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : ''
+                          }`}
+                        >
+                          <span>{isSelected ? 'Continuar' : 'Reservar'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Isla Flotante de Selección Dinámica (Estilo Apple / wilanye.com) */}
+            {paso === 1 && servicioSel && (
+              <div className="fixed bottom-6 inset-x-0 mx-auto w-[92%] sm:w-[96%] max-w-[480px] z-40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
+                <div className="backdrop-blur-2xl bg-neutral-900/95 dark:bg-white/95 text-white dark:text-neutral-900 rounded-2xl px-4 py-3 sm:py-3.5 shadow-[0_16px_48px_rgba(0,0,0,0.28)] flex items-center justify-between border border-white/10 dark:border-black/10 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium truncate">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" />
+                      <span>Servicio seleccionado</span>
+                      <span>•</span>
+                      <span>{servicioSel.duracion_base_min} min</span>
+                    </div>
+                    <div className="font-bold text-sm sm:text-base truncate text-white dark:text-neutral-900 mt-0.5">
+                      {servicioSel.nombre}
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-base sm:text-lg font-extrabold text-white dark:text-neutral-900">
+                      {formatearMoneda(servicioSel.precio_base)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSeleccionarServicio(servicioSel)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-xl bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all shadow-md"
+                    >
+                      <span>Elegir Horario</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

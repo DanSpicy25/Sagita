@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { useAuth } from '@/hooks/useAuth'
-import { useDeviceOS } from '@/hooks/useDeviceOS'
 import { serviciosService } from '@/services/servicios.service'
 import { empleadosService } from '@/services/empleados.service'
 import { citasService } from '@/services/citas.service'
@@ -25,7 +24,6 @@ import {
   PortalCatalogoProductos,
   PortalHardwareShowcase,
   PortalVerticalesShowcase,
-  PortalFloatingIsland,
   PortalFooter,
 } from '@/components/portal'
 import { PortalModulosShowcase } from '@/components/portal/PortalModulosShowcase'
@@ -40,7 +38,7 @@ function formatLocalDate(date: Date): string {
 export default function PortalReservaPage() {
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
-  const initialTab = (searchParams.get('tab') as 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') || 'modulos'
+  const initialTab = (searchParams.get('tab') as 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') || 'reservas'
 
   const { configuracion, nombreMarca, lemaMarca } = useConfiguracion()
   const { isAuthenticated, user } = useAuth()
@@ -48,9 +46,8 @@ export default function PortalReservaPage() {
   const formatearMoneda = (monto: number) =>
     `${configuracion.simbolo_moneda || '$'}${monto.toFixed(2)}`
 
-  // Pestaña principal de la Landing (por defecto muestra todos los módulos del sistema)
+  // Pestaña principal de la Landing (por defecto muestra agenda y reservas online)
   const [tabPrincipal, setTabPrincipal] = useState<'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'>(initialTab)
-  const { activeOS, setOS } = useDeviceOS()
 
   // Estados de catálogos
   const [cargando, setCargando] = useState(true)
@@ -231,13 +228,7 @@ export default function PortalReservaPage() {
 
   // Modo portal completo adaptativo al Sistema Operativo (Pantalla Completa Nativa)
   return (
-    <div
-      className={`min-h-screen flex flex-col ${
-        activeOS === 'android'
-          ? 'bg-[#F8F9FA] dark:bg-[#121316]'
-          : 'bg-[#F6F7F9] dark:bg-[#0A0A0C]'
-      } text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans overflow-x-hidden safe-pb pb-24 sm:pb-28`}
-    >
+    <div className="min-h-screen flex flex-col bg-[#F6F7F9] dark:bg-[#0A0A0C] text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans overflow-x-hidden pb-12 sm:pb-16">
       {/* 0 & 1. Header de Acceso y Marca */}
       <PortalHeader
         configuracion={configuracion}
@@ -248,8 +239,6 @@ export default function PortalReservaPage() {
         tabPrincipal={tabPrincipal}
         onSelectTab={setTabPrincipal}
         totalProductos={productos.length}
-        activeOS={activeOS}
-        onToggleOS={setOS}
       />
 
       {/* 2. Hero Multi-Comercio */}
@@ -259,10 +248,6 @@ export default function PortalReservaPage() {
       />
 
       {/* 3. Vistas Principales según Tab */}
-      {tabPrincipal === 'modulos' && (
-        <PortalModulosShowcase />
-      )}
-
       {tabPrincipal === 'reservas' && (
         <PortalWizardReserva
           cargando={cargando}
@@ -281,6 +266,10 @@ export default function PortalReservaPage() {
           onCompletarReserva={handleCompletarReserva}
           isEmbed={false}
         />
+      )}
+
+      {tabPrincipal === 'modulos' && (
+        <PortalModulosShowcase />
       )}
 
       {tabPrincipal === 'productos' && (
@@ -309,15 +298,6 @@ export default function PortalReservaPage() {
         isAuthenticated={isAuthenticated}
         onSeleccionarServicio={() => setTabPrincipal('reservas')}
         onIrAReservas={() => setTabPrincipal('reservas')}
-      />
-
-      {/* 5. Barra Flotante Adaptativa Nativa (iOS Liquid Glass / Android Material 3) */}
-      <PortalFloatingIsland
-        tabPrincipal={tabPrincipal}
-        onSelectTab={setTabPrincipal}
-        totalProductos={productos.length}
-        activeOS={activeOS}
-        onToggleOS={setOS}
       />
     </div>
   )

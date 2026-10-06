@@ -8,8 +8,6 @@ import {
   Store,
   Calendar,
   Layers,
-  Smartphone,
-  Apple,
 } from 'lucide-react'
 import { TenantSelector } from '@/components/crm/TenantSelector'
 import { useAuth } from '@/hooks/useAuth'
@@ -25,8 +23,6 @@ export interface PortalHeaderProps {
   tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
   onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') => void
   totalProductos: number
-  activeOS?: 'ios' | 'android'
-  onToggleOS?: (os: 'auto' | 'ios' | 'android') => void
 }
 
 export function PortalHeader({
@@ -38,8 +34,6 @@ export function PortalHeader({
   tabPrincipal,
   onSelectTab,
   totalProductos,
-  activeOS = 'ios',
-  onToggleOS,
 }: PortalHeaderProps) {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -75,7 +69,7 @@ export function PortalHeader({
               S
             </div>
           )}
-          <div className="cursor-pointer" onClick={() => onSelectTab('modulos')}>
+          <div className="cursor-pointer" onClick={() => onSelectTab('reservas')}>
             <span className="font-bold text-base tracking-tight block leading-none text-neutral-900 dark:text-white">
               {nombreMarca}
             </span>
@@ -87,19 +81,6 @@ export function PortalHeader({
 
         {/* Segmented Control Central (Apple Style) */}
         <nav className="hidden lg:flex items-center bg-neutral-100/90 dark:bg-neutral-900/90 p-1 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
-          <button
-            type="button"
-            onClick={() => onSelectTab('modulos')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-              tabPrincipal === 'modulos'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Módulos (18)</span>
-          </button>
-
           <button
             type="button"
             onClick={() => onSelectTab('reservas')}
@@ -151,33 +132,24 @@ export function PortalHeader({
             <Store className="w-3.5 h-3.5" />
             <span>Negocios</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => onSelectTab('modulos')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              tabPrincipal === 'modulos'
+                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
+                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Módulos (18)</span>
+          </button>
         </nav>
 
         {/* Acciones Rápidas del Header */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <TenantSelector />
-
-          {/* Toggle Adaptativo de Sistema Operativo para Demostración */}
-          {onToggleOS && (
-            <button
-              type="button"
-              onClick={() => onToggleOS(activeOS === 'ios' ? 'android' : 'ios')}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-black/5 dark:border-white/10 transition-all active:scale-95"
-              title={`Estilo activo: ${activeOS === 'ios' ? 'Apple iOS' : 'Android Material You'}. Clic para alternar.`}
-            >
-              {activeOS === 'ios' ? (
-                <>
-                  <Apple className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
-                  <span className="hidden xs:inline">iOS</span>
-                </>
-              ) : (
-                <>
-                  <Smartphone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span className="hidden xs:inline">Android M3</span>
-                </>
-              )}
-            </button>
-          )}
 
           <Link
             to="/ventas"

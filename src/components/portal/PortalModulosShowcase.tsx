@@ -366,8 +366,8 @@ export function PortalModulosShowcase() {
                     <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
                       {modulo.categoriaLabel}
                     </span>
-                    <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">
-                      {modulo.ruta}
+                    <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
+                      En Vivo
                     </span>
                   </div>
                 </div>
@@ -376,8 +376,8 @@ export function PortalModulosShowcase() {
                   <h4 className="font-bold text-base text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     {modulo.titulo}
                   </h4>
-                  <p className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 mt-0.5">
-                    {modulo.archivoTsx}
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 font-medium">
+                    Módulo Operativo Sagitta
                   </p>
                 </div>
 

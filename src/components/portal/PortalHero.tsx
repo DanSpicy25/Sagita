@@ -65,40 +65,31 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 pt-1">
           <button
             type="button"
-            onClick={handleEntrarAdmin}
+            onClick={() => {
+              onSelectTab('reservas')
+              const el = document.getElementById('servicios') || document.getElementById('seccion-reserva')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Sparkles className="w-4 h-4 text-amber-300 dark:text-amber-500" />
-            <span>Probar Panel Completo (1 Clic)</span>
+            <Calendar className="w-4 h-4" />
+            <span>Agendar Cita Online</span>
             <ArrowRight className="w-4 h-4 opacity-70" />
           </button>
 
           <button
             type="button"
-            onClick={() => onSelectTab('modulos')}
+            onClick={handleEntrarAdmin}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-neutral-100 hover:bg-neutral-200/80 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-200/80 dark:border-neutral-800 font-semibold text-xs sm:text-sm transition-all"
           >
-            <Layers className="w-4 h-4 text-neutral-500" />
-            <span>Ver Directorio de 18 Módulos</span>
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>Panel Demo (1 Clic)</span>
           </button>
         </div>
 
         {/* Apple Style Segmented Tab Switcher (Touch Scroll on Mobile) */}
         <div className="pt-2 sm:pt-4 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="inline-flex p-1 sm:p-1.5 rounded-2xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-black/[0.04] dark:border-white/[0.06] flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => onSelectTab('modulos')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                tabPrincipal === 'modulos'
-                  ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Directorio de Módulos (18)</span>
-            </button>
-
             <button
               type="button"
               onClick={() => onSelectTab('reservas')}
@@ -109,7 +100,7 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Agendar Cita Online</span>
+              <span>Citas & Agenda</span>
             </button>
 
             <button
@@ -149,6 +140,19 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
             >
               <Store className="w-3.5 h-3.5" />
               <span>Por Negocio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onSelectTab('modulos')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                tabPrincipal === 'modulos'
+                  ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Módulos (18)</span>
             </button>
           </div>
         </div>
