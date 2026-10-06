@@ -228,7 +228,7 @@ export default function PortalReservaPage() {
 
   // Modo portal completo
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 selection:bg-primary-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#F6F7F9] dark:bg-[#0A0A0C] text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans">
       {/* 0 & 1. Header de Acceso y Marca */}
       <PortalHeader
         configuracion={configuracion}
