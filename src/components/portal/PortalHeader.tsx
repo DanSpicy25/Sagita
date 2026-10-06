@@ -9,6 +9,7 @@ import {
   Calendar,
   Layers,
   Smartphone,
+  Apple,
 } from 'lucide-react'
 import { TenantSelector } from '@/components/crm/TenantSelector'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,8 +25,8 @@ export interface PortalHeaderProps {
   tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
   onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') => void
   totalProductos: number
-  isMobileSimulator?: boolean
-  onToggleMobileSimulator?: () => void
+  activeOS?: 'ios' | 'android'
+  onToggleOS?: (os: 'auto' | 'ios' | 'android') => void
 }
 
 export function PortalHeader({
@@ -37,8 +38,8 @@ export function PortalHeader({
   tabPrincipal,
   onSelectTab,
   totalProductos,
-  isMobileSimulator = false,
-  onToggleMobileSimulator,
+  activeOS = 'ios',
+  onToggleOS,
 }: PortalHeaderProps) {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -156,20 +157,25 @@ export function PortalHeader({
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <TenantSelector />
 
-          {/* Toggle Modo Teléfono / Simulador de Presentación en Desktop */}
-          {onToggleMobileSimulator && (
+          {/* Toggle Adaptativo de Sistema Operativo para Demostración */}
+          {onToggleOS && (
             <button
               type="button"
-              onClick={onToggleMobileSimulator}
-              className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                isMobileSimulator
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                  : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-              }`}
-              title="Alternar vista de smartphone para presentaciones"
+              onClick={() => onToggleOS(activeOS === 'ios' ? 'android' : 'ios')}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-black/5 dark:border-white/10 transition-all active:scale-95"
+              title={`Estilo activo: ${activeOS === 'ios' ? 'Apple iOS' : 'Android Material You'}. Clic para alternar.`}
             >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{isMobileSimulator ? 'Pantalla Completa' : 'Vista Teléfono'}</span>
+              {activeOS === 'ios' ? (
+                <>
+                  <Apple className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
+                  <span className="hidden xs:inline">iOS</span>
+                </>
+              ) : (
+                <>
+                  <Smartphone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="hidden xs:inline">Android M3</span>
+                </>
+              )}
             </button>
           )}
 

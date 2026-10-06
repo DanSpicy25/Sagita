@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { useAuth } from '@/hooks/useAuth'
+import { useDeviceOS } from '@/hooks/useDeviceOS'
 import { serviciosService } from '@/services/servicios.service'
 import { empleadosService } from '@/services/empleados.service'
 import { citasService } from '@/services/citas.service'
@@ -49,7 +50,7 @@ export default function PortalReservaPage() {
 
   // Pestaña principal de la Landing (por defecto muestra todos los módulos del sistema)
   const [tabPrincipal, setTabPrincipal] = useState<'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'>(initialTab)
-  const [isMobileSimulator, setIsMobileSimulator] = useState(false)
+  const { activeOS, setOS } = useDeviceOS()
 
   // Estados de catálogos
   const [cargando, setCargando] = useState(true)
@@ -228,9 +229,15 @@ export default function PortalReservaPage() {
     )
   }
 
-  // Contenido común de las vistas del portal
-  const renderContenidoPortal = () => (
-    <>
+  // Modo portal completo adaptativo al Sistema Operativo (Pantalla Completa Nativa)
+  return (
+    <div
+      className={`min-h-screen flex flex-col ${
+        activeOS === 'android'
+          ? 'bg-[#F8F9FA] dark:bg-[#121316]'
+          : 'bg-[#F6F7F9] dark:bg-[#0A0A0C]'
+      } text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans overflow-x-hidden safe-pb pb-24 sm:pb-28`}
+    >
       {/* 0 & 1. Header de Acceso y Marca */}
       <PortalHeader
         configuracion={configuracion}
@@ -241,8 +248,8 @@ export default function PortalReservaPage() {
         tabPrincipal={tabPrincipal}
         onSelectTab={setTabPrincipal}
         totalProductos={productos.length}
-        isMobileSimulator={isMobileSimulator}
-        onToggleMobileSimulator={() => setIsMobileSimulator(!isMobileSimulator)}
+        activeOS={activeOS}
+        onToggleOS={setOS}
       />
 
       {/* 2. Hero Multi-Comercio */}
@@ -303,66 +310,14 @@ export default function PortalReservaPage() {
         onSeleccionarServicio={() => setTabPrincipal('reservas')}
         onIrAReservas={() => setTabPrincipal('reservas')}
       />
-    </>
-  )
 
-  // Modo Simulador de Smartphone para presentaciones en Pantallas Grandes / Laptops
-  if (isMobileSimulator) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-2 sm:p-6 text-white font-sans selection:bg-neutral-800">
-        {/* Barra superior de control del simulador */}
-        <div className="w-full max-w-[430px] flex items-center justify-between py-2 px-4 mb-3 text-xs text-neutral-400 bg-neutral-900/90 rounded-full border border-neutral-800 shadow-lg">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold text-neutral-200">Vista Smartphone (Presentación)</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsMobileSimulator(false)}
-            className="text-amber-400 hover:text-amber-300 font-bold transition-colors"
-          >
-            Pantalla Completa ✕
-          </button>
-        </div>
-
-        {/* Marco de Smartphone iPhone 16 Pro con Dynamic Island */}
-        <div className="relative w-full max-w-[420px] h-[860px] max-h-[88vh] bg-[#F6F7F9] dark:bg-[#0A0A0C] text-neutral-900 dark:text-neutral-100 rounded-[48px] border-[10px] border-neutral-800 shadow-[0_30px_90px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
-          {/* Dynamic Island Notch */}
-          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 w-28 h-6 bg-black rounded-full flex items-center justify-between px-3.5 shadow-md pointer-events-none">
-            <div className="w-2 h-2 rounded-full bg-neutral-950" />
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-950/80 border border-blue-600/40" />
-          </div>
-
-          {/* Contenido con scroll interno */}
-          <div className="flex-1 overflow-y-auto scrollbar-none pb-28 pt-2">
-            {renderContenidoPortal()}
-          </div>
-
-          {/* Isla Flotante fija en la base del mockup */}
-          <PortalFloatingIsland
-            tabPrincipal={tabPrincipal}
-            onSelectTab={setTabPrincipal}
-            totalProductos={productos.length}
-            isMobileSimulator={isMobileSimulator}
-            onToggleMobileSimulator={() => setIsMobileSimulator(false)}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // Modo nativo completo (Adaptado 100% para Teléfono Móvil, Tablet y Desktop)
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F6F7F9] dark:bg-[#0A0A0C] text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans overflow-x-hidden safe-pb pb-24 sm:pb-28">
-      {renderContenidoPortal()}
-
-      {/* 5. Isla Flotante Dinámica (Dynamic Floating Dock) */}
+      {/* 5. Barra Flotante Adaptativa Nativa (iOS Liquid Glass / Android Material 3) */}
       <PortalFloatingIsland
         tabPrincipal={tabPrincipal}
         onSelectTab={setTabPrincipal}
         totalProductos={productos.length}
-        isMobileSimulator={isMobileSimulator}
-        onToggleMobileSimulator={() => setIsMobileSimulator(!isMobileSimulator)}
+        activeOS={activeOS}
+        onToggleOS={setOS}
       />
     </div>
   )
