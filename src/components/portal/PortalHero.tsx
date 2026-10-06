@@ -10,8 +10,8 @@ import {
 } from 'lucide-react'
 
 export interface PortalHeroProps {
-  tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales'
-  onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales') => void
+  tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
+  onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') => void
 }
 
 export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
@@ -38,6 +38,19 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
 
         {/* Conmutador de modo / pestañas de la landing */}
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => onSelectTab('modulos')}
+            className={`px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-sm ${
+              tabPrincipal === 'modulos'
+                ? 'bg-purple-600 text-white ring-2 ring-purple-500/50'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-purple-400'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Ver Todos los Módulos (18 Pantallas)</span>
+          </button>
+
           <button
             type="button"
             onClick={() => onSelectTab('reservas')}

@@ -24,6 +24,7 @@ import {
   PortalCatalogoProductos,
   PortalHardwareShowcase,
   PortalVerticalesShowcase,
+  PortalModulosShowcase,
   PortalFooter,
 } from '@/components/portal'
 
@@ -37,7 +38,7 @@ function formatLocalDate(date: Date): string {
 export default function PortalReservaPage() {
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
-  const initialTab = (searchParams.get('tab') as 'reservas' | 'productos' | 'hardware' | 'verticales') || 'reservas'
+  const initialTab = (searchParams.get('tab') as 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') || 'modulos'
 
   const { configuracion, nombreMarca, lemaMarca } = useConfiguracion()
   const { isAuthenticated, user } = useAuth()
@@ -45,8 +46,8 @@ export default function PortalReservaPage() {
   const formatearMoneda = (monto: number) =>
     `${configuracion.simbolo_moneda || '$'}${monto.toFixed(2)}`
 
-  // Pestaña principal de la Landing
-  const [tabPrincipal, setTabPrincipal] = useState<'reservas' | 'productos' | 'hardware' | 'verticales'>(initialTab)
+  // Pestaña principal de la Landing (por defecto muestra todos los módulos del sistema)
+  const [tabPrincipal, setTabPrincipal] = useState<'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'>(initialTab)
 
   // Estados de catálogos
   const [cargando, setCargando] = useState(true)
@@ -247,6 +248,10 @@ export default function PortalReservaPage() {
       />
 
       {/* 3. Vistas Principales según Tab */}
+      {tabPrincipal === 'modulos' && (
+        <PortalModulosShowcase />
+      )}
+
       {tabPrincipal === 'reservas' && (
         <PortalWizardReserva
           cargando={cargando}

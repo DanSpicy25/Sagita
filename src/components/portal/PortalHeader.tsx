@@ -19,8 +19,8 @@ export interface PortalHeaderProps {
   lemaMarca?: string
   isAuthenticated: boolean
   user: User | null
-  tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales'
-  onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales') => void
+  tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
+  onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') => void
   totalProductos: number
 }
 
@@ -125,6 +125,18 @@ export function PortalHeader({
 
           {/* Menú central por vistas */}
           <nav className="hidden md:flex items-center gap-2 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => onSelectTab('modulos')}
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                tabPrincipal === 'modulos'
+                  ? 'bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 font-semibold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-purple-500" />
+              Módulos (18)
+            </button>
             <button
               type="button"
               onClick={() => onSelectTab('reservas')}
