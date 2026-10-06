@@ -8,6 +8,7 @@ import {
   Store,
   Calendar,
   Layers,
+  Smartphone,
 } from 'lucide-react'
 import { TenantSelector } from '@/components/crm/TenantSelector'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,6 +24,8 @@ export interface PortalHeaderProps {
   tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
   onSelectTab: (tab: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos') => void
   totalProductos: number
+  isMobileSimulator?: boolean
+  onToggleMobileSimulator?: () => void
 }
 
 export function PortalHeader({
@@ -34,6 +37,8 @@ export function PortalHeader({
   tabPrincipal,
   onSelectTab,
   totalProductos,
+  isMobileSimulator = false,
+  onToggleMobileSimulator,
 }: PortalHeaderProps) {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -148,8 +153,25 @@ export function PortalHeader({
         </nav>
 
         {/* Acciones Rápidas del Header */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <TenantSelector />
+
+          {/* Toggle Modo Teléfono / Simulador de Presentación en Desktop */}
+          {onToggleMobileSimulator && (
+            <button
+              type="button"
+              onClick={onToggleMobileSimulator}
+              className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                isMobileSimulator
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                  : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+              }`}
+              title="Alternar vista de smartphone para presentaciones"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{isMobileSimulator ? 'Pantalla Completa' : 'Vista Teléfono'}</span>
+            </button>
+          )}
 
           <Link
             to="/ventas"
@@ -162,17 +184,19 @@ export function PortalHeader({
           <button
             type="button"
             onClick={handleAccesoRapido}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             {isAuthenticated ? (
               <>
                 <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Panel ({user?.nombre ? user.nombre.split(' ')[0] : 'Admin'})</span>
+                <span className="hidden sm:inline">Panel ({user?.nombre ? user.nombre.split(' ')[0] : 'Admin'})</span>
+                <span className="sm:hidden">Panel</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Panel Admin (1 Clic)</span>
+                <span className="hidden sm:inline">Panel Admin (1 Clic)</span>
+                <span className="sm:hidden">Demo</span>
               </>
             )}
           </button>

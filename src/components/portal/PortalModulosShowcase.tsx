@@ -279,29 +279,29 @@ export function PortalModulosShowcase() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
       {/* Banner Minimalista de Presentación */}
-      <div className="bg-neutral-900 text-white rounded-3xl p-6 sm:p-10 shadow-sm border border-neutral-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-neutral-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-10 shadow-sm border border-neutral-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
         <div className="space-y-2 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-800 text-neutral-300 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-800 text-neutral-300 text-[11px] sm:text-xs font-semibold">
             <Zap className="w-3.5 h-3.5 text-amber-400" />
             <span>Arquitectura Modular Lista para Operar</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             Directorio Completo de Módulos
           </h2>
-          <p className="text-sm text-neutral-400 leading-relaxed">
-            Cada sección es un módulo independiente y desacoplado. Haz clic en cualquier tarjeta para abrir la pantalla en vivo sin contraseñas en modo demostración.
+          <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
+            Cada sección es un módulo independiente y desacoplado. Toca cualquier tarjeta para abrir la pantalla en vivo sin contraseñas en modo demostración.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full md:w-auto shrink-0 pt-1 md:pt-0">
           <Button
             variant="primary"
             size="lg"
             onClick={() => handleEntrarAModulo('/dashboard', 'Panel de Control')}
             isLoading={ingresando}
-            className="bg-white hover:bg-neutral-100 text-neutral-900 font-semibold rounded-full px-6 shadow-sm"
+            className="w-full sm:w-auto bg-white hover:bg-neutral-100 text-neutral-900 font-semibold rounded-full px-5 sm:px-6 py-3 shadow-sm text-xs sm:text-sm"
           >
             <LayoutDashboard className="w-4 h-4 mr-2" />
             <span>Abrir Panel General</span>
@@ -312,7 +312,7 @@ export function PortalModulosShowcase() {
             size="lg"
             onClick={() => handleEntrarAModulo('/ventas', 'Punto de Venta POS')}
             isLoading={ingresando}
-            className="bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700 font-semibold rounded-full px-6"
+            className="w-full sm:w-auto bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700 font-semibold rounded-full px-5 sm:px-6 py-3 text-xs sm:text-sm"
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
             <span>Abrir POS Directo</span>
@@ -320,40 +320,42 @@ export function PortalModulosShowcase() {
         </div>
       </div>
 
-      {/* Filtros de Categoría (Pill Segmented Control) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { id: 'todos', label: 'Todos (18)' },
-          { id: 'operaciones', label: 'Operaciones & Citas' },
-          { id: 'ventas', label: 'Ventas & POS' },
-          { id: 'clientes', label: 'Clientes & CRM' },
-          { id: 'inventario', label: 'Inventario' },
-          { id: 'analitica', label: 'Automatizaciones & Reportes' },
-          { id: 'configuracion', label: 'Configuración & Seguridad' },
-        ].map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => setFiltroCategoria(cat.id)}
-            className={`px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
-              filtroCategoria === cat.id
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
-                : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200/70 dark:border-neutral-800'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* Filtros de Categoría (Pill Segmented Control con Full-Bleed Scroll en Mobile) */}
+      <div className="overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1.5 pb-2 shrink-0">
+          {[
+            { id: 'todos', label: 'Todos (18)' },
+            { id: 'operaciones', label: 'Operaciones & Citas' },
+            { id: 'ventas', label: 'Ventas & POS' },
+            { id: 'clientes', label: 'Clientes & CRM' },
+            { id: 'inventario', label: 'Inventario' },
+            { id: 'analitica', label: 'Automatizaciones & Reportes' },
+            { id: 'configuracion', label: 'Configuración & Seguridad' },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setFiltroCategoria(cat.id)}
+              className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all active:scale-95 ${
+                filtroCategoria === cat.id
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                  : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200/70 dark:border-neutral-800'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid de Tarjetas Limpias (Apple / Linear Style) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {modulosFiltrados.map((modulo) => {
           const Icon = modulo.icon
           return (
             <div
               key={modulo.id}
-              className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200/80 dark:border-neutral-800/80 p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all flex flex-col justify-between group"
+              className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800/80 p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-3.5">
                 <div className="flex items-start justify-between gap-3">

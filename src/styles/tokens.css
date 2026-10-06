@@ -228,4 +228,58 @@
   font-size: 16px;
 }
 
+/* ─── iOS Liquid Glass & Mobile Presentation Utilities ───────────────────── */
+.safe-pb {
+  padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom) + 1.25rem));
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.glass-dock {
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.glass-dock-light {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+@keyframes ios-slide-up {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ios-scale-bounce {
+  0% { transform: scale(0.92); opacity: 0; }
+  60% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-ios-slide-up {
+  animation: ios-slide-up 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-ios-bounce {
+  animation: ios-scale-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 
