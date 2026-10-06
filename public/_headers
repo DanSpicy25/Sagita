@@ -1,0 +1,18 @@
+# Cloudflare Pages Headers Configuration
+
+# Cache-Control para assets compilados con hash inmutable
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache-Control estricto para el Service Worker y el HTML principal (evita stale cache)
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+/workbox-*.js
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Headers de seguridad y soporte de embebido para widgets
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
