@@ -4,7 +4,7 @@
 
 :root {
   /* ─── Semantic Colors (Light Mode) ─────────────────────────────────────── */
-  --color-bg: #f8fafc;
+  --color-bg: #F6F7F9;
   --color-surface: #ffffff;
   --color-surface-elevated: #ffffff;
   --color-text: #0f172a;
@@ -12,11 +12,11 @@
   --color-border: #e2e8f0;
   --color-border-subtle: #f1f5f9;
 
-  /* ─── Brand & Primary ─────────────────────────────────────────────────── */
-  --color-brand-primary: #6366f1;
-  --color-primary: var(--color-brand-primary, #6366f1);
-  --color-primary-hover: color-mix(in srgb, var(--color-primary) 85%, #000000);
-  --color-primary-soft: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  /* ─── Brand & Primary (Apple / Luxury Minimalist) ───────────────────────── */
+  --color-brand-primary: #0f172a;
+  --color-primary: var(--color-brand-primary, #0f172a);
+  --color-primary-hover: #1e293b;
+  --color-primary-soft: rgba(15, 23, 42, 0.08);
 
   /* ─── Secondary & Neutrals ────────────────────────────────────────────── */
   --color-secondary: #64748b;
@@ -51,10 +51,10 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* ─── Geometry (Radius) ───────────────────────────────────────────────── */
-  --radius-sm: 0.25rem;    /* 4px */
-  --radius-md: 0.5rem;     /* 8px */
-  --radius-lg: 0.75rem;    /* 12px */
-  --radius-xl: 1rem;       /* 16px */
+  --radius-sm: 0.375rem;   /* 6px */
+  --radius-md: 0.625rem;   /* 10px */
+  --radius-lg: 1rem;       /* 16px */
+  --radius-xl: 1.25rem;    /* 20px */
   --radius-full: 9999px;
 
   /* ─── Depth (Shadows) — Default Subtle ────────────────────────────────── */
