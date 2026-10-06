@@ -118,6 +118,8 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
       { id: 'mod-recursos', titulo: 'Recursos Físicos & Cabinas', categoria: 'Módulos', icono: DoorOpen, ruta: '/recursos' },
       { id: 'mod-fin', titulo: 'Facturación & Cobros', categoria: 'Módulos', icono: Receipt, ruta: '/finanzas' },
       { id: 'mod-rep', titulo: 'Reportes y Analítica BI', categoria: 'Módulos', icono: BarChart2, ruta: '/reportes' },
+      { id: 'mod-crm', titulo: 'CRM & Pipeline Comercial', categoria: 'Módulos', icono: Users, ruta: '/crm' },
+      { id: 'mod-dev', titulo: 'Desarrolladores & API Keys OpenAPI', categoria: 'Módulos', icono: Settings, ruta: '/desarrolladores' },
       { id: 'mod-cfg', titulo: 'Configuración de Marca & Tipografías', categoria: 'Módulos', icono: Settings, ruta: '/ajustes' },
       { id: 'mod-sect', titulo: 'Módulos y Presets por Sector', categoria: 'Módulos', icono: Blocks, ruta: '/modulos' },
     ],

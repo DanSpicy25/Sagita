@@ -22,6 +22,7 @@ const ClientesPage = lazy(() => import('@/pages/ClientesPage'))
 const PagosPage = lazy(() => import('@/pages/PagosPage'))
 const IntegracionesPage = lazy(() => import('@/pages/IntegracionesPage'))
 const ConfiguracionPage = lazy(() => import('@/pages/ConfiguracionPage'))
+const CrmPage = lazy(() => import('@/pages/CrmPage'))
 const CrmDesarrolladoresPage = lazy(() => import('@/pages/CrmDesarrolladoresPage'))
 const ModulosPage = lazy(() => import('@/pages/ModulosPage'))
 const PortalReservaPage = lazy(() => import('@/pages/PortalReservaPage'))
@@ -189,14 +190,28 @@ function AppRoutes() {
         }
       />
 
-      {/* Fase 6: Escalabilidad, Multi-Tenant y Desarrolladores */}
+      {/* DOM-04: CRM y Pipeline Comercial */}
       <Route
         path="/crm"
         element={
-          <PrivateRoute requiredPermission="crm.manage">
+          <PrivateRoute>
+            <CrmPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* DOM-07: Desarrolladores, API Keys y Consola OpenAPI */}
+      <Route
+        path="/desarrolladores"
+        element={
+          <PrivateRoute>
             <CrmDesarrolladoresPage />
           </PrivateRoute>
         }
+      />
+      <Route
+        path="/configuracion/desarrolladores"
+        element={<Navigate to="/desarrolladores" replace />}
       />
 
       {/* Nuevos módulos */}

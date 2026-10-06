@@ -1,0 +1,7 @@
+export * from './PosTerminal'
+export * from './PosHistorialVentas'
+export * from './PosCajaControl'
+export * from './PosDetalleVentaModal'
+export { ModalCobroPOS } from '../ventas/ModalCobroPOS'
+export { ModalDevolucionVenta } from '../ventas/ModalDevolucionVenta'
+export { TicketTermicoModal } from '../ventas/TicketTermicoModal'
