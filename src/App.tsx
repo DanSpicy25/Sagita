@@ -21,6 +21,7 @@ const RecursosPage = lazy(() => import('@/pages/RecursosPage'))
 const ClientesPage = lazy(() => import('@/pages/ClientesPage'))
 const PagosPage = lazy(() => import('@/pages/PagosPage'))
 const IntegracionesPage = lazy(() => import('@/pages/IntegracionesPage'))
+const AutomatizacionesPage = lazy(() => import('@/pages/AutomatizacionesPage'))
 const ConfiguracionPage = lazy(() => import('@/pages/ConfiguracionPage'))
 const CrmPage = lazy(() => import('@/pages/CrmPage'))
 const CrmDesarrolladoresPage = lazy(() => import('@/pages/CrmDesarrolladoresPage'))
@@ -165,7 +166,7 @@ function AppRoutes() {
         path="/automatizaciones"
         element={
           <PrivateRoute>
-            <IntegracionesPage defaultTab="automatizaciones" />
+            <AutomatizacionesPage />
           </PrivateRoute>
         }
       />

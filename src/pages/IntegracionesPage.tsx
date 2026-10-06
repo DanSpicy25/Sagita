@@ -10,49 +10,24 @@ import {
   Trash2,
   Copy,
   Check,
-  Zap,
-  Sparkles,
-  Settings2,
-  History,
+  Blocks,
 } from 'lucide-react'
-import {
-  Integracion,
-  EstadoIntegracion,
-  Webhook,
-  PlantillaMensaje,
-  EjecucionLogAutomatizacion,
-} from '@/types'
+import type { Integracion, EstadoIntegracion, Webhook } from '@/types'
 import { integracionesService } from '@/services/integraciones.service'
-import { automatizacionesService } from '@/services/automatizaciones.service'
 import { Button, Badge, Loader, EmptyState } from '@/components/ui'
-import { ModalWebhook, PlantillaEditor } from '@/components/integraciones'
-import {
-  TableroAutomatizaciones,
-  HistorialEjecuciones,
-  PreferenciasComunicacion,
-  GestionPlantillasMensajes,
-} from '@/components/automatizaciones'
+import { ModalWebhook } from '@/components/integraciones'
 import { useToast } from '@/hooks/useToast'
 
-export type TabIntegracion =
-  | 'automatizaciones'
-  | 'plantillas'
-  | 'preferencias'
-  | 'historial'
-  | 'calendarios'
-  | 'whatsapp'
-  | 'webhooks'
+export type TabIntegracion = 'calendarios' | 'whatsapp' | 'webhooks'
 
 export default function IntegracionesPage({
-  defaultTab = 'automatizaciones',
+  defaultTab = 'calendarios',
 }: {
   defaultTab?: TabIntegracion
 }) {
   const [tabActivo, setTabActivo] = useState<TabIntegracion>(defaultTab)
   const [integraciones, setIntegraciones] = useState<Integracion[]>([])
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
-  const [plantillas, setPlantillas] = useState<PlantillaMensaje[]>([])
-  const [logs, setLogs] = useState<EjecucionLogAutomatizacion[]>([])
   const [cargando, setCargando] = useState(true)
 
   // Modales y estados
@@ -67,32 +42,15 @@ export default function IntegracionesPage({
     Promise.all([
       integracionesService.getIntegraciones(),
       integracionesService.getWebhooks(),
-      integracionesService.getPlantillas(),
-      automatizacionesService.getLogs(),
     ])
-      .then(([intRes, webRes, planRes, logRes]) => {
+      .then(([intRes, webRes]) => {
         if (intRes.data) setIntegraciones(intRes.data)
         if (webRes.data) setWebhooks(webRes.data)
-        if (planRes.data) setPlantillas(planRes.data)
-        if (logRes.data) setLogs(logRes.data)
       })
       .catch((err) => {
         toast.error('Error al cargar integraciones', err instanceof Error ? err.message : 'Error')
       })
       .finally(() => setCargando(false))
-  }
-
-  const cargarLogs = () => {
-    automatizacionesService.getLogs().then((res) => {
-      if (res.data) setLogs(res.data)
-    })
-  }
-
-  const handleLimpiarLogs = async () => {
-    if (!confirm('¿Deseas vaciar el historial de ejecuciones de automatización?')) return
-    await automatizacionesService.limpiarLogs()
-    toast.success('Historial limpiado', 'Se han borrado los logs de auditoría.')
-    cargarLogs()
   }
 
   useEffect(() => {
@@ -128,7 +86,7 @@ export default function IntegracionesPage({
   }
 
   const handleEliminarWebhook = async (id: number) => {
-    if (!confirm('¿Seguro que deseas eliminar este webhook? Dejará de recibir alertas.')) return
+    if (!confirm('¿Seguro que deseas eliminar este webhook? Dejará de recibir eventos.')) return
     try {
       await integracionesService.eliminarWebhook(id)
       toast.success('Webhook eliminado', 'El endpoint ha sido desvinculado')
@@ -155,13 +113,16 @@ export default function IntegracionesPage({
     navigator.clipboard.writeText(secret)
     setCopiadoSecretId(id)
     setTimeout(() => setCopiadoSecretId(null), 2000)
-    toast.info('Copiado', 'Clave secreta copiada al portapapeles')
+    toast.info('Copiado', 'Clave secreta HMAC copiada al portapapeles')
   }
 
-  const handleGuardarPlantilla = async (id: number, data: Partial<PlantillaMensaje>) => {
-    await integracionesService.actualizarPlantilla(id, data)
-    cargarDatos()
-  }
+  const tabClass = (t: TabIntegracion) =>
+    [
+      'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
+      tabActivo === t
+        ? 'bg-primary-600 text-white shadow-xs'
+        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+    ].join(' ')
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -169,11 +130,11 @@ export default function IntegracionesPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Zap className="w-6 h-6 text-amber-500" />
-            Automatizaciones, Integraciones y Comunicación
+            <Blocks className="w-6 h-6 text-primary-500" />
+            Integraciones & Conectores Externos
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Motor de reglas (Trigger → Condiciones → Acciones), plantillas dinámicas, canales y webhooks
+            Sincronización bidireccional con Google Calendar, salas de Meet/Zoom, WhatsApp Cloud API y Webhooks
           </p>
         </div>
 
@@ -190,134 +151,42 @@ export default function IntegracionesPage({
       {/* Tabs de Navegación */}
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
         <button
-          onClick={() => setTabActivo('automatizaciones')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'automatizaciones'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
-        >
-          <Zap className="w-4 h-4 text-amber-400" />
-          Automatizaciones
-        </button>
-
-        <button
-          onClick={() => setTabActivo('plantillas')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'plantillas'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
-        >
-          <Sparkles className="w-4 h-4 text-primary-300" />
-          Plantillas Dinámicas
-        </button>
-
-        <button
-          onClick={() => setTabActivo('preferencias')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'preferencias'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
-        >
-          <Settings2 className="w-4 h-4 text-blue-400" />
-          Canales & Silencio
-        </button>
-
-        <button
-          onClick={() => setTabActivo('historial')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'historial'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
-        >
-          <History className="w-4 h-4" />
-          Historial de Ejecución ({logs.length})
-        </button>
-
-        <button
           onClick={() => setTabActivo('calendarios')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'calendarios'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
+          className={tabClass('calendarios')}
         >
           <Calendar className="w-4 h-4" />
-          Calendarios & Meet
+          Calendarios & Videollamadas
         </button>
 
         <button
           onClick={() => setTabActivo('whatsapp')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'whatsapp'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
+          className={tabClass('whatsapp')}
         >
           <MessageSquare className="w-4 h-4" />
-          WhatsApp Directo
+          WhatsApp Cloud API
         </button>
 
         <button
           onClick={() => setTabActivo('webhooks')}
-          className={[
-            'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2',
-            tabActivo === 'webhooks'
-              ? 'bg-primary-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-          ].join(' ')}
+          className={tabClass('webhooks')}
         >
           <WebhookIcon className="w-4 h-4" />
-          Webhooks ({webhooks.length})
+          Webhooks & API ({webhooks.length})
         </button>
       </div>
 
-      {/* Contenido de Tabs */}
+      {/* Contenido */}
       {cargando ? (
-        <Loader text="Cargando integraciones..." />
+        <Loader text="Cargando conectores externos..." />
       ) : (
         <div className="space-y-6">
-          {/* TAB: AUTOMATIZACIONES */}
-          {tabActivo === 'automatizaciones' && (
-            <TableroAutomatizaciones onVerLogs={() => setTabActivo('historial')} />
-          )}
-
-          {/* TAB: PLANTILLAS */}
-          {tabActivo === 'plantillas' && (
-            <GestionPlantillasMensajes
-              plantillas={plantillas}
-              onGuardarPlantilla={handleGuardarPlantilla}
-            />
-          )}
-
-          {/* TAB: PREFERENCIAS DE CANALES & SILENCIO */}
-          {tabActivo === 'preferencias' && <PreferenciasComunicacion />}
-
-          {/* TAB: HISTORIAL DE EJECUCIÓN */}
-          {tabActivo === 'historial' && (
-            <HistorialEjecuciones
-              logs={logs}
-              onLimpiarLogs={handleLimpiarLogs}
-              onRecargar={cargarLogs}
-            />
-          )}
-
           {/* TAB: CALENDARIOS & VIDEOLLAMADAS */}
           {tabActivo === 'calendarios' && (() => {
             const gcal = integraciones.find((i) => i.id === 'google_calendar')
             const gmeet = integraciones.find((i) => i.id === 'google_meet')
             const zoom = integraciones.find((i) => i.id === 'zoom')
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {/* Google Calendar */}
                 <div className="card p-6 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
                   <div>
@@ -331,7 +200,7 @@ export default function IntegracionesPage({
                             {gcal?.nombre ?? 'Google Calendar'}
                           </h4>
                           <p className="text-xs text-slate-400">
-                            Sincronización automática bidireccional
+                            Sincronización bidireccional
                           </p>
                         </div>
                       </div>
@@ -341,7 +210,7 @@ export default function IntegracionesPage({
                     </div>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                      {gcal?.descripcion ?? 'Tus citas se guardan automáticamente en tu calendario de Google y los bloqueos de tu agenda personal impiden reservas superpuestas.'}
+                      {gcal?.descripcion ?? 'Tus citas se sincronizan con tu calendario personal de Google y los bloqueos externos impiden reservas superpuestas.'}
                     </p>
 
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
@@ -379,7 +248,7 @@ export default function IntegracionesPage({
                             {gmeet?.nombre ?? 'Google Meet'}
                           </h4>
                           <p className="text-xs text-slate-400">
-                            Generación dinámica de enlaces de videollamada
+                            Salas dinámicas instantáneas
                           </p>
                         </div>
                       </div>
@@ -389,7 +258,7 @@ export default function IntegracionesPage({
                     </div>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                      {gmeet?.descripcion ?? 'Crea salas de Google Meet de manera automática cuando se agenda una cita bajo la modalidad virtual.'}
+                      {gmeet?.descripcion ?? 'Crea enlaces de Google Meet de manera automática cuando se agenda una cita en modalidad virtual o teleconsulta.'}
                     </p>
 
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
@@ -402,7 +271,7 @@ export default function IntegracionesPage({
 
                   <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <span className="text-[11px] text-slate-400">
-                      Modo: Enlace automático en citas virtuales
+                      Modo: Teleconsulta automática
                     </span>
                     <Button
                       variant={gmeet?.estado === 'conectado' ? 'secondary' : 'primary'}
@@ -427,7 +296,7 @@ export default function IntegracionesPage({
                             {zoom?.nombre ?? 'Zoom Meetings'}
                           </h4>
                           <p className="text-xs text-slate-400">
-                            Salas de conferencia Zoom OAuth
+                            Salas Zoom OAuth 2.0
                           </p>
                         </div>
                       </div>
@@ -437,7 +306,7 @@ export default function IntegracionesPage({
                     </div>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                      {zoom?.descripcion ?? 'Alternativa para citas online con soporte para grabación en la nube e invitaciones personalizadas.'}
+                      {zoom?.descripcion ?? 'Alternativa profesional para sesiones online con soporte para grabación en la nube e invitaciones personalizadas.'}
                     </p>
 
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs space-y-1">
@@ -457,7 +326,7 @@ export default function IntegracionesPage({
                       size="sm"
                       onClick={() => handleToggleIntegracion('zoom', zoom?.estado ?? 'desconectado')}
                     >
-                      {zoom?.estado === 'conectado' ? 'Desconectar' : 'Conectar con Zoom'}
+                      {zoom?.estado === 'conectado' ? 'Desconectar' : 'Conectar Zoom'}
                     </Button>
                   </div>
                 </div>
@@ -465,7 +334,7 @@ export default function IntegracionesPage({
             )
           })()}
 
-          {/* TAB: WHATSAPP DIRECTO */}
+          {/* TAB: WHATSAPP CLOUD API */}
           {tabActivo === 'whatsapp' && (() => {
             const wa = integraciones.find((i) => i.id === 'whatsapp')
             return (
@@ -477,10 +346,10 @@ export default function IntegracionesPage({
                     </div>
                     <div>
                       <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                        {wa?.nombre ?? 'WhatsApp Business API'}
+                        {wa?.nombre ?? 'WhatsApp Business Platform (Cloud API)'}
                       </h3>
                       <p className="text-xs text-slate-400">
-                        Número emisor: <strong>{wa?.cuenta_vinculada ?? '+1 555-0900 (Cuenta Oficial Verificada)'}</strong>
+                        Número emisor verificado: <strong>{wa?.cuenta_vinculada ?? '+1 555-0900 (Sagitta Verified)'}</strong>
                       </p>
                     </div>
                   </div>
@@ -494,26 +363,52 @@ export default function IntegracionesPage({
                       size="sm"
                       onClick={() =>
                         toast.success(
-                          'Recordatorios activos',
-                          'Los mensajes se disparan 24 horas antes de cada cita'
+                          'Conector WhatsApp Operativo',
+                          'El webhook de Meta Cloud API está procesando eventos de entrada y salida.'
                         )
                       }
                     >
-                      Estado del Servicio
+                      Verificar Estado
                     </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {plantillas
-                    .filter((p) => p.canal === 'whatsapp')
-                    .map((p) => (
-                      <PlantillaEditor
-                        key={p.id}
-                        plantilla={p}
-                        onGuardar={handleGuardarPlantilla}
-                      />
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="card p-5 border border-slate-100 dark:border-slate-800">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+                      Mensajes 1-a-1 Directos
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Envío de confirmaciones, recordatorios 24h y recibos digitales con soporte de entrega verificado (doble check azul).
+                    </p>
+                    <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                      Velocidad instantánea (~1.2s)
+                    </span>
+                  </div>
+
+                  <div className="card p-5 border border-slate-100 dark:border-slate-800">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+                      Plantillas Aprobadas por Meta
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Sincronización de templates HSM pre-aprobados para evitar bloqueos por spam o políticas comerciales.
+                    </p>
+                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded">
+                      HSM Category: Utility
+                    </span>
+                  </div>
+
+                  <div className="card p-5 border border-slate-100 dark:border-slate-800">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+                      Respuestas Automáticas
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Recepción de respuestas de clientes ("CONFIRMAR", "CANCELAR") y actualización directa en el calendario.
+                    </p>
+                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
+                      Sincronización con Agenda
+                    </span>
+                  </div>
                 </div>
               </div>
             )
@@ -528,7 +423,7 @@ export default function IntegracionesPage({
                     Endpoints de Webhook Registrados
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Envío de eventos en tiempo real hacia tus sistemas o CRM externos
+                    Envío seguro firmado con HMAC SHA-256 en tiempo real hacia tus servidores o Zapier/Make
                   </p>
                 </div>
               </div>
@@ -536,7 +431,7 @@ export default function IntegracionesPage({
               {webhooks.length === 0 ? (
                 <EmptyState
                   title="No hay webhooks configurados"
-                  description="Registra un endpoint HTTPS para recibir eventos de citas y pagos."
+                  description="Registra un endpoint HTTPS para recibir eventos de citas, cobros y stock en tiempo real."
                   actionLabel="Registrar Webhook"
                   onAction={() => setModalWebhookAbierto(true)}
                 />
@@ -577,7 +472,7 @@ export default function IntegracionesPage({
 
                         {/* Clave Secreta */}
                         <div className="flex items-center gap-2 text-slate-400">
-                          <span>Secret Key:</span>
+                          <span>HMAC Secret:</span>
                           <code className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px] font-mono">
                             {w.secret_key.slice(0, 14)}••••••••
                           </code>
@@ -634,4 +529,3 @@ export default function IntegracionesPage({
     </div>
   )
 }
-

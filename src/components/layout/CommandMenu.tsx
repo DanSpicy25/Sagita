@@ -18,6 +18,8 @@ import {
   Clock,
   Sparkles,
   Command,
+  Workflow,
+  Share2,
   X,
 } from 'lucide-react'
 import { clientesService } from '@/services/clientes.service'
@@ -119,6 +121,8 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
       { id: 'mod-fin', titulo: 'Facturación & Cobros', categoria: 'Módulos', icono: Receipt, ruta: '/finanzas' },
       { id: 'mod-rep', titulo: 'Reportes y Analítica BI', categoria: 'Módulos', icono: BarChart2, ruta: '/reportes' },
       { id: 'mod-crm', titulo: 'CRM & Pipeline Comercial', categoria: 'Módulos', icono: Users, ruta: '/crm' },
+      { id: 'mod-auto', titulo: 'Automatizaciones & Workflows Omnicanal', categoria: 'Módulos', icono: Workflow, ruta: '/automatizaciones' },
+      { id: 'mod-integ', titulo: 'Integraciones & Conectores Externos', categoria: 'Módulos', icono: Share2, ruta: '/integraciones' },
       { id: 'mod-dev', titulo: 'Desarrolladores & API Keys OpenAPI', categoria: 'Módulos', icono: Settings, ruta: '/desarrolladores' },
       { id: 'mod-cfg', titulo: 'Configuración de Marca & Tipografías', categoria: 'Módulos', icono: Settings, ruta: '/ajustes' },
       { id: 'mod-sect', titulo: 'Módulos y Presets por Sector', categoria: 'Módulos', icono: Blocks, ruta: '/modulos' },

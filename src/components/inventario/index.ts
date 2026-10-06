@@ -1,0 +1,5 @@
+export { ProductosTab } from './ProductosTab'
+export { MovimientosKardexTab } from './MovimientosKardexTab'
+export { AlertasStockTab } from './AlertasStockTab'
+export { GestionProveedoresCompras } from './GestionProveedoresCompras'
+export { GestionRecetasBOM } from './GestionRecetasBOM'
