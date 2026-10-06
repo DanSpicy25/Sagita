@@ -239,7 +239,7 @@ export default function InventarioPage() {
               productos={productos}
               onGuardarProducto={handleGuardarProducto}
               onEliminarProducto={handleEliminarProducto}
-              onAjustarStockRapido={(p) => {
+              onAjustarStockRapido={(p: Producto) => {
                 setTab('movimientos')
                 toast.info(`Navega al Kardex para registrar movimientos de ${p.nombre}`)
               }}
