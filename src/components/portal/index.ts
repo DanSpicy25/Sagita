@@ -1,0 +1,7 @@
+export * from './PortalHeader'
+export * from './PortalHero'
+export * from './PortalWizardReserva'
+export * from './PortalCatalogoProductos'
+export * from './PortalHardwareShowcase'
+export * from './PortalVerticalesShowcase'
+export * from './PortalFooter'
