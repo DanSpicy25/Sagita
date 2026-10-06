@@ -1,41 +1,54 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Receipt, FileDown, Printer, RefreshCw } from 'lucide-react'
-import { Cita, VistaCalendario, EstadoCita, Factura } from '@/types'
+import { Plus, Calendar as CalIcon, CalendarDays, ListFilter } from 'lucide-react'
+import type { Cita, VistaCalendario, EstadoCita, Factura, Empleado } from '@/types'
 import { citasService } from '@/services/citas.service'
 import { pagosService } from '@/services/pagos.service'
+import { empleadosService } from '@/services/empleados.service'
 import {
   CalendarioMensual,
   CalendarioSemanal,
   VistaLista,
 } from '@/components/calendario'
+import { AgendaFiltrosBar, type AgendaFiltros } from '@/components/calendario/AgendaFiltrosBar'
 import { FacturaModal } from '@/components/pagos/FacturaModal'
 import { ModalReprogramarCita } from '@/components/reservas'
-import { Button, Loader, Modal, Badge } from '@/components/ui'
+import { ModalDetalleCita } from '@/components/reservas/ModalDetalleCita'
+import { Button, Loader } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useConfiguracion } from '@/context/ConfiguracionContext'
 import { useModules } from '@/context/ModulesContext'
-import { descargarArchivoIcs, descargarCitaPdf, visualizarCitaPdf } from '@/utils/calendar'
 
 export default function CitasPage() {
   const { configuracion } = useConfiguracion()
   const [citas, setCitas] = useState<Cita[]>([])
+  const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [cargando, setCargando] = useState(true)
   const [vista, setVista] = useState<VistaCalendario>('mes')
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null)
   const [citaParaReprogramar, setCitaParaReprogramar] = useState<Cita | null>(null)
   const [facturaModal, setFacturaModal] = useState<Factura | null>(null)
+
+  const [filtros, setFiltros] = useState<AgendaFiltros>({
+    busqueda: '',
+    empleadoId: 'todos',
+    estado: 'todos',
+  })
+
   const { toast } = useToast()
   const { tTerm } = useModules()
   const citaTerm = tTerm('cita', 'Cita')
   const citasTerm = tTerm('citas', 'Citas')
 
-  const cargarCitas = () => {
+  const cargarDatos = () => {
     setCargando(true)
-    citasService
-      .getAll()
-      .then((res) => {
-        if (res.data) setCitas(res.data)
+    Promise.all([
+      citasService.getAll(),
+      empleadosService.getAll(),
+    ])
+      .then(([citasRes, empRes]) => {
+        if (citasRes.data) setCitas(citasRes.data)
+        if (empRes.data) setEmpleados(empRes.data)
       })
       .catch((err) => {
         toast.error(`Error al cargar ${citasTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
@@ -44,15 +57,45 @@ export default function CitasPage() {
   }
 
   useEffect(() => {
-    cargarCitas()
+    cargarDatos()
   }, [])
+
+  // Filtrado reactivo de citas
+  const citasFiltradas = useMemo(() => {
+    return citas.filter((c) => {
+      // 1. Filtro por búsqueda de texto
+      if (filtros.busqueda.trim()) {
+        const q = filtros.busqueda.toLowerCase().trim()
+        const idFormatted = `#cit-${String(c.id).padStart(4, '0')}`.toLowerCase()
+        const matchCliente = (c.cliente?.nombre ?? '').toLowerCase().includes(q)
+        const matchServicio = (c.servicio?.nombre ?? '').toLowerCase().includes(q)
+        const matchEmpleado = (c.empleado?.nombre ?? '').toLowerCase().includes(q)
+        const matchId = String(c.id) === q || idFormatted.includes(q)
+        if (!matchCliente && !matchServicio && !matchEmpleado && !matchId) {
+          return false
+        }
+      }
+
+      // 2. Filtro por empleado
+      if (filtros.empleadoId !== 'todos' && c.empleado_id !== filtros.empleadoId) {
+        return false
+      }
+
+      // 3. Filtro por estado
+      if (filtros.estado !== 'todos' && c.estado !== filtros.estado) {
+        return false
+      }
+
+      return true
+    })
+  }, [citas, filtros])
 
   const handleCancelarCita = async (id: number) => {
     try {
       await citasService.cancel(id)
       toast.success(`${citaTerm} cancelada`, `La ${citaTerm.toLowerCase()} fue cancelada exitosamente`)
       setCitaSeleccionada(null)
-      cargarCitas()
+      cargarDatos()
     } catch (err) {
       toast.error(`Error al cancelar ${citaTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
     }
@@ -63,9 +106,39 @@ export default function CitasPage() {
       await citasService.update(id, { estado: nuevoEstado })
       toast.success('Estado actualizado', `La ${citaTerm.toLowerCase()} ahora está ${nuevoEstado}`)
       setCitaSeleccionada(null)
-      cargarCitas()
+      cargarDatos()
     } catch (err) {
       toast.error('Error al actualizar estado', err instanceof Error ? err.message : 'Error')
+    }
+  }
+
+  const handleVerFactura = async (c: Cita) => {
+    try {
+      const res = await pagosService.getFacturas()
+      const fac = res.data?.find((f) => f.cita_id === c.id) ?? {
+        id: Date.now(),
+        numero: `FAC-CITA-${c.id}`,
+        cita_id: c.id,
+        cliente_id: c.cliente_id,
+        cliente: c.cliente,
+        subtotal: c.precio_total,
+        descuento: 0,
+        total: c.precio_total,
+        metodo_pago: 'tarjeta' as const,
+        estado: (c.estado === 'cancelada' ? 'reembolsada' : 'pagada') as 'pagada' | 'reembolsada',
+        items: [
+          {
+            descripcion: c.servicio?.nombre ?? 'Servicio',
+            cantidad: 1,
+            precio_unitario: c.precio_total,
+            total: c.precio_total,
+          },
+        ],
+        created_at: c.created_at,
+      }
+      setFacturaModal(fac)
+    } catch {
+      toast.error('Error al obtener factura')
     }
   }
 
@@ -84,13 +157,13 @@ export default function CitasPage() {
 
         <div className="flex items-center gap-3">
           {/* Selector de vistas */}
-          <div className="flex items-center p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <button
               onClick={() => setVista('mes')}
               className={[
-                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                 vista === 'mes'
-                  ? 'bg-primary-600 text-white shadow-sm'
+                  ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
             >
@@ -100,9 +173,9 @@ export default function CitasPage() {
             <button
               onClick={() => setVista('semana')}
               className={[
-                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                 vista === 'semana'
-                  ? 'bg-primary-600 text-white shadow-sm'
+                  ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
             >
@@ -112,9 +185,9 @@ export default function CitasPage() {
             <button
               onClick={() => setVista('lista')}
               className={[
-                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
                 vista === 'lista'
-                  ? 'bg-primary-600 text-white shadow-sm'
+                  ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
             >
@@ -131,201 +204,52 @@ export default function CitasPage() {
         </div>
       </div>
 
+      {/* Barra de Filtros Unificada de la Agenda */}
+      <AgendaFiltrosBar
+        filtros={filtros}
+        onFiltrosChange={setFiltros}
+        empleados={empleados}
+        totalCitas={citas.length}
+        citasFiltradas={citasFiltradas.length}
+        citasTerm={citasTerm}
+      />
+
       {/* Vistas del Calendario */}
       {cargando ? (
         <Loader text={`Cargando ${citasTerm.toLowerCase()}...`} />
       ) : vista === 'mes' ? (
         <CalendarioMensual
-          citas={citas}
+          citas={citasFiltradas}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
         />
       ) : vista === 'semana' ? (
         <CalendarioSemanal
-          citas={citas}
+          citas={citasFiltradas}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
         />
       ) : (
         <VistaLista
-          citas={citas}
+          citas={citasFiltradas}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
           onCancelarCita={handleCancelarCita}
         />
       )}
 
-      {/* Modal de Detalle de Cita */}
-      {citaSeleccionada && (
-        <Modal
-          isOpen={true}
-          onClose={() => setCitaSeleccionada(null)}
-          title={`Detalles de la ${citaTerm}`}
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                {citaSeleccionada.estado !== 'confirmada' && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleCambiarEstado(citaSeleccionada.id, 'confirmada')}
-                  >
-                    Confirmar
-                  </Button>
-                )}
-                {citaSeleccionada.estado !== 'completada' && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleCambiarEstado(citaSeleccionada.id, 'completada')}
-                  >
-                    Completar
-                  </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={async () => {
-                    const res = await pagosService.getFacturas()
-                    const fac = res.data?.find((f) => f.cita_id === citaSeleccionada.id) ?? {
-                      id: Date.now(),
-                      numero: `FAC-CITA-${citaSeleccionada.id}`,
-                      cita_id: citaSeleccionada.id,
-                      cliente_id: citaSeleccionada.cliente_id,
-                      cliente: citaSeleccionada.cliente,
-                      subtotal: citaSeleccionada.precio_total,
-                      descuento: 0,
-                      total: citaSeleccionada.precio_total,
-                      metodo_pago: 'tarjeta' as const,
-                      estado: (citaSeleccionada.estado === 'cancelada' ? 'reembolsada' : 'pagada') as 'pagada' | 'reembolsada',
-                      items: [
-                        {
-                          descripcion: citaSeleccionada.servicio?.nombre ?? 'Servicio',
-                          cantidad: 1,
-                          precio_unitario: citaSeleccionada.precio_total,
-                          total: citaSeleccionada.precio_total,
-                        },
-                      ],
-                      created_at: citaSeleccionada.created_at,
-                    }
-                    setFacturaModal(fac)
-                  }}
-                  leftIcon={<Receipt className="w-3.5 h-3.5" />}
-                >
-                  Factura
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => descargarArchivoIcs(citaSeleccionada, configuracion.nombre_negocio)}
-                  leftIcon={<CalIcon className="w-3.5 h-3.5" />}
-                >
-                  .ICS
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => descargarCitaPdf(citaSeleccionada, configuracion)}
-                  leftIcon={<FileDown className="w-3.5 h-3.5" />}
-                >
-                  PDF
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => visualizarCitaPdf(citaSeleccionada, configuracion)}
-                  leftIcon={<Printer className="w-3.5 h-3.5" />}
-                >
-                  Imprimir
-                </Button>
-
-                {citaSeleccionada.estado !== 'cancelada' && citaSeleccionada.estado !== 'completada' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCitaParaReprogramar(citaSeleccionada)
-                      setCitaSeleccionada(null)
-                    }}
-                    leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-                  >
-                    Reprogramar
-                  </Button>
-                )}
-
-                {citaSeleccionada.estado !== 'cancelada' && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleCancelarCita(citaSeleccionada.id)}
-                  >
-                    Cancelar Cita
-                  </Button>
-                )}
-              </div>
-            </div>
-          }
-        >
-          <div className="space-y-4 text-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                  {citaSeleccionada.servicio?.nombre}
-                </h4>
-                <p className="text-xs text-slate-400">
-                  Duración: {citaSeleccionada.servicio?.duracion_base_min} minutos
-                </p>
-              </div>
-              <Badge variant="primary">
-                ${citaSeleccionada.precio_total}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <p className="text-slate-400">Cliente:</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                  {citaSeleccionada.cliente?.nombre}
-                </p>
-                <p className="text-slate-500">{citaSeleccionada.cliente?.email}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Profesional:</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                  {citaSeleccionada.empleado?.nombre}
-                </p>
-                <p className="text-slate-500">{citaSeleccionada.empleado?.especialidad}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Fecha y Hora:</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                  {citaSeleccionada.fecha_inicio.slice(0, 10)}
-                </p>
-                <p className="text-slate-500">
-                  {citaSeleccionada.fecha_inicio.slice(11, 16)} a {citaSeleccionada.fecha_fin.slice(11, 16)}
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-400">Estado Actual:</p>
-                <Badge variant="info" dot>
-                  {citaSeleccionada.estado}
-                </Badge>
-              </div>
-            </div>
-
-            {citaSeleccionada.notas && (
-              <div className="pt-2">
-                <p className="text-xs text-slate-400 mb-1">Notas:</p>
-                <p className="text-xs bg-slate-50 dark:bg-slate-800/70 p-3 rounded-xl italic">
-                  {citaSeleccionada.notas}
-                </p>
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
+      {/* Modal Desacoplado de Detalle de Cita */}
+      <ModalDetalleCita
+        cita={citaSeleccionada}
+        isOpen={!!citaSeleccionada}
+        onClose={() => setCitaSeleccionada(null)}
+        onCambiarEstado={handleCambiarEstado}
+        onCancelarCita={handleCancelarCita}
+        onReprogramar={(c: Cita) => {
+          setCitaParaReprogramar(c)
+          setCitaSeleccionada(null)
+        }}
+        onVerFactura={handleVerFactura}
+        configuracion={configuracion}
+        citaTerm={citaTerm}
+      />
 
       {/* Modal Comprobante / Factura */}
       <FacturaModal
@@ -341,11 +265,10 @@ export default function CitasPage() {
         onClose={() => setCitaParaReprogramar(null)}
         onCitaReprogramada={() => {
           setCitaParaReprogramar(null)
-          cargarCitas()
+          cargarDatos()
           toast.success('Cita reprogramada', 'La cita fue reprogramada correctamente')
         }}
       />
     </div>
   )
 }
-
