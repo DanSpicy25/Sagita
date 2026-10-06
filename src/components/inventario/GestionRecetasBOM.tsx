@@ -129,7 +129,7 @@ export function GestionRecetasBOM() {
       costo_estimado: (prod.precio_costo || 1000) * (cantidadInsumo / (prod.stock_actual || 1)),
     }
 
-    let recetasActualizadas = [...recetas]
+    const recetasActualizadas = [...recetas]
     const indexReceta = recetasActualizadas.findIndex((r) => r.servicio_id === serv.id)
 
     if (indexReceta >= 0) {

@@ -1,0 +1,7 @@
+export { TabPerfil } from './TabPerfil'
+export { TabCitas } from './TabCitas'
+export { TabPaquetesMembresias } from './TabPaquetesMembresias'
+export { TabNotasBitacora } from './TabNotasBitacora'
+export { TabDocumentos } from './TabDocumentos'
+export { TabConsentimientos } from './TabConsentimientos'
+export { TabDatosVertical } from './TabDatosVertical'

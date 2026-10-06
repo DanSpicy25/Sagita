@@ -10,14 +10,12 @@ import {
   Eye,
   Filter,
 } from 'lucide-react'
-import { Cliente, TipoDocumentoCliente, CanalContactoCliente } from '@/types'
+import { Cliente } from '@/types'
 import { clientesService } from '@/services/clientes.service'
-import { Button, Input, Select, Modal, Loader, EmptyState, Pagination } from '@/components/ui'
-import { ModalExpedienteCliente } from '@/components/clientes/ModalExpedienteCliente'
+import { Button, Loader, EmptyState, Pagination } from '@/components/ui'
+import { FichaCliente360, ModalNuevoCliente } from '@/components/clientes'
 import { useToast } from '@/hooks/useToast'
 import { useModules } from '@/context/ModulesContext'
-import { sanitizeText } from '@/utils/sanitize'
-import { formatTelefonoVE, handleOnlyNumbersKeyDown } from '@/utils/phone'
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -31,20 +29,6 @@ export default function ClientesPage() {
 
   // Modal Nuevo Cliente
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false)
-  const [nuevoCliente, setNuevoCliente] = useState<Partial<Cliente>>({
-    nombre: '',
-    apellido: '',
-    tipo_documento: 'CI',
-    documento_identidad: '',
-    email: '',
-    telefono: '',
-    ciudad: '',
-    direccion: '',
-    canal_contacto_preferido: 'whatsapp',
-    etiquetas: [],
-    notas: '',
-  })
-  const [tagInput, setTagInput] = useState('')
 
   const { toast } = useToast()
   const { tTerm } = useModules()
@@ -95,45 +79,6 @@ export default function ClientesPage() {
     return clientesFiltrados.slice((pagina - 1) * ITEMS_POR_PAGINA, pagina * ITEMS_POR_PAGINA)
   }, [clientesFiltrados, pagina])
 
-  const handleCrear = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!nuevoCliente.nombre?.trim() || !nuevoCliente.email?.trim()) {
-      toast.warning('Campos requeridos', 'Nombre y correo electrónico son obligatorios')
-      return
-    }
-
-    try {
-      const clienteSanitizado = {
-        ...nuevoCliente,
-        nombre: sanitizeText(nuevoCliente.nombre),
-        apellido: sanitizeText(nuevoCliente.apellido),
-        direccion: sanitizeText(nuevoCliente.direccion),
-        ciudad: sanitizeText(nuevoCliente.ciudad),
-        notas: sanitizeText(nuevoCliente.notas),
-      }
-      await clientesService.create(clienteSanitizado)
-      toast.success(`${clienteTerm} registrado`, `El ${clienteTerm.toLowerCase()} fue agregado al directorio con éxito`)
-      setModalNuevoAbierto(false)
-      setNuevoCliente({
-        nombre: '',
-        apellido: '',
-        tipo_documento: 'CI',
-        documento_identidad: '',
-        email: '',
-        telefono: '',
-        ciudad: '',
-        direccion: '',
-        canal_contacto_preferido: 'whatsapp',
-        etiquetas: [],
-        notas: '',
-      })
-      setTagInput('')
-      cargarClientes()
-    } catch (err) {
-      toast.error('Error al registrar', err instanceof Error ? err.message : 'Error')
-    }
-  }
-
   const handleAbrirExpediente = (c: Cliente) => {
     setClienteSeleccionado(c)
     setModalExpedienteAbierto(true)
@@ -145,6 +90,7 @@ export default function ClientesPage() {
     )
     setClienteSeleccionado(clienteActualizado)
   }
+
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -315,8 +261,8 @@ export default function ClientesPage() {
         </>
       )}
 
-      {/* Modal Expediente 360° */}
-      <ModalExpedienteCliente
+      {/* Expediente Comercial 360° Modular */}
+      <FichaCliente360
         cliente={clienteSeleccionado}
         isOpen={modalExpedienteAbierto}
         onClose={() => {
@@ -326,197 +272,14 @@ export default function ClientesPage() {
         onClienteActualizado={handleActualizarClienteEnLista}
       />
 
-      {/* Modal Registrar Nuevo Cliente */}
-      <Modal
+      {/* Modal Registrar Nuevo Cliente Modular */}
+      <ModalNuevoCliente
         isOpen={modalNuevoAbierto}
         onClose={() => setModalNuevoAbierto(false)}
-        title={`Registrar Nuevo ${clienteTerm} en el Directorio`}
-        maxWidth="max-w-2xl"
-      >
-        <form onSubmit={handleCrear} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Nombre"
-              placeholder="Ej: Laura..."
-              value={nuevoCliente.nombre || ''}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })}
-              required
-            />
-            <Input
-              label="Apellidos"
-              placeholder="Ej: Morales..."
-              value={nuevoCliente.apellido || ''}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, apellido: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select
-              label="Tipo Documento"
-              value={nuevoCliente.tipo_documento || 'CI'}
-              onChange={(e) =>
-                setNuevoCliente({ ...nuevoCliente, tipo_documento: e.target.value as TipoDocumentoCliente })
-              }
-              options={[
-                { value: 'CI', label: 'Cédula (CI)' },
-                { value: 'DNI', label: 'DNI' },
-                { value: 'RIF', label: 'RIF' },
-                { value: 'pasaporte', label: 'Pasaporte' },
-                { value: 'otro', label: 'Otro' },
-              ]}
-            />
-            <div className="sm:col-span-2">
-              <Input
-                label="Número de Identificación"
-                placeholder="Ej: V-18442991"
-                value={nuevoCliente.documento_identidad || ''}
-                onChange={(e) =>
-                  setNuevoCliente({ ...nuevoCliente, documento_identidad: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Correo Electrónico"
-              type="email"
-              placeholder="laura@ejemplo.com"
-              value={nuevoCliente.email || ''}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, email: e.target.value })}
-              required
-            />
-            <Input
-              label="Teléfono / WhatsApp"
-              type="tel"
-              placeholder="+58 412 123 4567"
-              value={nuevoCliente.telefono || ''}
-              onChange={(e) =>
-                setNuevoCliente({ ...nuevoCliente, telefono: formatTelefonoVE(e.target.value) })
-              }
-              onKeyDown={handleOnlyNumbersKeyDown}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Ciudad"
-              placeholder="Ej: Caracas"
-              value={nuevoCliente.ciudad || ''}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, ciudad: e.target.value })}
-            />
-            <Select
-              label="Canal Preferido de Contacto"
-              value={nuevoCliente.canal_contacto_preferido || 'whatsapp'}
-              onChange={(e) =>
-                setNuevoCliente({
-                  ...nuevoCliente,
-                  canal_contacto_preferido: e.target.value as CanalContactoCliente,
-                })
-              }
-              options={[
-                { value: 'whatsapp', label: 'WhatsApp' },
-                { value: 'email', label: 'Correo Electrónico' },
-                { value: 'telefono', label: 'Llamada' },
-                { value: 'sms', label: 'SMS' },
-              ]}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Etiquetas Iniciales (CRM)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Escribe etiqueta (ej: VIP) y presiona Enter..."
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    if (tagInput.trim()) {
-                      const tags = nuevoCliente.etiquetas || []
-                      if (!tags.includes(tagInput.trim())) {
-                        setNuevoCliente({
-                          ...nuevoCliente,
-                          etiquetas: [...tags, tagInput.trim()],
-                        })
-                      }
-                      setTagInput('')
-                    }
-                  }
-                }}
-                className="input-base text-xs flex-1"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  if (tagInput.trim()) {
-                    const tags = nuevoCliente.etiquetas || []
-                    if (!tags.includes(tagInput.trim())) {
-                      setNuevoCliente({
-                        ...nuevoCliente,
-                        etiquetas: [...tags, tagInput.trim()],
-                      })
-                    }
-                    setTagInput('')
-                  }
-                }}
-              >
-                Añadir
-              </Button>
-            </div>
-            {(nuevoCliente.etiquetas || []).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                {nuevoCliente.etiquetas?.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-300"
-                  >
-                    {t}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setNuevoCliente({
-                          ...nuevoCliente,
-                          etiquetas: nuevoCliente.etiquetas?.filter((tag) => tag !== t),
-                        })
-                      }
-                      className="font-bold hover:text-red-500"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Notas Iniciales
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Preferencias o detalles iniciales..."
-              value={nuevoCliente.notas || ''}
-              onChange={(e) => setNuevoCliente({ ...nuevoCliente, notas: e.target.value })}
-              className="input-base text-xs w-full"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <Button variant="secondary" type="button" onClick={() => setModalNuevoAbierto(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">Guardar Cliente</Button>
-          </div>
-        </form>
-      </Modal>
+        onClienteCreado={() => cargarClientes()}
+        clienteTerm={clienteTerm}
+      />
     </div>
   )
 }
+

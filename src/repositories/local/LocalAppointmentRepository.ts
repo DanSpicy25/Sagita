@@ -94,6 +94,13 @@ function parseTimeToMinutes(str: string): number | null {
   return h * 60 + m
 }
 
+function parseTimestamp(str?: string): number | null {
+  if (!str) return null
+  const normalized = str.includes(' ') ? str.replace(' ', 'T') : str
+  const d = new Date(normalized)
+  return Number.isNaN(d.getTime()) ? null : d.getTime()
+}
+
 function formatMinutesToTime(totalMin: number): string {
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
@@ -102,6 +109,46 @@ function formatMinutesToTime(totalMin: number): string {
 
 export class LocalAppointmentRepository implements IAppointmentRepository {
   private collection = 'citas'
+
+  private verificarColisiones(
+    nuevaCita: Partial<Cita>,
+    ignorarCitaId?: number
+  ): void {
+    const startMs = parseTimestamp(nuevaCita.fecha_inicio)
+    const endMs = parseTimestamp(nuevaCita.fecha_fin)
+    if (!startMs || !endMs) return
+
+    const citas = LocalStorageAdapter.getCollection<Cita>(this.collection, SEED_CITAS)
+
+    for (const c of citas) {
+      if (ignorarCitaId && c.id === ignorarCitaId) continue
+      if (c.estado === 'cancelada') continue
+
+      const cStartMs = parseTimestamp(c.fecha_inicio)
+      const cEndMs = parseTimestamp(c.fecha_fin)
+      if (!cStartMs || !cEndMs) continue
+
+      // Verifica si hay solapamiento temporal (startA < endB && endA > startB)
+      if (startMs < cEndMs && endMs > cStartMs) {
+        // 1. Conflicto de Especialista / Empleado
+        if (nuevaCita.empleado_id && c.empleado_id === nuevaCita.empleado_id) {
+          throw new Error(
+            `Conflicto de horario: El profesional ya tiene una cita agendada entre ${c.fecha_inicio} y ${c.fecha_fin}.`
+          )
+        }
+        // 2. Conflicto de Recurso Físico (Cabina / Sala / Box)
+        if (
+          nuevaCita.recurso_id &&
+          c.recurso_id &&
+          c.recurso_id === nuevaCita.recurso_id
+        ) {
+          throw new Error(
+            `Conflicto de recurso: La cabina/sala seleccionada ya se encuentra ocupada entre ${c.fecha_inicio} y ${c.fecha_fin}.`
+          )
+        }
+      }
+    }
+  }
 
   async getAll(params?: Record<string, string>): Promise<ApiResponse<Cita[]>> {
     let list = LocalStorageAdapter.getCollection<Cita>(this.collection, SEED_CITAS)
@@ -125,6 +172,7 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
   }
 
   async create(data: Partial<Cita>): Promise<ApiResponse<Cita>> {
+    this.verificarColisiones(data)
     const created = LocalStorageAdapter.insert<Cita>(this.collection, {
       ...data,
       created_at: new Date().toISOString(),
@@ -133,9 +181,53 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
   }
 
   async update(id: number, data: Partial<Cita>): Promise<ApiResponse<Cita>> {
+    const list = LocalStorageAdapter.getCollection<Cita>(this.collection, SEED_CITAS)
+    const citaActual = list.find((c) => c.id === id)
+    if (!citaActual) throw new Error('Cita no encontrada para actualizar')
+
+    if (data.fecha_inicio || data.fecha_fin || data.empleado_id || data.recurso_id) {
+      this.verificarColisiones(
+        {
+          ...citaActual,
+          ...data,
+        },
+        id
+      )
+    }
+
     const updated = LocalStorageAdapter.update<Cita>(this.collection, id, data)
     if (!updated) throw new Error('Cita no encontrada para actualizar')
     return { success: true, message: 'Cita actualizada exitosamente', data: updated }
+  }
+
+  async reprogramar(
+    id: number,
+    nuevaFechaInicio: string,
+    nuevaFechaFin: string,
+    nuevoRecursoId?: number
+  ): Promise<ApiResponse<Cita>> {
+    const list = LocalStorageAdapter.getCollection<Cita>(this.collection, SEED_CITAS)
+    const citaActual = list.find((c) => c.id === id)
+    if (!citaActual) throw new Error('Cita no encontrada para reprogramar')
+
+    this.verificarColisiones(
+      {
+        ...citaActual,
+        fecha_inicio: nuevaFechaInicio,
+        fecha_fin: nuevaFechaFin,
+        recurso_id: nuevoRecursoId ?? citaActual.recurso_id,
+      },
+      id
+    )
+
+    const updated = LocalStorageAdapter.update<Cita>(this.collection, id, {
+      fecha_inicio: nuevaFechaInicio,
+      fecha_fin: nuevaFechaFin,
+      recurso_id: nuevoRecursoId ?? citaActual.recurso_id,
+      estado: 'confirmada',
+    })
+    if (!updated) throw new Error('No se pudo reprogramar la cita')
+    return { success: true, message: 'Cita reprogramada exitosamente', data: updated }
   }
 
   async cancel(id: number): Promise<ApiResponse<void>> {
@@ -147,7 +239,8 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
     empleadoId: number,
     fecha: string,
     servicioId?: number,
-    duracionSolicitadaMin?: number
+    duracionSolicitadaMin?: number,
+    recursoId?: number
   ): Promise<{ success: boolean; data?: SlotDisponible[] }> {
     if (!fecha) {
       return { success: false, data: [] }
@@ -179,10 +272,14 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
 
     const citas = LocalStorageAdapter.getCollection<Cita>(this.collection, SEED_CITAS)
 
-    // Citas activas para ese empleado y día
+    // Citas activas para ese empleado o recurso en ese día
     const citasDelDia = citas
       .filter((c) => {
-        if (c.empleado_id !== empleadoId || c.estado === 'cancelada') return false
+        if (c.estado === 'cancelada') return false
+        const coincideEmpleado = c.empleado_id === empleadoId
+        const coincideRecurso = Boolean(recursoId && c.recurso_id === recursoId)
+        if (!coincideEmpleado && !coincideRecurso) return false
+
         const normalized = c.fecha_inicio.includes(' ')
           ? c.fecha_inicio.replace(' ', 'T')
           : c.fecha_inicio
@@ -240,3 +337,4 @@ export class LocalAppointmentRepository implements IAppointmentRepository {
     return { success: true, data: slots }
   }
 }
+

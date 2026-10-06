@@ -1,16 +1,30 @@
-import { useContext } from 'react'
-import { Menu, Sun, Moon, LogOut, User } from 'lucide-react'
+import { useContext, useState, useEffect } from 'react'
+import { Menu, Sun, Moon, LogOut, User, Search } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui'
 import { CentroNotificaciones } from '@/components/integraciones'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { TenantSelector } from '@/components/crm'
+import { CommandMenu } from './CommandMenu'
 
 export function Navbar() {
   const { user, logout } = useAuth()
   const app = useContext(AppContext)
   const { configuracion, nombreMarca } = useConfiguracion()
+  const [commandOpen, setCommandOpen] = useState(false)
+
+  // Atajo global Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCommandOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const toggleTheme = () => {
     if (!app) return
@@ -47,8 +61,38 @@ export function Navbar() {
         </div>
       </div>
 
+      {/* Center - Universal Omnibar Command Trigger */}
+      <div className="flex-1 max-w-xs md:max-w-md mx-2 hidden sm:block">
+        <button
+          type="button"
+          onClick={() => setCommandOpen(true)}
+          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-text-muted bg-surface-subtle hover:bg-surface border border-border rounded-lg transition-colors shadow-2xs group"
+          title="Buscar clientes, productos #PRD, citas o acciones (Ctrl+K)"
+        >
+          <div className="flex items-center gap-2 truncate">
+            <Search className="w-3.5 h-3.5 text-text-muted group-hover:text-primary transition-colors shrink-0" />
+            <span className="truncate">Buscar clientes, productos #PRD, citas...</span>
+          </div>
+          <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-medium text-text-muted bg-surface border border-border rounded shadow-2xs shrink-0">
+            <span className="text-[9px]">Ctrl</span> K
+          </kbd>
+        </button>
+      </div>
+
       {/* Right */}
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+        {/* Mobile Search Trigger */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCommandOpen(true)}
+          aria-label="Abrir buscador global"
+          title="Buscar (Ctrl+K)"
+          className="h-8 w-8 p-0 sm:hidden"
+        >
+          <Search className="h-4 w-4 text-text" />
+        </Button>
+
         {/* Notificaciones */}
         <CentroNotificaciones />
 
@@ -75,7 +119,11 @@ export function Navbar() {
           </Button>
         </div>
       </div>
+
+      {/* Universal Omnibar Dialog */}
+      <CommandMenu isOpen={commandOpen} onClose={() => setCommandOpen(false)} />
     </header>
   )
 }
+
 
