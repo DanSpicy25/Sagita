@@ -24,9 +24,9 @@ import {
   PortalCatalogoProductos,
   PortalHardwareShowcase,
   PortalVerticalesShowcase,
-  PortalModulosShowcase,
   PortalFooter,
 } from '@/components/portal'
+import { PortalModulosShowcase } from '@/components/portal/PortalModulosShowcase'
 
 function formatLocalDate(date: Date): string {
   const year = date.getFullYear()
