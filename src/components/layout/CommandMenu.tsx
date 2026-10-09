@@ -13,28 +13,32 @@ import {
   DoorOpen,
   Receipt,
   Blocks,
-  ArrowRight,
   PlusCircle,
   Clock,
   Sparkles,
-  Command,
   Workflow,
   Share2,
   X,
+  Star,
+  History,
+  Trash2,
 } from 'lucide-react'
 import { clientesService } from '@/services/clientes.service'
 import { inventarioService } from '@/services/inventario.service'
 import { citasService } from '@/services/citas.service'
 import { Cliente, Producto, Cita } from '@/types'
+import { Badge, IconButton } from '@/components/ui'
+import { useRole } from '@/hooks/useRole'
 
 interface CommandItem {
   id: string
   titulo: string
   subtitulo?: string
-  categoria: 'Módulos' | 'Acciones Rápidas' | 'Clientes' | 'Productos (#PRD)' | 'Citas'
+  categoria: 'Favoritos' | 'Recientes' | 'Módulos' | 'Acciones Rápidas' | 'Clientes' | 'Productos (#PRD)' | 'Citas'
   icono: React.ElementType
   ruta?: string
   accion?: () => void
+  permiso?: string
 }
 
 interface CommandMenuProps {
@@ -42,107 +46,204 @@ interface CommandMenuProps {
   onClose: () => void
 }
 
+// In-memory data cache to avoid hammering API on every keypress
+let dataCache: {
+  clientes: Cliente[]
+  productos: Producto[]
+  citas: Cita[]
+  timestamp: number
+} | null = null
+
+const CACHE_TTL_MS = 60000 // 60 seconds
+
 export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
   const navigate = useNavigate()
+  const { hasPermission } = useRole()
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [citas, setCitas] = useState<Cita[]>([])
+  const [recentIds, setRecentIds] = useState<string[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
+
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // Cargar datos en memoria al abrir
+  // Cargar recientes y favoritos desde localStorage
+  useEffect(() => {
+    try {
+      const rec = localStorage.getItem('sagitta_recent_commands')
+      if (rec) setRecentIds(JSON.parse(rec))
+      const fav = localStorage.getItem('sagitta_favorite_commands')
+      if (fav) setFavoriteIds(JSON.parse(fav))
+    } catch {
+      // Ignorar errores de parseo
+    }
+  }, [isOpen])
+
+  // Cargar datos en memoria al abrir con caché de 60s
   useEffect(() => {
     if (isOpen) {
       setQuery('')
       setSelectedIndex(0)
       setTimeout(() => inputRef.current?.focus(), 50)
 
-      Promise.all([
-        clientesService.getAll().catch(() => ({ data: [] })),
-        inventarioService.getProductos().catch(() => ({ data: [] })),
-        citasService.getAll().catch(() => ({ data: [] })),
-      ]).then(([resCli, resProd, resCitas]) => {
-        setClientes(resCli.data ?? [])
-        setProductos(resProd.data ?? [])
-        setCitas(resCitas.data ?? [])
-      })
+      const now = Date.now()
+      if (dataCache && now - dataCache.timestamp < CACHE_TTL_MS) {
+        setClientes(dataCache.clientes)
+        setProductos(dataCache.productos)
+        setCitas(dataCache.citas)
+      } else {
+        Promise.all([
+          clientesService.getAll().catch(() => ({ data: [] })),
+          inventarioService.getProductos().catch(() => ({ data: [] })),
+          citasService.getAll().catch(() => ({ data: [] })),
+        ]).then(([resCli, resProd, resCitas]) => {
+          const cli = resCli.data ?? []
+          const prod = resProd.data ?? []
+          const cit = resCitas.data ?? []
+          dataCache = { clientes: cli, productos: prod, citas: cit, timestamp: now }
+          setClientes(cli)
+          setProductos(prod)
+          setCitas(cit)
+        })
+      }
     }
   }, [isOpen])
 
-  // Navegación estática y acciones rápidas
+  // Navegación estática y acciones rápidas filtradas por permisos
   const comandosEstaticos: CommandItem[] = useMemo(
-    () => [
-      // Acciones Rápidas
-      {
-        id: 'act-pos',
-        titulo: 'Cobrar en Punto de Venta (POS)',
-        subtitulo: 'Abrir terminal de caja y cobro táctil',
-        categoria: 'Acciones Rápidas',
-        icono: ShoppingCart,
-        ruta: '/ventas',
-      },
-      {
-        id: 'act-cita',
-        titulo: 'Agendar Nueva Cita',
-        subtitulo: 'Abrir wizard de reserva asistida',
-        categoria: 'Acciones Rápidas',
-        icono: PlusCircle,
-        ruta: '/citas/nueva',
-      },
-      {
-        id: 'act-hardware',
-        titulo: 'Banco de Pruebas de Hardware & Bluetooth',
-        subtitulo: 'Test de impresora térmica 58/80mm y cajón',
-        categoria: 'Acciones Rápidas',
-        icono: Printer,
-        ruta: '/hardware',
-      },
-      {
-        id: 'act-walkin',
-        titulo: 'Registrar Cliente Walk-in en Recepción',
-        subtitulo: 'Agregar a la cola de espera de mostrador',
-        categoria: 'Acciones Rápidas',
-        icono: Clock,
-        ruta: '/recepcion',
-      },
+    () => {
+      const todos: CommandItem[] = [
+        // Acciones Rápidas
+        {
+          id: 'act-pos',
+          titulo: 'Cobrar en Punto de Venta (POS)',
+          subtitulo: 'Abrir terminal de caja y cobro táctil',
+          categoria: 'Acciones Rápidas',
+          icono: ShoppingCart,
+          ruta: '/ventas',
+          permiso: 'sales.read',
+        },
+        {
+          id: 'act-cita',
+          titulo: 'Agendar Nueva Cita',
+          subtitulo: 'Abrir wizard de reserva asistida',
+          categoria: 'Acciones Rápidas',
+          icono: PlusCircle,
+          ruta: '/citas/nueva',
+          permiso: 'appointments.read',
+        },
+        {
+          id: 'act-hardware',
+          titulo: 'Banco de Pruebas de Hardware & Bluetooth',
+          subtitulo: 'Test de impresora térmica 58/80mm y cajón',
+          categoria: 'Acciones Rápidas',
+          icono: Printer,
+          ruta: '/hardware',
+          permiso: 'settings.manage',
+        },
+        {
+          id: 'act-walkin',
+          titulo: 'Registrar Cliente Walk-in en Recepción',
+          subtitulo: 'Agregar a la cola de espera de mostrador',
+          categoria: 'Acciones Rápidas',
+          icono: Clock,
+          ruta: '/recepcion',
+          permiso: 'appointments.read',
+        },
+        {
+          id: 'act-demo-center',
+          titulo: 'Abrir Demo Center (Ventas & Prospección)',
+          subtitulo: 'Centro de demostración interactiva con datos ficticios',
+          categoria: 'Acciones Rápidas',
+          icono: Sparkles,
+          ruta: '/demo',
+        },
 
-      // Módulos
-      { id: 'mod-dash', titulo: 'Panel de Control (Dashboard)', categoria: 'Módulos', icono: BarChart2, ruta: '/dashboard' },
-      { id: 'mod-citas', titulo: 'Agenda y Calendario de Citas', categoria: 'Módulos', icono: Calendar, ruta: '/citas' },
-      { id: 'mod-ventas', titulo: 'Punto de Venta (POS)', categoria: 'Módulos', icono: ShoppingCart, ruta: '/ventas' },
-      { id: 'mod-inv', titulo: 'Inventario & Productos (#PRD)', categoria: 'Módulos', icono: Package, ruta: '/inventario' },
-      { id: 'mod-cli', titulo: 'Directorio de Clientes & CRM', categoria: 'Módulos', icono: Users, ruta: '/clientes' },
-      { id: 'mod-rec', titulo: 'Recepción & Cola de Espera', categoria: 'Módulos', icono: Clock, ruta: '/recepcion' },
-      { id: 'mod-serv', titulo: 'Catálogo de Servicios & Paquetes', categoria: 'Módulos', icono: Sparkles, ruta: '/servicios' },
-      { id: 'mod-emp', titulo: 'Equipo & Horarios de Personal', categoria: 'Módulos', icono: Briefcase, ruta: '/empleados' },
-      { id: 'mod-recursos', titulo: 'Recursos Físicos & Cabinas', categoria: 'Módulos', icono: DoorOpen, ruta: '/recursos' },
-      { id: 'mod-fin', titulo: 'Facturación & Cobros', categoria: 'Módulos', icono: Receipt, ruta: '/finanzas' },
-      { id: 'mod-rep', titulo: 'Reportes y Analítica BI', categoria: 'Módulos', icono: BarChart2, ruta: '/reportes' },
-      { id: 'mod-crm', titulo: 'CRM & Pipeline Comercial', categoria: 'Módulos', icono: Users, ruta: '/crm' },
-      { id: 'mod-auto', titulo: 'Automatizaciones & Workflows Omnicanal', categoria: 'Módulos', icono: Workflow, ruta: '/automatizaciones' },
-      { id: 'mod-integ', titulo: 'Integraciones & Conectores Externos', categoria: 'Módulos', icono: Share2, ruta: '/integraciones' },
-      { id: 'mod-dev', titulo: 'Desarrolladores & API Keys OpenAPI', categoria: 'Módulos', icono: Settings, ruta: '/desarrolladores' },
-      { id: 'mod-cfg', titulo: 'Configuración de Marca & Tipografías', categoria: 'Módulos', icono: Settings, ruta: '/ajustes' },
-      { id: 'mod-sect', titulo: 'Módulos y Presets por Sector', categoria: 'Módulos', icono: Blocks, ruta: '/modulos' },
-    ],
-    []
+        // Módulos
+        { id: 'mod-dash', titulo: 'Panel de Control (Dashboard)', categoria: 'Módulos', icono: BarChart2, ruta: '/dashboard' },
+        { id: 'mod-demo', titulo: 'Demo Center Comercial (7 Módulos)', categoria: 'Módulos', icono: Sparkles, ruta: '/demo' },
+        { id: 'mod-citas', titulo: 'Agenda y Calendario de Citas', categoria: 'Módulos', icono: Calendar, ruta: '/citas', permiso: 'appointments.read' },
+        { id: 'mod-ventas', titulo: 'Punto de Venta (POS)', categoria: 'Módulos', icono: ShoppingCart, ruta: '/ventas', permiso: 'sales.read' },
+        { id: 'mod-inv', titulo: 'Inventario & Productos (#PRD)', categoria: 'Módulos', icono: Package, ruta: '/inventario', permiso: 'inventory.read' },
+        { id: 'mod-cli', titulo: 'Directorio de Clientes & CRM', categoria: 'Módulos', icono: Users, ruta: '/clientes', permiso: 'clients.read' },
+        { id: 'mod-rec', titulo: 'Recepción & Cola de Espera', categoria: 'Módulos', icono: Clock, ruta: '/recepcion', permiso: 'appointments.read' },
+        { id: 'mod-serv', titulo: 'Catálogo de Servicios & Paquetes', categoria: 'Módulos', icono: Sparkles, ruta: '/servicios', permiso: 'services.read' },
+        { id: 'mod-emp', titulo: 'Equipo & Horarios de Personal', categoria: 'Módulos', icono: Briefcase, ruta: '/empleados', permiso: 'employees.read' },
+        { id: 'mod-recursos', titulo: 'Recursos Físicos & Cabinas', categoria: 'Módulos', icono: DoorOpen, ruta: '/recursos', permiso: 'services.update' },
+        { id: 'mod-fin', titulo: 'Facturación & Cobros', categoria: 'Módulos', icono: Receipt, ruta: '/finanzas', permiso: 'sales.read' },
+        { id: 'mod-rep', titulo: 'Reportes y Analítica BI', categoria: 'Módulos', icono: BarChart2, ruta: '/reportes', permiso: 'reports.read' },
+        { id: 'mod-crm', titulo: 'CRM & Pipeline Comercial', categoria: 'Módulos', icono: Users, ruta: '/crm', permiso: 'clients.read' },
+        { id: 'mod-auto', titulo: 'Automatizaciones & Workflows Omnicanal', categoria: 'Módulos', icono: Workflow, ruta: '/automatizaciones', permiso: 'settings.manage' },
+        { id: 'mod-integ', titulo: 'Integraciones & Conectores Externos', categoria: 'Módulos', icono: Share2, ruta: '/integraciones', permiso: 'settings.manage' },
+        { id: 'mod-dev', titulo: 'Desarrolladores & API Keys OpenAPI', categoria: 'Módulos', icono: Settings, ruta: '/desarrolladores', permiso: 'settings.manage' },
+        { id: 'mod-cfg', titulo: 'Configuración de Marca & Tipografías', categoria: 'Módulos', icono: Settings, ruta: '/ajustes', permiso: 'settings.manage' },
+        { id: 'mod-sect', titulo: 'Módulos y Presets por Sector', categoria: 'Módulos', icono: Blocks, ruta: '/modulos', permiso: 'settings.manage' },
+      ]
+
+      return todos.filter((cmd) => (cmd.permiso ? hasPermission(cmd.permiso) : true))
+    },
+    [hasPermission]
   )
+
+  // Alternar favorito
+  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    setFavoriteIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      localStorage.setItem('sagitta_favorite_commands', JSON.stringify(next))
+      return next
+    })
+  }
+
+  // Limpiar recientes
+  const clearRecents = () => {
+    setRecentIds([])
+    localStorage.removeItem('sagitta_recent_commands')
+  }
 
   // Filtrado de elementos
   const itemsFiltrados = useMemo(() => {
     const q = query.trim().toLowerCase()
     const resultados: CommandItem[] = []
 
-    // 1. Filtrar acciones y módulos
+    // Si la búsqueda está vacía, mostrar Favoritos y Recientes primero
+    if (!q) {
+      // 1. Favoritos
+      if (favoriteIds.length > 0) {
+        comandosEstaticos
+          .filter((cmd) => favoriteIds.includes(cmd.id))
+          .forEach((cmd) => {
+            resultados.push({ ...cmd, categoria: 'Favoritos' })
+          })
+      }
+
+      // 2. Recientes (hasta 4)
+      if (recentIds.length > 0) {
+        recentIds
+          .slice(0, 4)
+          .map((id) => comandosEstaticos.find((cmd) => cmd.id === id))
+          .filter((cmd): cmd is CommandItem => Boolean(cmd))
+          .forEach((cmd) => {
+            if (!resultados.some((r) => r.id === cmd.id)) {
+              resultados.push({ ...cmd, categoria: 'Recientes' })
+            }
+          })
+      }
+    }
+
+    // 3. Filtrar acciones y módulos
     comandosEstaticos.forEach((cmd) => {
       if (!q || cmd.titulo.toLowerCase().includes(q) || cmd.subtitulo?.toLowerCase().includes(q)) {
-        resultados.push(cmd)
+        if (!resultados.some((r) => r.id === cmd.id)) {
+          resultados.push(cmd)
+        }
       }
     })
 
-    // 2. Filtrar clientes (hasta 4)
+    // 4. Filtrar clientes (hasta 4)
     if (q) {
       clientes
         .filter(
@@ -164,8 +265,8 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
         })
     }
 
-    // 3. Filtrar productos (#PRD-XXXX, hasta 4)
-    if (q) {
+    // 5. Filtrar productos (#PRD-XXXX, hasta 4) (solo si tiene permiso de inventario)
+    if (q && hasPermission('inventory.read')) {
       productos
         .filter((p) => {
           const prdCode = `#prd-${String(p.id).padStart(4, '0')}`.toLowerCase()
@@ -189,7 +290,7 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
         })
     }
 
-    // 4. Filtrar citas (hasta 3)
+    // 6. Filtrar citas (hasta 3)
     if (q) {
       citas
         .filter(
@@ -203,7 +304,9 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
           resultados.push({
             id: `cita-${c.id}`,
             titulo: `Cita #${c.id} - ${c.cliente?.nombre || 'Cliente'}`,
-            subtitulo: `${c.servicio?.nombre || 'Servicio'} • ${c.fecha_inicio ? new Date(c.fecha_inicio).toLocaleDateString() : ''}`,
+            subtitulo: `${c.servicio?.nombre || 'Servicio'} • ${
+              c.fecha_inicio ? new Date(c.fecha_inicio).toLocaleDateString() : ''
+            }`,
             categoria: 'Citas',
             icono: Calendar,
             ruta: `/citas?id=${c.id}`,
@@ -212,10 +315,17 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
     }
 
     return resultados
-  }, [query, comandosEstaticos, clientes, productos, citas])
+  }, [query, comandosEstaticos, clientes, productos, citas, favoriteIds, recentIds])
 
   // Ejecutar selección
   const ejecutarItem = (item: CommandItem) => {
+    // Guardar en recientes
+    if (!item.id.startsWith('cli-') && !item.id.startsWith('prd-') && !item.id.startsWith('cita-')) {
+      const nextRecent = [item.id, ...recentIds.filter((id) => id !== item.id)].slice(0, 8)
+      setRecentIds(nextRecent)
+      localStorage.setItem('sagitta_recent_commands', JSON.stringify(nextRecent))
+    }
+
     onClose()
     if (item.accion) {
       item.accion()
@@ -251,17 +361,29 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
     return acc
   }, {} as Record<string, CommandItem[]>)
 
-  let indiceGlobal = 0
+  let flatIndex = 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-modal flex items-start justify-center pt-[8vh] sm:pt-[12vh] p-3 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Backdrop */}
       <div
-        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[80vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Panel Omnibar */}
+      <div
+        className="relative w-full max-w-2xl bg-surface-elevated text-text rounded-2xl border border-border shadow-elevated overflow-hidden z-10 animate-slide-up flex flex-col max-h-[80vh]"
+        onKeyDown={handleKeyDown}
       >
-        {/* Cabecera con Input de Búsqueda */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
-          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+        {/* Input Bar */}
+        <div className="flex items-center px-4 py-3.5 border-b border-border gap-3 bg-surface">
+          <Search className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -270,98 +392,146 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
               setQuery(e.target.value)
               setSelectedIndex(0)
             }}
-            onKeyDown={handleKeyDown}
-            placeholder="Escribe para buscar clientes, #PRD, citas o módulos..."
-            className="flex-1 bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+            placeholder="Buscar por módulo, cliente, producto #PRD, cita o acción..."
+            className="w-full bg-transparent text-text text-sm sm:text-base placeholder:text-text-muted/60 focus:outline-none"
           />
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {query && (
+            <IconButton
+              icon={<X className="w-4 h-4" />}
+              aria-label="Borrar texto"
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setQuery('')
+                setSelectedIndex(0)
+                inputRef.current?.focus()
+              }}
+            />
+          )}
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-semibold text-text-muted bg-surface-subtle border border-border rounded">
+            ESC
+          </kbd>
         </div>
 
-        {/* Lista de Resultados */}
-        <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-3">
+        {/* List of Results */}
+        <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-3">
           {itemsFiltrados.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
-              No se encontraron resultados para &ldquo;<span className="font-semibold text-slate-600 dark:text-slate-300">{query}</span>&rdquo;
+            <div className="py-12 text-center text-xs text-text-muted space-y-2">
+              <p>No se encontraron resultados para "{query}"</p>
+              <p className="text-[11px] opacity-75">
+                Prueba buscando por nombre de cliente, código #PRD-XXXX o término de módulo.
+              </p>
             </div>
           ) : (
             Object.entries(categoriasAgrupadas).map(([cat, items]) => (
               <div key={cat} className="space-y-1">
-                <div className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  {cat}
-                </div>
-                {items.map((item) => {
-                  const currentIndex = indiceGlobal++
-                  const isSelected = currentIndex === selectedIndex
-                  const Icon = item.icono
+                <div className="px-3 py-1 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                    {cat === 'Favoritos' && <Star className="w-3 h-3 text-warning fill-warning" />}
+                    {cat === 'Recientes' && <History className="w-3 h-3 text-primary" />}
+                    <span>{cat}</span>
+                  </span>
 
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => ejecutarItem(item)}
-                      onMouseEnter={() => setSelectedIndex(currentIndex)}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-primary-50 dark:bg-primary-950/70 text-primary-900 dark:text-white'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200'
-                      }`}
+                  {cat === 'Recientes' && (
+                    <button
+                      type="button"
+                      onClick={clearRecents}
+                      className="text-[10px] text-text-muted hover:text-danger flex items-center gap-1 transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            isSelected
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate leading-tight">
-                            {item.titulo}
-                          </p>
-                          {item.subtitulo && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                              {item.subtitulo}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                      <Trash2 className="w-3 h-3" />
+                      <span>Limpiar</span>
+                    </button>
+                  )}
+                </div>
 
-                      <div className="flex items-center gap-1 text-slate-400 shrink-0 ml-2">
-                        {isSelected && <ArrowRight className="w-4 h-4 text-primary-600 dark:text-primary-400" />}
+                <div className="space-y-0.5">
+                  {items.map((item) => {
+                    const currentIndex = flatIndex++
+                    const isSelected = currentIndex === selectedIndex
+                    const Icon = item.icono
+                    const isFav = favoriteIds.includes(item.id)
+
+                    return (
+                      <div
+                        key={`${cat}-${item.id}`}
+                        onClick={() => ejecutarItem(item)}
+                        onMouseEnter={() => setSelectedIndex(currentIndex)}
+                        className={[
+                          'flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all select-none group',
+                          isSelected
+                            ? 'bg-primary-soft text-primary font-semibold shadow-2xs'
+                            : 'text-text hover:bg-surface-subtle',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                              isSelected
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-surface-subtle text-text-muted border-border/50 group-hover:text-text'
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="truncate leading-snug">{item.titulo}</div>
+                            {item.subtitulo && (
+                              <div
+                                className={`text-[11px] truncate mt-0.5 font-normal ${
+                                  isSelected ? 'text-primary/80' : 'text-text-muted'
+                                }`}
+                              >
+                                {item.subtitulo}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(e, item.id)}
+                            aria-label={isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                            className={`p-1 rounded-md transition-colors ${
+                              isFav
+                                ? 'text-warning hover:text-warning/80'
+                                : 'text-text-muted/40 hover:text-warning'
+                            }`}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${isFav ? 'fill-warning' : ''}`} />
+                          </button>
+
+                          <Badge size="sm" variant={isSelected ? 'primary' : 'default'}>
+                            {item.categoria}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Barra de atajos de pie de ventana */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 text-[11px] text-slate-400">
+        {/* Footer shortcuts helper */}
+        <div className="px-4 py-2 border-t border-border-subtle bg-surface-subtle/40 flex items-center justify-between text-[11px] text-text-muted">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px]">↑↓</kbd> Navegar
+            <span>
+              <kbd className="font-mono bg-surface border border-border px-1 py-0.5 rounded text-[10px] mr-1">
+                ↑↓
+              </kbd>
+              Navegar
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px]">↵</kbd> Seleccionar
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px]">ESC</kbd> Cerrar
+            <span>
+              <kbd className="font-mono bg-surface border border-border px-1 py-0.5 rounded text-[10px] mr-1">
+                ↵
+              </kbd>
+              Seleccionar
             </span>
           </div>
-
-          <div className="flex items-center gap-1 font-semibold text-primary-600 dark:text-primary-400">
-            <Command className="w-3.5 h-3.5" />
-            <span>Sagitta Omnibar</span>
-          </div>
+          <span className="truncate">Sagita Omnibar 2.0</span>
         </div>
       </div>
     </div>

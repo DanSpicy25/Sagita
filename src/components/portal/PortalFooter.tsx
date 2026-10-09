@@ -11,6 +11,7 @@ import {
   Lock,
 } from 'lucide-react'
 import type { ConfiguracionMarcaBlanca, Servicio } from '@/types'
+import { useSector } from '@/context/SectorContext'
 
 export interface PortalFooterProps {
   configuracion: ConfiguracionMarcaBlanca
@@ -31,12 +32,14 @@ export function PortalFooter({
   onSeleccionarServicio,
   onIrAReservas,
 }: PortalFooterProps) {
+  const { sector, tokens, mockItems } = useSector()
+
   return (
     <footer
       id="contacto"
       className="mt-auto bg-slate-950 text-slate-400 border-t border-slate-800 text-xs"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Columna 1: Info Negocio */}
           <div className="space-y-4 col-span-1 sm:col-span-2">
@@ -48,58 +51,66 @@ export function PortalFooter({
                   className="h-8 object-contain"
                 />
               ) : (
-                <Store className="w-5 h-5 text-primary-400" />
+                <Store className="w-5 h-5 text-zinc-300" />
               )}
               <span>{nombreMarca}</span>
             </div>
             <p className="text-slate-400 text-xs max-w-sm leading-relaxed">
-              {lemaMarca || 'Plataforma integral de Punto de Venta (POS), control de stock profesional y agendamiento en tiempo real.'}
+              {lemaMarca || 'Plataforma integral para organizar operaciones, ventas y atención al cliente.'}
             </p>
             <div className="space-y-2 pt-1 text-xs">
               <p className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                 <span>Atención presencial en sucursales y operaciones web</span>
               </p>
               {configuracion.telefono_soporte && (
                 <p className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                  <Phone className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                   <span>{configuracion.telefono_soporte}</span>
                 </p>
               )}
               {configuracion.email_soporte && (
                 <p className="flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                  <Mail className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                   <span>{configuracion.email_soporte}</span>
                 </p>
               )}
             </div>
           </div>
 
-          {/* Columna 2: Servicios & Reservas */}
+          {/* Columna 2: Catálogo adaptado al sector */}
           <div className="space-y-3">
-            <h4 className="text-white font-bold text-sm">Servicios</h4>
+            <h4 className="text-white font-bold text-sm">{sector === 'spa' ? 'Servicios' : 'Catálogo'}</h4>
             <ul className="space-y-2">
-              {servicios.slice(0, 4).map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onIrAReservas()
-                      onSeleccionarServicio(s)
-                    }}
-                    className="hover:text-white transition-colors text-left cursor-pointer"
-                  >
-                    {s.nombre}
-                  </button>
-                </li>
-              ))}
+              {sector === 'spa'
+                ? servicios.slice(0, 4).map((s) => (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onIrAReservas()
+                          onSeleccionarServicio(s)
+                        }}
+                        className="hover:text-white transition-colors text-left cursor-pointer"
+                      >
+                        {s.nombre}
+                      </button>
+                    </li>
+                  ))
+                : mockItems.slice(0, 4).map((item) => (
+                    <li key={item.id}>
+                      <button type="button" onClick={onIrAReservas} className="hover:text-white transition-colors text-left cursor-pointer">
+                        {item.nombre}
+                      </button>
+                    </li>
+                  ))}
               <li>
                 <button
                   type="button"
                   onClick={onIrAReservas}
-                  className="text-primary-400 hover:text-primary-300 transition-colors font-medium cursor-pointer"
+                  className="text-zinc-200 hover:text-white transition-colors font-medium cursor-pointer"
                 >
-                  Ver todos los servicios →
+                  {sector === 'spa' ? 'Ver agenda y servicios →' : `Ver catálogo de ${tokens.nombre} →`}
                 </button>
               </li>
             </ul>
@@ -110,20 +121,20 @@ export function PortalFooter({
             <h4 className="text-white font-bold text-sm">Punto de Venta</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/ventas" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                  <ShoppingCart className="w-3.5 h-3.5 text-emerald-400" />
+                <Link to="/ventas" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <ShoppingCart className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Punto de Venta (POS)</span>
                 </Link>
               </li>
               <li>
-                <Link to="/inventario" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-blue-400" />
+                <Link to="/inventario" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Inventario (#PRD)</span>
                 </Link>
               </li>
               <li>
-                <Link to="/hardware" className="hover:text-indigo-400 transition-colors flex items-center gap-1.5">
-                  <Printer className="w-3.5 h-3.5 text-indigo-400" />
+                <Link to="/hardware" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <Printer className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Hardware ESC/POS</span>
                 </Link>
               </li>
@@ -141,12 +152,12 @@ export function PortalFooter({
             <ul className="space-y-2">
               <li>
                 {isAuthenticated ? (
-                  <Link to="/dashboard" className="hover:text-white transition-colors flex items-center gap-1.5 font-semibold text-primary-400">
+                  <Link to="/dashboard" className="hover:text-white transition-colors flex items-center gap-1.5 font-semibold text-zinc-200">
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     <span>Panel de Control</span>
                   </Link>
                 ) : (
-                  <Link to="/login" className="hover:text-white transition-colors flex items-center gap-1.5 font-semibold text-primary-400">
+                  <Link to="/login" className="hover:text-white transition-colors flex items-center gap-1.5 font-semibold text-zinc-200">
                     <Lock className="w-3.5 h-3.5" />
                     <span>Acceso Staff / Login</span>
                   </Link>

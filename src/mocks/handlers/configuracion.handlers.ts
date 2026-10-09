@@ -6,13 +6,13 @@ import { API_BASE_URL as BASE } from '@/config/environment'
 export const CONFIGURACION_DEFAULT: ConfiguracionMarcaBlanca = {
   id: 1,
   nombre_negocio: 'Sagitta',
-  lema_negocio: 'Sistema de reservas y citas inteligente para profesionales.',
+  lema_negocio: 'Gestión clara para las operaciones de tu negocio.',
   logo_url: '',
   logo_dark_url: '',
   logo_icono_url: '',
   favicon_url: '',
-  color_primario: '#6366f1',
-  paleta_predefinida: 'indigo',
+  color_primario: '#18181B',
+  paleta_predefinida: 'slate',
   fuente_tipografica: 'Inter',
   radio_esquinas: 'moderno',
   marca_blanca_activa: false,
@@ -74,4 +74,3 @@ export const configuracionHandlers = [
     })
   }),
 ]
-

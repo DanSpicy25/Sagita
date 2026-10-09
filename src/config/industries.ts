@@ -441,7 +441,15 @@ export function getIndustryPreset(id: IndustryId): IndustryPreset {
   return INDUSTRY_PRESETS[id] ?? INDUSTRY_PRESETS.general
 }
 
-export function translateTerm(industryId: IndustryId, key: TermKey, fallback: string): string {
+export function translateTerm(
+  industryId: IndustryId,
+  key: TermKey,
+  fallback: string,
+  customTerms?: Partial<Record<TermKey, string>>
+): string {
+  if (customTerms && customTerms[key]) {
+    return customTerms[key]!
+  }
   const preset = getIndustryPreset(industryId)
   return preset.terms[key] ?? fallback
 }

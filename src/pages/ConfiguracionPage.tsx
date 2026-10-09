@@ -1,13 +1,20 @@
 import { useState, FormEvent, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Palette,
-  Shield,
-  Code2,
   Building2,
+  Code2,
   Save,
   RotateCcw,
   Download,
   Upload,
+  Sliders,
+  Blocks,
+  LayoutDashboard,
+  Languages,
+  Receipt,
+  Sparkles,
+  HelpCircle,
 } from 'lucide-react'
 import {
   useConfiguracion,
@@ -26,14 +33,29 @@ import {
   TabTipografiaDiseno,
   TabNegocioRegional,
   ModalImportarTema,
+  TabEspacioTrabajo,
+  TabModulosControl,
+  TabPersonalizarDashboard,
+  TabTerminologia,
+  TabAyudaOnboarding,
 } from '@/components/configuracion'
 import { useToast } from '@/hooks/useToast'
 import { applyTheme, configuracionToTema, temaToConfiguracion } from '@/utils/themeEngine'
 import { descargarTema, importarTema } from '@/utils/themeValidator'
 
-export type TabConfig = 'marca_blanca' | 'apariencia' | 'widget' | 'negocio'
+export type TabConfig =
+  | 'identidad'
+  | 'workspace'
+  | 'modulos'
+  | 'dashboard'
+  | 'terminologia'
+  | 'apariencia'
+  | 'negocio'
+  | 'widget'
+  | 'ayuda'
 
 export default function ConfiguracionPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const {
     configuracion,
     actualizarConfiguracion,
@@ -44,13 +66,28 @@ export default function ConfiguracionPage() {
   } = useConfiguracion()
   const { toast } = useToast()
 
-  const [tabActivo, setTabActivo] = useState<TabConfig>('marca_blanca')
+  const tabQuery = searchParams.get('tab') as TabConfig | null
+  const initialTab: TabConfig =
+    tabQuery &&
+    ['identidad', 'workspace', 'modulos', 'dashboard', 'terminologia', 'apariencia', 'negocio', 'widget', 'ayuda'].includes(
+      tabQuery
+    )
+      ? tabQuery
+      : 'identidad'
+
+  const [tabActivo, setTabActivo] = useState<TabConfig>(initialTab)
   const [formData, setFormData] = useState<ConfiguracionMarcaBlanca>({ ...configuracion })
   const [guardando, setGuardando] = useState(false)
 
   // Estado para el modal de importar tema
   const [modalImportar, setModalImportar] = useState(false)
   const [erroresImportacion, setErroresImportacion] = useState<string[]>([])
+
+  // Sincronizar tab con URL query
+  const handleTabChange = (t: TabConfig) => {
+    setTabActivo(t)
+    setSearchParams({ tab: t })
+  }
 
   // Mantener sincronizado formData cuando la configuración externa cambia
   useEffect(() => {
@@ -109,7 +146,7 @@ export default function ConfiguracionPage() {
     setGuardando(true)
     try {
       await actualizarConfiguracion(formData)
-      toast.success('Configuración guardada', 'Los cambios de marca blanca y diseño se han guardado con éxito.')
+      toast.success('Configuración guardada', 'Los cambios del Centro de Control se han guardado con éxito.')
     } catch {
       toast.error('Error al guardar', 'No se pudo sincronizar la configuración con el servidor.')
     } finally {
@@ -173,23 +210,45 @@ export default function ConfiguracionPage() {
 
   const tabClass = (t: TabConfig) =>
     [
-      'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer',
+      'px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer select-none',
       tabActivo === t
-        ? 'bg-primary-600 text-white shadow-sm'
-        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+        ? 'bg-primary text-white shadow-2xs'
+        : 'text-text-muted hover:bg-surface-subtle hover:text-text',
     ].join(' ')
+
+  const tabsConfig = [
+    { id: 'identidad' as const, label: 'Identidad del Negocio', icon: Building2 },
+    { id: 'workspace' as const, label: 'Espacio de Trabajo', icon: Sliders },
+    { id: 'modulos' as const, label: 'Módulos & Capacidades', icon: Blocks },
+    { id: 'dashboard' as const, label: 'Centro de Mando', icon: LayoutDashboard },
+    { id: 'terminologia' as const, label: 'Terminología del Sector', icon: Languages },
+    { id: 'apariencia' as const, label: 'Aspecto Visual & Presets', icon: Palette },
+    { id: 'negocio' as const, label: 'Datos Regionales & Moneda', icon: Receipt },
+    { id: 'widget' as const, label: 'Portal & Widget Web', icon: Code2 },
+    { id: 'ayuda' as const, label: 'Ayuda & Onboarding', icon: HelpCircle },
+  ]
+
+  // Pestañas que se benefician del previsualizador de marca y tema a la derecha
+  const muestraPrevisualizadorLateral = ['identidad', 'apariencia', 'widget'].includes(tabActivo)
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+      {/* ── Encabezado Principal del Centro de Control ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Configuración & Marca Blanca
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Personaliza el nombre comercial, logotipos, favicon, tipografías, geometría y presets visuales
-          </p>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-primary-soft text-primary rounded-xl">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-text">
+                Centro de Control & Personalización
+              </h1>
+              <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+                Adapta Sagitta a la identidad, flujos, módulos y lenguaje propio de tu empresa.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -235,77 +294,81 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
-        <button
-          onClick={() => setTabActivo('marca_blanca')}
-          className={tabClass('marca_blanca')}
-        >
-          <Shield className="w-4 h-4" />
-          Identidad & Marca Blanca
-        </button>
-
-        <button
-          onClick={() => setTabActivo('apariencia')}
-          className={tabClass('apariencia')}
-        >
-          <Palette className="w-4 h-4" />
-          Aspecto Visual & Tipografías
-        </button>
-
-        <button
-          onClick={() => setTabActivo('widget')}
-          className={tabClass('widget')}
-        >
-          <Code2 className="w-4 h-4" />
-          Portal & Widget Embebible
-        </button>
-
-        <button
-          onClick={() => setTabActivo('negocio')}
-          className={tabClass('negocio')}
-        >
-          <Building2 className="w-4 h-4" />
-          Negocio & Datos Regionales
-        </button>
+      {/* ── Navegación Ergonómica por Pestañas del Centro de Control ── */}
+      <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto scrollbar-none">
+        {tabsConfig.map((t) => {
+          const Icon = t.icon
+          return (
+            <button
+              key={t.id}
+              onClick={() => handleTabChange(t.id)}
+              className={tabClass(t.id)}
+              type="button"
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{t.label}</span>
+            </button>
+          )
+        })}
       </div>
 
-      {/* Grid: Formulario (Izq) + Previsualizador en Vivo (Der) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7 space-y-6">
-          {tabActivo === 'marca_blanca' && (
-            <TabIdentidadMarca
-              formData={formData}
-              onChange={handleChange}
-            />
-          )}
+      {/* ── Contenido de las Pestañas ── */}
+      {muestraPrevisualizadorLateral ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-7 space-y-6">
+            {tabActivo === 'identidad' && (
+              <TabIdentidadMarca
+                formData={formData}
+                onChange={handleChange}
+              />
+            )}
 
-          {tabActivo === 'apariencia' && (
-            <TabTipografiaDiseno
-              formData={formData}
-              onChange={handleChange}
-              onSeleccionarPaleta={handleSeleccionarPaleta}
-              onAplicarPreset={handleAplicarPreset}
-            />
-          )}
+            {tabActivo === 'apariencia' && (
+              <TabTipografiaDiseno
+                formData={formData}
+                onChange={handleChange}
+                onSeleccionarPaleta={handleSeleccionarPaleta}
+                onAplicarPreset={handleAplicarPreset}
+              />
+            )}
 
-          {tabActivo === 'widget' && (
-            <GeneradorWidgetEmbebible configuracion={formData} />
-          )}
+            {tabActivo === 'widget' && (
+              <GeneradorWidgetEmbebible configuracion={formData} />
+            )}
+          </div>
+
+          {/* Panel Lateral: Previsualizador en Vivo (Sticky) */}
+          <div className="lg:col-span-5 sticky top-20 space-y-4">
+            <PrevisualizadorMarcaBlanca configuracion={formData} />
+          </div>
+        </div>
+      ) : (
+        <div className="w-full space-y-6">
+          {tabActivo === 'workspace' && <TabEspacioTrabajo />}
+
+          {tabActivo === 'modulos' && <TabModulosControl />}
+
+          {tabActivo === 'dashboard' && <TabPersonalizarDashboard />}
+
+          {tabActivo === 'terminologia' && <TabTerminologia />}
 
           {tabActivo === 'negocio' && (
-            <TabNegocioRegional
-              formData={formData}
-              onChange={handleChange}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="lg:col-span-8">
+                <TabNegocioRegional
+                  formData={formData}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="lg:col-span-4 sticky top-20">
+                <PrevisualizadorMarcaBlanca configuracion={formData} />
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Panel Lateral: Previsualizador en Vivo (Sticky) */}
-        <div className="lg:col-span-5 sticky top-20 space-y-4">
-          <PrevisualizadorMarcaBlanca configuracion={formData} />
+          {tabActivo === 'ayuda' && <TabAyudaOnboarding />}
         </div>
-      </div>
+      )}
 
       {/* Modal de Importación de Tema */}
       <ModalImportarTema
@@ -317,4 +380,3 @@ export default function ConfiguracionPage() {
     </div>
   )
 }
-

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { AlertTriangle, AlertCircle, X } from 'lucide-react'
+import { AlertTriangle, AlertCircle, X, Info } from 'lucide-react'
 import { Button } from './Button'
+import { IconButton } from './IconButton'
 
 export interface ConfirmDialogProps {
   open: boolean
@@ -8,7 +9,7 @@ export interface ConfirmDialogProps {
   description?: string
   confirmLabel?: string
   cancelLabel?: string
-  variant?: 'warning' | 'danger'
+  variant?: 'warning' | 'danger' | 'info'
   loading?: boolean
   onConfirm: () => void | Promise<void>
   onCancel: () => void
@@ -67,11 +68,29 @@ export function ConfirmDialog({
 
   if (!open) return null
 
-  const isDanger = variant === 'danger'
+  const iconConfig = {
+    danger: {
+      icon: <AlertTriangle className="w-5 h-5" aria-hidden="true" />,
+      style: 'bg-danger-soft text-danger border-danger/20',
+      buttonVariant: 'danger' as const,
+    },
+    warning: {
+      icon: <AlertCircle className="w-5 h-5" aria-hidden="true" />,
+      style: 'bg-warning-soft text-warning border-warning/20',
+      buttonVariant: 'warning' as const,
+    },
+    info: {
+      icon: <Info className="w-5 h-5" aria-hidden="true" />,
+      style: 'bg-info-soft text-info border-info/20',
+      buttonVariant: 'primary' as const,
+    },
+  }
+
+  const currentConfig = iconConfig[variant] || iconConfig.danger
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-fade-in sm:p-4"
+      className="fixed inset-0 z-modal flex items-center justify-center overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-fade-in sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -90,47 +109,40 @@ export function ConfirmDialog({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface-elevated p-4 shadow-lg animate-slide-up z-10 focus:outline-none sm:max-h-[calc(100dvh-2rem)] sm:p-6"
+        className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface-elevated p-4 shadow-elevated animate-slide-up z-10 focus:outline-none sm:max-h-[calc(100dvh-2rem)] sm:p-6"
       >
         {/* Botón cerrar esquina superior derecha */}
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          aria-label="Cerrar diálogo"
-          className="absolute top-4 right-4 text-text-muted hover:text-text disabled:opacity-40 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="absolute top-4 right-4">
+          <IconButton
+            icon={<X className="w-4 h-4" />}
+            aria-label="Cerrar diálogo"
+            variant="ghost"
+            size="sm"
+            disabled={loading}
+            onClick={onCancel}
+          />
+        </div>
 
         <div className="flex items-start gap-4">
           {/* Badge de icono semántico */}
           <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
-              isDanger
-                ? 'bg-danger-soft text-danger border-danger/20'
-                : 'bg-warning-soft text-warning border-warning/20'
-            }`}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${currentConfig.style}`}
           >
-            {isDanger ? (
-              <AlertTriangle className="w-5 h-5" aria-hidden="true" />
-            ) : (
-              <AlertCircle className="w-5 h-5" aria-hidden="true" />
-            )}
+            {currentConfig.icon}
           </div>
 
           {/* Contenido textual */}
-          <div className="flex-1 pr-4">
+          <div className="flex-1 pr-6">
             <h2
               id="confirm-dialog-title"
-              className="text-base font-semibold text-text font-heading"
+              className="text-base font-semibold text-text font-heading leading-snug"
             >
               {title}
             </h2>
             {description && (
               <p
                 id="confirm-dialog-desc"
-                className="text-sm text-text-muted mt-1.5 leading-relaxed"
+                className="text-xs sm:text-sm text-text-muted mt-1.5 leading-relaxed"
               >
                 {description}
               </p>
@@ -153,7 +165,7 @@ export function ConfirmDialog({
 
           <Button
             type="button"
-            variant={isDanger ? 'danger' : 'warning'}
+            variant={currentConfig.buttonVariant}
             size="sm"
             isLoading={loading}
             disabled={loading}

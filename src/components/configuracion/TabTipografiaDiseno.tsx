@@ -8,6 +8,7 @@ import {
   Moon,
   Monitor,
   Type,
+  HelpCircle,
 } from 'lucide-react'
 import type {
   ConfiguracionMarcaBlanca,
@@ -19,9 +20,11 @@ import type {
   Densidad,
   ModoVisual,
 } from '@/types'
-import { Input } from '@/components/ui'
+import { Input, Button } from '@/components/ui'
 import { PALETAS_PREDEFINIDAS } from '@/context/ConfiguracionContext'
 import { THEME_PRESETS } from '@/config/themePresets'
+import { useFirstUseHint } from '@/hooks/useFirstUseHint'
+import { useToast } from '@/hooks/useToast'
 
 export const FUENTES_DISPONIBLES: { id: FuenteTipografica; nombre: string; desc: string; sample: string }[] = [
   { id: 'Inter', nombre: 'Inter (Estándar)', desc: 'Técnica, neutral y de máxima legibilidad en interfaces complejas.', sample: 'The quick brown fox jumps over the lazy dog 12345' },
@@ -110,6 +113,9 @@ export function TabTipografiaDiseno({
   onAplicarPreset,
 }: TabTipografiaDisenoProps) {
   const [textoMuestra, setTextoMuestra] = useState('Gestiona tu negocio con precisión absoluta y diseño a medida.')
+  const { resetAllHints, getDismissedCount } = useFirstUseHint()
+  const { toast } = useToast()
+  const [dismissedCount, setDismissedCount] = useState(() => getDismissedCount())
 
   return (
     <div className="space-y-6">
@@ -558,6 +564,36 @@ export function TabTipografiaDiseno({
               </button>
             )
           })}
+        </div>
+      </div>
+
+      {/* Sugerencias y Guías de Primer Uso (First-Use Hints) */}
+      <div className="card p-6 border border-slate-100 dark:border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-primary-500" />
+              Sugerencias y Guías de Primer Uso
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Reanudar las guías de ayuda y atajos contextuales para usuarios que deseen repasar la interfaz.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              resetAllHints()
+              setDismissedCount(0)
+              toast.success(
+                'Sugerencias restablecidas',
+                'Los tips contextuales volverán a mostrarse en sus respectivas pantallas.'
+              )
+            }}
+          >
+            Restablecer sugerencias ({dismissedCount} completadas)
+          </Button>
         </div>
       </div>
     </div>

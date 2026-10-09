@@ -21,7 +21,8 @@ export function Switch({
   className = '',
   id,
 }: SwitchProps) {
-  const switchId = id || (label ? `sw-${String(label).replace(/\s+/g, '-').toLowerCase()}` : undefined)
+  const generatedId = React.useId()
+  const switchId = id || (label ? `sw-${String(label).replace(/\s+/g, '-').toLowerCase()}` : generatedId)
 
   const dimensions = {
     sm: { track: 'w-8 h-4', thumb: 'w-3 h-3', translate: 'translate-x-4' },
@@ -39,14 +40,24 @@ export function Switch({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
-        className={`relative inline-flex items-center shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${track} ${
-          checked ? 'bg-primary-600' : 'bg-slate-200 dark:bg-slate-700'
-        } ${disabled ? 'cursor-not-allowed' : ''}`}
+        className={[
+          'relative inline-flex items-center shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out border border-transparent',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+          track,
+          checked ? 'bg-primary' : 'bg-surface-subtle border-border',
+          disabled ? 'cursor-not-allowed' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <span
-          className={`pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition duration-200 ease-in-out ${thumb} ${
-            checked ? translate : 'translate-x-1'
-          }`}
+          className={[
+            'pointer-events-none inline-block rounded-full bg-white shadow-xs transform transition duration-200 ease-in-out',
+            thumb,
+            checked ? translate : 'translate-x-1',
+          ]
+            .filter(Boolean)
+            .join(' ')}
         />
       </button>
 
@@ -56,13 +67,13 @@ export function Switch({
             <label
               htmlFor={switchId}
               onClick={() => !disabled && onChange(!checked)}
-              className="font-medium text-slate-700 dark:text-slate-300 cursor-pointer block leading-tight"
+              className="font-medium text-text cursor-pointer block leading-tight text-xs sm:text-sm"
             >
               {label}
             </label>
           )}
           {description && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
               {description}
             </p>
           )}

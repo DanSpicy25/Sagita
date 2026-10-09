@@ -20,6 +20,9 @@ interface ModulesContextValue {
   disableAddon: (addonKey: string) => void
   toggleAddon: (addonKey: string) => void
   tTerm: (key: TermKey, fallback: string) => string
+  customTerms: Partial<Record<TermKey, string>>
+  setCustomTerm: (key: TermKey, value: string) => void
+  resetCustomTerms: () => void
   activeModules: ModuleId[]
   activeAddons: string[]
   resetToDefaults: () => void
@@ -256,11 +259,34 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
     saveProfile(fresh)
   }, [profile.industria, saveProfile, tenantId])
 
+  const setCustomTerm = useCallback(
+    (key: TermKey, value: string) => {
+      const current = profile.terminos_personalizados || {}
+      saveProfile({
+        ...profile,
+        terminos_personalizados: {
+          ...current,
+          [key]: value.trim(),
+        },
+        updated_at: new Date().toISOString(),
+      })
+    },
+    [profile, saveProfile]
+  )
+
+  const resetCustomTerms = useCallback(() => {
+    saveProfile({
+      ...profile,
+      terminos_personalizados: {},
+      updated_at: new Date().toISOString(),
+    })
+  }, [profile, saveProfile])
+
   const tTerm = useCallback(
     (key: TermKey, fallback: string): string => {
-      return translateTerm(profile.industria, key, fallback)
+      return translateTerm(profile.industria, key, fallback, profile.terminos_personalizados)
     },
-    [profile.industria]
+    [profile.industria, profile.terminos_personalizados]
   )
 
   const activeModules = useMemo(() => {
@@ -286,6 +312,9 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
       disableAddon,
       toggleAddon,
       tTerm,
+      customTerms: profile.terminos_personalizados || {},
+      setCustomTerm,
+      resetCustomTerms,
       activeModules,
       activeAddons,
       resetToDefaults,
@@ -303,6 +332,8 @@ export function ModulesProvider({ children }: { children: React.ReactNode }) {
       disableAddon,
       toggleAddon,
       tTerm,
+      setCustomTerm,
+      resetCustomTerms,
       activeModules,
       activeAddons,
       resetToDefaults,

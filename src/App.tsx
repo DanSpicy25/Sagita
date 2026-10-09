@@ -6,12 +6,14 @@ import { ConfiguracionProvider } from '@/context/ConfiguracionContext'
 import { TenantProvider } from '@/context/TenantContext'
 import { ModulesProvider } from '@/context/ModulesContext'
 import { I18nProvider } from '@/context/I18nContext'
+import { SectorProvider } from '@/context/SectorContext'
 import { PageWrapper } from '@/components/layout'
 import { Loader } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const MostradorPage = lazy(() => import('@/pages/MostradorPage'))
 const CitasPage = lazy(() => import('@/pages/CitasPage'))
 const NuevaCitaPage = lazy(() => import('@/pages/NuevaCitaPage'))
 const RecepcionPage = lazy(() => import('@/pages/RecepcionPage'))
@@ -34,6 +36,7 @@ const VentasPage = lazy(() => import('@/pages/VentasPage'))
 const HardwarePage = lazy(() => import('@/pages/HardwarePage'))
 const ReportesPage = lazy(() => import('@/pages/ReportesPage'))
 const RolesPage = lazy(() => import('@/pages/RolesPage'))
+const DemoCenterPage = lazy(() => import('@/pages/DemoCenterPage'))
 
 // ─── Guard de rutas privadas ───────────────────────────────────────────────
 function PrivateRoute({
@@ -59,6 +62,22 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<PortalReservaPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/demo" element={<DemoCenterPage />} />
+        <Route path="/demos" element={<Navigate to="/demo" replace />} />
+        <Route path="/pos-demo" element={<MostradorPage />} />
+
+      <Route
+        path="/mostrador"
+        element={
+          <PrivateRoute>
+            <MostradorPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/pos"
+        element={<Navigate to="/mostrador" replace />}
+      />
 
       <Route
         path="/dashboard"
@@ -180,6 +199,10 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/configuracion"
+        element={<Navigate to="/ajustes" replace />}
+      />
 
       {/* Adaptabilidad y Gestión de Módulos */}
       <Route
@@ -271,19 +294,21 @@ function AppRoutes() {
 export default function App() {
   return (
     <TenantProvider>
-      <ModulesProvider>
-        <I18nProvider>
-          <ConfiguracionProvider>
-            <AppProvider>
-              <AuthProvider>
-                <BrowserRouter>
-                  <AppRoutes />
-                </BrowserRouter>
-              </AuthProvider>
-            </AppProvider>
-          </ConfiguracionProvider>
-        </I18nProvider>
-      </ModulesProvider>
+      <SectorProvider>
+        <ModulesProvider>
+          <I18nProvider>
+            <ConfiguracionProvider>
+              <AppProvider>
+                <AuthProvider>
+                  <BrowserRouter>
+                    <AppRoutes />
+                  </BrowserRouter>
+                </AuthProvider>
+              </AppProvider>
+            </ConfiguracionProvider>
+          </I18nProvider>
+        </ModulesProvider>
+      </SectorProvider>
     </TenantProvider>
   )
 }

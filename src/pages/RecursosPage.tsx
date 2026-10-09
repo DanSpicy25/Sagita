@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DoorOpen, CalendarOff } from 'lucide-react'
 import { GestionRecursos, GestionBloqueos } from '@/components/reservas'
 import { useModules } from '@/hooks/useModules'
+import { FirstUseHint } from '@/components/ui'
 
 type TabRecursos = 'recursos' | 'bloqueos'
 
@@ -30,6 +31,14 @@ export default function RecursosPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Ayuda Contextual: Capacidad Física vs Personal ── */}
+      <FirstUseHint
+        hintKey="recursos_capacidad"
+        title="Capacidad Física de Salas vs Disponibilidad de Especialistas"
+        description="Los recursos físicos (cabinas, salas, sillones o camillas) limitan la atención concurrente. Aunque tengas 5 especialistas libres, si solo hay 3 salas habilitadas, el sistema bloqueará automáticamente el cuarto turno simultáneo para evitar sobrecupo en el local."
+        variant="callout"
+      />
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto">

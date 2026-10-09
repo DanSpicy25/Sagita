@@ -1,8 +1,16 @@
 import React from 'react'
 import { Loader2 } from 'lucide-react'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'warning' | 'outline' | 'success' | 'accent'
-export type ButtonSize = 'sm' | 'md' | 'lg'
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'warning'
+  | 'outline'
+  | 'success'
+  | 'accent'
+export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -16,64 +24,72 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-primary hover:bg-primary-hover text-white shadow-sm focus:ring-primary',
+    'bg-primary hover:bg-primary-hover text-white shadow-xs focus-visible:ring-primary border border-transparent',
   secondary:
-    'bg-secondary-soft hover:bg-border text-text border border-border focus:ring-secondary',
+    'bg-secondary-soft hover:bg-border/60 text-text border border-border focus-visible:ring-secondary',
   ghost:
-    'bg-transparent hover:bg-secondary-soft text-text focus:ring-secondary',
+    'bg-transparent hover:bg-secondary-soft text-text focus-visible:ring-secondary border border-transparent',
   danger:
-    'bg-danger hover:bg-danger-hover text-white shadow-sm focus:ring-danger',
+    'bg-danger hover:bg-danger-hover text-white shadow-xs focus-visible:ring-danger border border-transparent',
   warning:
-    'bg-warning hover:bg-warning-hover text-white shadow-sm focus:ring-warning',
+    'bg-warning hover:bg-warning-hover text-white shadow-xs focus-visible:ring-warning border border-transparent',
   outline:
-    'border border-border bg-transparent hover:bg-secondary-soft text-text focus:ring-primary',
+    'border border-border bg-surface hover:bg-secondary-soft text-text focus-visible:ring-primary shadow-xs',
   success:
-    'bg-success hover:bg-success-hover text-white shadow-sm focus:ring-success',
+    'bg-success hover:bg-success-hover text-white shadow-xs focus-visible:ring-success border border-transparent',
   accent:
-    'bg-accent hover:bg-accent-hover text-white shadow-sm focus:ring-accent',
+    'bg-accent hover:bg-accent-hover text-white shadow-xs focus-visible:ring-accent border border-transparent',
 }
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-xs rounded-sm gap-1.5',
-  md: 'px-4 py-2 text-sm rounded-md gap-2',
-  lg: 'px-5 py-2.5 text-base rounded-lg gap-2.5',
+  xs: 'h-7 px-2.5 text-xs rounded-sm gap-1.5',
+  sm: 'h-8 px-3 py-1 text-xs rounded-md gap-1.5 font-medium',
+  md: 'h-10 px-4 py-2 text-sm rounded-md gap-2 font-medium',
+  lg: 'h-11 px-5 py-2.5 text-base rounded-lg gap-2.5 font-semibold',
 }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  isLoading = false,
-  loading,
-  leftIcon,
-  rightIcon,
-  fullWidth = false,
-  children,
-  disabled,
-  className = '',
-  ...props
-}: ButtonProps) {
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    isLoading = false,
+    loading,
+    leftIcon,
+    rightIcon,
+    fullWidth = false,
+    children,
+    disabled,
+    className = '',
+    ...props
+  },
+  ref
+) {
   const resolvedLoading = isLoading || loading || false
+
   return (
     <button
+      ref={ref}
       disabled={disabled ?? resolvedLoading}
       className={[
-        'inline-flex items-center justify-center font-medium transition-all duration-150',
-        'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface',
-        'disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.99]',
+        'inline-flex items-center justify-center transition-all duration-150 select-none cursor-pointer',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]',
         variants[variant],
         sizes[size],
         fullWidth ? 'w-full' : '',
         className,
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
       {...props}
     >
       {resolvedLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+        <Loader2 className="w-4 h-4 animate-spin shrink-0 text-current" aria-hidden="true" />
       ) : (
-        leftIcon && <span className="shrink-0">{leftIcon}</span>
+        leftIcon && <span className="shrink-0 leading-none">{leftIcon}</span>
       )}
-      {children}
-      {!resolvedLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+      {children && <span className="truncate">{children}</span>}
+      {!resolvedLoading && rightIcon && <span className="shrink-0 leading-none">{rightIcon}</span>}
     </button>
   )
-}
+})

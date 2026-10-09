@@ -9,7 +9,7 @@ import {
   PasoConfirmacion,
   CarritoReserva,
 } from '@/components/reservas'
-import { Stepper, Button, Modal } from '@/components/ui'
+import { Stepper, Button, Modal, FirstUseHint } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { citasService } from '@/services/citas.service'
 import { pagosService } from '@/services/pagos.service'
@@ -159,6 +159,14 @@ function WizardContent() {
           Carrito ({estado.carrito.length})
         </Button>
       </div>
+
+      {/* ── Ayuda Contextual: Duración y Buffers ── */}
+      <FirstUseHint
+        hintKey="citas_buffers"
+        title="Duración Total y Tiempos de Amortiguación (Buffers)"
+        description="Cada cita reserva automáticamente la duración del servicio más los tiempos de preparación y desinfección (buffers antes y después), protegiendo la puntualidad y evitando solapamientos entre especialistas."
+        variant="callout"
+      />
 
       {/* Stepper Wizard */}
       <div className="card p-6 shadow-card">

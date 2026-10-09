@@ -42,20 +42,20 @@ export function Pagination({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 py-3 ${className}`}
+      className={`flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted py-3 ${className}`}
     >
       {totalItems !== undefined && (
         <div>
           Mostrando{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
+          <span className="font-semibold text-text">
             {itemsPerPage ? (currentPage - 1) * itemsPerPage + 1 : 1}
           </span>{' '}
           a{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
+          <span className="font-semibold text-text">
             {itemsPerPage ? Math.min(currentPage * itemsPerPage, totalItems) : totalItems}
           </span>{' '}
           de{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">
+          <span className="font-semibold text-text">
             {totalItems}
           </span>{' '}
           registros
@@ -67,24 +67,25 @@ export function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           aria-label="Página anterior"
-          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded-lg border border-border text-text hover:bg-surface-subtle disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
         {pages.map((p, idx) =>
           p === '...' ? (
-            <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">
+            <span key={`ellipsis-${idx}`} className="px-2 text-text-muted select-none">
               …
             </span>
           ) : (
             <button
               key={`page-${p}`}
               onClick={() => onPageChange(Number(p))}
-              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+              aria-current={currentPage === p ? 'page' : undefined}
+              className={`w-8 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 currentPage === p
-                  ? 'bg-primary-600 text-white font-semibold'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'text-text hover:bg-surface-subtle border border-transparent'
               }`}
             >
               {p}
@@ -96,7 +97,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
           aria-label="Página siguiente"
-          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded-lg border border-border text-text hover:bg-surface-subtle disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

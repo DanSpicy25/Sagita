@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
+import { useSector, SectorId } from '@/context/SectorContext'
 
 export interface PortalHeroProps {
   tabPrincipal: 'reservas' | 'productos' | 'hardware' | 'verticales' | 'modulos'
@@ -23,6 +24,7 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
   const navigate = useNavigate()
   const { isAuthenticated, login } = useAuth()
   const { toast } = useToast()
+  const { sector, setSector, allSectors, playTactileClick } = useSector()
 
   const handleEntrarAdmin = async () => {
     if (isAuthenticated) {
@@ -39,25 +41,25 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
   }
 
   return (
-    <section className="relative overflow-hidden bg-white dark:bg-neutral-950 pt-10 pb-10 sm:pt-20 sm:pb-16 border-b border-black/[0.05] dark:border-white/[0.06]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6 sm:space-y-7">
+    <section className="relative overflow-hidden bg-[#F8F9FA] dark:bg-[#09090B] py-10 sm:py-14 border-b border-zinc-200/80 dark:border-zinc-800">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
         {/* Subtle pill badge */}
-        <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-[11px] sm:text-xs font-medium border border-neutral-200/80 dark:border-neutral-800">
+        <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-[11px] sm:text-xs font-medium border border-zinc-200/80 dark:border-zinc-800">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Plataforma Empresarial Modular • Multi-Industria</span>
         </div>
 
         {/* Confident Headline */}
         <div className="space-y-3 sm:space-y-4">
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-[1.12]">
-            El software que se adapta a tu negocio,{' '}
-            <span className="text-neutral-500 dark:text-neutral-400 font-normal">
-              no tu negocio al software.
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-[1.08]">
+            Tu negocio, a tu manera.
+            <span className="block text-zinc-500 dark:text-zinc-400 font-normal mt-2">
+              Todo lo importante, en un solo lugar.
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed px-1 sm:px-0">
-            Punto de venta táctil, agenda inteligente, expedientes de clientes y control de inventario en una interfaz limpia, rápida y agradable a la vista.
+          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed px-1 sm:px-0">
+            Ventas, inventario, equipo y atención conectados en una experiencia sencilla, cómoda y lista para crecer contigo.
           </p>
         </div>
 
@@ -66,30 +68,77 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
           <button
             type="button"
             onClick={() => {
-              onSelectTab('reservas')
-              const el = document.getElementById('servicios') || document.getElementById('seccion-reserva')
+              const el = document.getElementById('simulador')
               if (el) el.scrollIntoView({ behavior: 'smooth' })
             }}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.98]"
           >
-            <Calendar className="w-4 h-4" />
-            <span>Agendar Cita Online</span>
+            <Store className="w-4 h-4" />
+            <span>Explorar Sagitta</span>
             <ArrowRight className="w-4 h-4 opacity-70" />
           </button>
 
           <button
             type="button"
-            onClick={handleEntrarAdmin}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-neutral-100 hover:bg-neutral-200/80 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-900 dark:text-white border border-neutral-200/80 dark:border-neutral-800 font-semibold text-xs sm:text-sm transition-all"
+            onClick={() => {
+              onSelectTab('reservas')
+              const el = document.getElementById('reserva') || document.getElementById('servicios')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200/90 dark:border-zinc-800 font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.98]"
           >
-            <Sparkles className="w-4 h-4 text-amber-500" />
+            <Calendar className="w-4 h-4" />
+            <span>Ver catálogo y reservas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleEntrarAdmin}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-800 font-semibold text-xs sm:text-sm transition-all"
+          >
+            <Sparkles className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
             <span>Panel Demo (1 Clic)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/demo')}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-800 font-semibold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.98]"
+          >
+            <Sparkles className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+            <span>Demo Center (Ventas)</span>
           </button>
         </div>
 
-        {/* Apple Style Segmented Tab Switcher (Touch Scroll on Mobile) */}
+        <div className="pt-1 space-y-2">
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Elige tu sector para ver Sagitta en acción</p>
+          <div className="overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="inline-flex p-1 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-1">
+              {allSectors.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    playTactileClick()
+                    setSector(item.id as SectorId)
+                  }}
+                  aria-pressed={sector === item.id}
+                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    sector === item.id
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  }`}
+                >
+                  <span>{item.iconEmoji}</span>
+                  <span>{item.id === 'gastronomia' ? 'Gastronomía & Comida Rápida' : item.id === 'retail' ? 'Retail & Moda' : item.id === 'farmacia' ? 'Farmacias' : 'Spas & Estética'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="pt-2 sm:pt-4 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="inline-flex p-1 sm:p-1.5 rounded-2xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-black/[0.04] dark:border-white/[0.06] flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-1 shrink-0">
+          <div className="inline-flex p-1 sm:p-1.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 flex-nowrap sm:flex-wrap justify-start sm:justify-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => onSelectTab('reservas')}
@@ -100,7 +149,7 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Citas & Agenda</span>
+              <span>{sector === 'spa' ? 'Citas & Agenda' : 'Catálogo público'}</span>
             </button>
 
             <button
@@ -158,7 +207,7 @@ export function PortalHero({ tabPrincipal, onSelectTab }: PortalHeroProps) {
         </div>
 
         {/* Quality Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 max-w-3xl mx-auto text-left">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 w-full max-w-7xl mx-auto text-left">
           <div className="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-900/60 p-2.5 rounded-xl border border-neutral-200/60 dark:border-neutral-800/60">
             <Printer className="w-3.5 h-3.5 text-neutral-800 dark:text-neutral-200 shrink-0" />
             <span className="truncate">Térmica Bluetooth (ESC/POS)</span>

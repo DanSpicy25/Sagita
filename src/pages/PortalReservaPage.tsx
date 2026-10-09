@@ -8,6 +8,7 @@ import { citasService } from '@/services/citas.service'
 import { clientesService } from '@/services/clientes.service'
 import { pagosService } from '@/services/pagos.service'
 import { inventarioService } from '@/services/inventario.service'
+import { useSector } from '@/context/SectorContext'
 import type {
   Servicio,
   Empleado,
@@ -20,13 +21,19 @@ import type {
 import {
   PortalHeader,
   PortalHero,
+  PortalProductSimulator,
+  PortalCapabilitiesGrid,
   PortalWizardReserva,
   PortalCatalogoProductos,
   PortalHardwareShowcase,
   PortalVerticalesShowcase,
+  PortalModulosShowcase,
+  PortalPersonalizacionShowcase,
+  PortalRolesShowcase,
+  PortalDemoSection,
+  PortalCtaBanner,
   PortalFooter,
 } from '@/components/portal'
-import { PortalModulosShowcase } from '@/components/portal/PortalModulosShowcase'
 
 function formatLocalDate(date: Date): string {
   const year = date.getFullYear()
@@ -42,6 +49,7 @@ export default function PortalReservaPage() {
 
   const { configuracion, nombreMarca, lemaMarca } = useConfiguracion()
   const { isAuthenticated, user } = useAuth()
+  const { sector, tokens, vocabulario, mockItems } = useSector()
 
   const formatearMoneda = (monto: number) =>
     `${configuracion.simbolo_moneda || '$'}${monto.toFixed(2)}`
@@ -228,7 +236,7 @@ export default function PortalReservaPage() {
 
   // Modo portal completo adaptativo al Sistema Operativo (Pantalla Completa Nativa)
   return (
-    <div className="min-h-screen flex flex-col bg-[#F6F7F9] dark:bg-[#0A0A0C] text-neutral-900 dark:text-neutral-100 selection:bg-neutral-900 selection:text-white font-sans overflow-x-hidden pb-12 sm:pb-16">
+    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-zinc-100 selection:bg-zinc-900 selection:text-white font-sans overflow-x-hidden pb-12 sm:pb-16">
       {/* 0 & 1. Header de Acceso y Marca */}
       <PortalHeader
         configuracion={configuracion}
@@ -244,49 +252,172 @@ export default function PortalReservaPage() {
       {/* 2. Hero Multi-Comercio */}
       <PortalHero
         tabPrincipal={tabPrincipal}
-        onSelectTab={setTabPrincipal}
+        onSelectTab={(tab) => {
+          setTabPrincipal(tab)
+          if (tab === 'reservas') {
+            const el = document.getElementById('reserva')
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
+          }
+        }}
       />
 
       {/* 3. Vistas Principales según Tab */}
       {tabPrincipal === 'reservas' && (
-        <PortalWizardReserva
-          cargando={cargando}
-          servicios={servicios}
-          categorias={categorias}
-          empleados={empleados}
-          extrasCatalogo={extrasCatalogo}
-          slots={slots}
-          cargandoSlots={cargandoSlots}
-          fechaSel={fechaSel}
-          onFechaChange={setFechaSel}
-          empleadoSel={empleadoSel}
-          onEmpleadoChange={setEmpleadoSel}
-          configuracion={configuracion}
-          formatearMoneda={formatearMoneda}
-          onCompletarReserva={handleCompletarReserva}
-          isEmbed={false}
-        />
+        <>
+          {/* 3. Simulador Interactivo de Interfaz */}
+          <div id="simulador">
+            <PortalProductSimulator />
+          </div>
+
+          {/* 4. Capacidades Principales (Grid de 6 pilares) */}
+          <PortalCapabilitiesGrid />
+
+          {/* 5. Adaptación por Vertical de Negocio */}
+          <PortalVerticalesShowcase
+            onIrAReservas={() => {
+              const el = document.getElementById('reserva')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
+          />
+
+          {/* 6. Catálogo de los 18 Módulos */}
+          <div id="modulos">
+            <PortalModulosShowcase />
+          </div>
+
+          {/* 7. Sales Demo Center Showcase */}
+          <PortalDemoSection />
+
+          {/* 8. Personalización & Marca Blanca */}
+          <PortalPersonalizacionShowcase />
+
+          {/* 9. Seguridad & Permisos por Rol */}
+          <PortalRolesShowcase />
+
+          {/* 10. Hardware & Terminal POS */}
+          <div id="hardware">
+            <PortalHardwareShowcase />
+          </div>
+
+          {/* 11. Motor de Agendamiento en Vivo (Preservación de Funcionalidad Real) */}
+          <section id="reserva" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 border-t border-zinc-200/80 dark:border-zinc-800 scroll-mt-16">
+            <div className="text-center max-w-3xl mx-auto space-y-4 mb-8 sm:mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold uppercase tracking-wider border border-primary/20">
+                <span>{sector === 'spa' ? 'Agenda en tiempo real' : `Catálogo de ${tokens.nombre}`}</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                {sector === 'spa'
+                  ? 'Reserva tu próxima visita'
+                  : `Descubre lo que ofrece ${tokens.nombre}`}
+              </h2>
+              <p className="text-text-muted text-sm sm:text-base leading-relaxed">
+                {sector === 'spa'
+                  ? 'Elige un servicio, profesional y horario disponible. Recibirás la confirmación de tu cita al instante.'
+                  : `Explora ${vocabulario.item.toLowerCase()}s y productos de ejemplo. El catálogo se adapta al sector que elegiste arriba.`}
+              </p>
+            </div>
+
+            {sector === 'spa' ? (
+              <PortalWizardReserva
+                cargando={cargando}
+                servicios={servicios}
+                categorias={categorias}
+                empleados={empleados}
+                extrasCatalogo={extrasCatalogo}
+                slots={slots}
+                cargandoSlots={cargandoSlots}
+                fechaSel={fechaSel}
+                onFechaChange={setFechaSel}
+                empleadoSel={empleadoSel}
+                onEmpleadoChange={setEmpleadoSel}
+                configuracion={configuracion}
+                formatearMoneda={formatearMoneda}
+                onCompletarReserva={handleCompletarReserva}
+                isEmbed={false}
+              />
+            ) : (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {mockItems.map((item) => (
+                    <article key={item.id} className="flex flex-col justify-between rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm">
+                      <div>
+                        <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{item.categoria}</span>
+                        <h3 className="mt-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">{item.nombre}</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{item.stockOAtributo}</p>
+                      </div>
+                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-200/80 dark:border-zinc-800 pt-4">
+                        <span className="font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                          {formatearMoneda(item.precio)}
+                        </span>
+                        <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                          {item.codigo}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 sm:px-5">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    Estás viendo un catálogo de demostración. Cada negocio configura sus propios productos, precios y existencias.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const simulator = document.getElementById('simulador')
+                      if (simulator) simulator.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                    className="shrink-0 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-50 shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                  >
+                    Probar catálogo interactivo
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 12. CTA Comercial de Cierre */}
+          <PortalCtaBanner
+            onIrAReservas={() => {
+              const el = document.getElementById('reserva')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
+          />
+        </>
       )}
 
       {tabPrincipal === 'modulos' && (
-        <PortalModulosShowcase />
+        <div className="pt-8">
+          <PortalModulosShowcase />
+        </div>
       )}
 
       {tabPrincipal === 'productos' && (
-        <PortalCatalogoProductos
-          productos={productos}
-          formatearMoneda={formatearMoneda}
-        />
+        <div className="pt-8">
+          <PortalCatalogoProductos
+            productos={productos}
+            formatearMoneda={formatearMoneda}
+          />
+        </div>
       )}
 
       {tabPrincipal === 'hardware' && (
-        <PortalHardwareShowcase />
+        <div className="pt-8">
+          <PortalHardwareShowcase />
+        </div>
       )}
 
       {tabPrincipal === 'verticales' && (
-        <PortalVerticalesShowcase
-          onIrAReservas={() => setTabPrincipal('reservas')}
-        />
+        <div className="pt-8">
+          <PortalVerticalesShowcase
+            onIrAReservas={() => {
+              setTabPrincipal('reservas')
+              setTimeout(() => {
+                const el = document.getElementById('reserva')
+                if (el) el.scrollIntoView({ behavior: 'smooth' })
+              }, 100)
+            }}
+          />
+        </div>
       )}
 
       {/* 4. Footer */}
@@ -296,8 +427,16 @@ export default function PortalReservaPage() {
         lemaMarca={lemaMarca}
         servicios={servicios}
         isAuthenticated={isAuthenticated}
-        onSeleccionarServicio={() => setTabPrincipal('reservas')}
-        onIrAReservas={() => setTabPrincipal('reservas')}
+        onSeleccionarServicio={() => {
+          setTabPrincipal('reservas')
+          const el = document.getElementById('reserva')
+          if (el) el.scrollIntoView({ behavior: 'smooth' })
+        }}
+        onIrAReservas={() => {
+          setTabPrincipal('reservas')
+          const el = document.getElementById('reserva')
+          if (el) el.scrollIntoView({ behavior: 'smooth' })
+        }}
       />
     </div>
   )

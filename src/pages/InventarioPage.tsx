@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import type { Producto, MovimientoStock, AlertaStock, MovimientoInventario } from '@/types'
 import { inventarioService } from '@/services/inventario.service'
-import { Loader } from '@/components/ui'
+import { Loader, FirstUseHint } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import {
   ProductosTab,
@@ -140,6 +140,14 @@ export default function InventarioPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Ayuda Contextual: Umbrales de Stock Mínimo & Reorden ── */}
+      <FirstUseHint
+        hintKey="inventario_umbral"
+        title="Umbrales de Stock Mínimo & Alertas de Reorden"
+        description="Configurar el stock mínimo en cada producto permite al sistema anticiparse al desabastecimiento. Cuando las existencias bajen de ese límite, recibirás avisos visuales automáticos en la pestaña Alertas y en el Punto de Venta (POS)."
+        variant="callout"
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,28 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Plus,
-  Clock,
-  Tag,
   Sparkles,
-  Trash2,
-  Edit2,
   Package,
   Award,
-  Eye,
-  EyeOff,
-  DoorOpen,
-  DollarSign,
+  AlertTriangle,
+  AlertCircle,
 } from 'lucide-react'
 import { Servicio, CategoriaServicio, Empleado } from '@/types'
 import { serviciosService } from '@/services/servicios.service'
 import { empleadosService } from '@/services/empleados.service'
-import { Button, Loader, EmptyState } from '@/components/ui'
-import { ModalServicioComercial } from '@/components/servicios/ModalServicioComercial'
-import { GestionPaquetes } from '@/components/servicios/GestionPaquetes'
-import { GestionMembresias } from '@/components/servicios/GestionMembresias'
+import { citasService } from '@/services/citas.service'
+import { Button, Loader, EmptyState, FirstUseHint, Modal } from '@/components/ui'
+import {
+  ServicioCard,
+  ServiciosFiltrosBar,
+  ServiciosTabla,
+  ModalGestionCategorias,
+  ModalServicioComercial,
+  GestionPaquetes,
+  GestionMembresias,
+  ServiciosFiltros,
+} from '@/components/servicios'
 import { useToast } from '@/hooks/useToast'
 
 type TabServiciosPage = 'servicios' | 'paquetes' | 'membresias'
+
+interface DeleteDialogState {
+  isOpen: boolean
+  servicio: Servicio | null
+  citasCount: number
+  citasActivasCount: number
+  verificando: boolean
+  modo: 'desactivar' | 'eliminar_forzado'
+  procesando: boolean
+}
 
 export default function ServiciosPage() {
   const [tabPrincipal, setTabPrincipal] = useState<TabServiciosPage>('servicios')
@@ -30,16 +42,47 @@ export default function ServiciosPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [categorias, setCategorias] = useState<CategoriaServicio[]>([])
   const [empleados, setEmpleados] = useState<Empleado[]>([])
-  const [categoriaFiltro, setCategoriaFiltro] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
+
+  // Filtros & Vista
+  const [filtros, setFiltros] = useState<ServiciosFiltros>({
+    busqueda: '',
+    categoriaId: 'todas',
+    estado: 'todos',
+    empleadoId: 'todos',
+  })
+
+  const [vistaModo, setVistaModo] = useState<'grid' | 'tabla'>(() => {
+    const saved = localStorage.getItem('sagitta_servicios_view_mode')
+    return saved === 'tabla' ? 'tabla' : 'grid'
+  })
 
   // Modal de servicio comercial
   const [modalAbierto, setModalAbierto] = useState(false)
   const [servicioEditando, setServicioEditando] = useState<Partial<Servicio> | null>(null)
 
+  // Modal de gestión de categorías
+  const [modalCategoriasAbierto, setModalCategoriasAbierto] = useState(false)
+
+  // Estado del diálogo de eliminación segura
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
+    isOpen: false,
+    servicio: null,
+    citasCount: 0,
+    citasActivasCount: 0,
+    verificando: false,
+    modo: 'desactivar',
+    procesando: false,
+  })
+
   const { toast } = useToast()
 
-  const cargarDatos = () => {
+  const handleVistaModoChange = (modo: 'grid' | 'tabla') => {
+    setVistaModo(modo)
+    localStorage.setItem('sagitta_servicios_view_mode', modo)
+  }
+
+  const cargarDatos = useCallback(() => {
     setCargando(true)
     Promise.all([
       serviciosService.getAll(),
@@ -55,12 +98,45 @@ export default function ServiciosPage() {
         toast.error('Error al cargar servicios', err instanceof Error ? err.message : 'Error')
       })
       .finally(() => setCargando(false))
-  }
+  }, [toast])
 
   useEffect(() => {
     cargarDatos()
-  }, [])
+  }, [cargarDatos])
 
+  // Filtrado reactivo en memoria
+  const serviciosFiltrados = useMemo(() => {
+    return servicios.filter((s) => {
+      // 1. Búsqueda de texto libre
+      if (filtros.busqueda.trim()) {
+        const q = filtros.busqueda.toLowerCase().trim()
+        const matchNombre = s.nombre.toLowerCase().includes(q)
+        const matchDesc = s.descripcion?.toLowerCase().includes(q)
+        const matchCat = s.categoria?.nombre.toLowerCase().includes(q)
+        if (!matchNombre && !matchDesc && !matchCat) return false
+      }
+
+      // 2. Filtro por Categoría
+      if (filtros.categoriaId !== 'todas') {
+        if (s.categoria_id !== filtros.categoriaId) return false
+      }
+
+      // 3. Filtro por Estado
+      if (filtros.estado === 'activos' && !s.activo) return false
+      if (filtros.estado === 'inactivos' && s.activo) return false
+
+      // 4. Filtro por Empleado asignado
+      if (filtros.empleadoId !== 'todos') {
+        const empId = Number(filtros.empleadoId)
+        const asignados = s.empleados_compatibles_ids || s.empleados_asignados_ids || []
+        if (!asignados.includes(empId)) return false
+      }
+
+      return true
+    })
+  }, [servicios, filtros])
+
+  // Guardar servicio (Crear o Actualizar)
   const handleGuardarServicio = async (servicioData: Partial<Servicio>) => {
     if (servicioData.id) {
       await serviciosService.update(servicioData.id, servicioData)
@@ -72,63 +148,157 @@ export default function ServiciosPage() {
     cargarDatos()
   }
 
-  const handleEliminar = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este servicio?')) return
+  // Toggle rápido de estado Activo / Inactivo
+  const handleToggleActivo = async (servicio: Servicio, nuevoActivo: boolean) => {
+    // Actualización optimista
+    setServicios((prev) =>
+      prev.map((s) => (s.id === servicio.id ? { ...s, activo: nuevoActivo } : s))
+    )
     try {
-      await serviciosService.delete(id)
-      toast.success('Servicio eliminado', 'El servicio fue retirado del catálogo')
-      cargarDatos()
+      await serviciosService.update(servicio.id, { activo: nuevoActivo })
+      toast.success(
+        nuevoActivo ? 'Servicio activado' : 'Servicio desactivado',
+        `"${servicio.nombre}" ahora está ${nuevoActivo ? 'disponible para reservas' : 'oculto de reservas'}.`
+      )
     } catch (err) {
-      toast.error('Error al eliminar', err instanceof Error ? err.message : 'Error')
+      // Revertir en fallo
+      setServicios((prev) =>
+        prev.map((s) => (s.id === servicio.id ? { ...s, activo: !nuevoActivo } : s))
+      )
+      toast.error('Error al cambiar estado', err instanceof Error ? err.message : 'Error')
     }
   }
 
-  const serviciosFiltrados = categoriaFiltro
-    ? servicios.filter((s) => s.categoria_id === categoriaFiltro)
-    : servicios
+  // Duplicar servicio con sufijo y estado inactivo
+  const handleDuplicar = async (servicio: Servicio) => {
+    const copia: Partial<Servicio> = {
+      ...servicio,
+      id: undefined,
+      nombre: `${servicio.nombre} (Copia)`,
+      activo: false,
+      duraciones: servicio.duraciones?.map((d) => ({
+        ...d,
+        id: undefined as unknown as number,
+        servicio_id: undefined as unknown as number,
+      })),
+    }
+
+    try {
+      const res = await serviciosService.create(copia)
+      toast.success('Servicio duplicado', `Se creó "${copia.nombre}" como borrador inactivo.`)
+      cargarDatos()
+      if (res.data) {
+        setServicioEditando(res.data)
+        setModalAbierto(true)
+      }
+    } catch (err) {
+      toast.error('Error al duplicar servicio', err instanceof Error ? err.message : 'Error')
+    }
+  }
+
+  // Apertura de confirmación segura de eliminación
+  const handleSolicitarEliminar = async (servicio: Servicio) => {
+    setDeleteDialog({
+      isOpen: true,
+      servicio,
+      citasCount: 0,
+      citasActivasCount: 0,
+      verificando: true,
+      modo: 'desactivar',
+      procesando: false,
+    })
+
+    try {
+      const res = await citasService.getAll()
+      const citasDelServicio = (res.data || []).filter((c) => c.servicio_id === servicio.id)
+      const citasActivas = citasDelServicio.filter(
+        (c) => !['completada', 'cancelada', 'no_asistio'].includes(c.estado)
+      )
+
+      setDeleteDialog((prev) => ({
+        ...prev,
+        citasCount: citasDelServicio.length,
+        citasActivasCount: citasActivas.length,
+        verificando: false,
+        modo: citasDelServicio.length > 0 ? 'desactivar' : 'eliminar_forzado',
+      }))
+    } catch {
+      setDeleteDialog((prev) => ({ ...prev, verificando: false }))
+    }
+  }
+
+  // Confirmar acción del diálogo de eliminación
+  const handleConfirmarEliminacion = async () => {
+    if (!deleteDialog.servicio) return
+
+    setDeleteDialog((prev) => ({ ...prev, procesando: true }))
+    try {
+      if (deleteDialog.modo === 'desactivar') {
+        await serviciosService.update(deleteDialog.servicio.id, { activo: false })
+        toast.success(
+          'Servicio archivado y desactivado',
+          `"${deleteDialog.servicio.nombre}" se desactivó para conservar el historial contable.`
+        )
+      } else {
+        await serviciosService.delete(deleteDialog.servicio.id)
+        toast.success(
+          'Servicio eliminado',
+          `"${deleteDialog.servicio.nombre}" fue retirado permanentemente del catálogo.`
+        )
+      }
+      setDeleteDialog((prev) => ({ ...prev, isOpen: false }))
+      cargarDatos()
+    } catch (err) {
+      toast.error('Error al procesar acción', err instanceof Error ? err.message : 'Error')
+    } finally {
+      setDeleteDialog((prev) => ({ ...prev, procesando: false }))
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Principal */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <h1 className="text-2xl font-bold text-text">
             Catálogo Comercial de Servicios
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Gestiona servicios individuales, paquetes de sesiones prepagadas y planes de membresía
+          <p className="text-sm text-text-muted mt-0.5">
+            Gestiona servicios con duraciones flexibles, variantes de precio, paquetes y membresías
           </p>
         </div>
 
         {tabPrincipal === 'servicios' && (
-          <Button
-            onClick={() => {
-              setServicioEditando({
-                nombre: '',
-                descripcion: '',
-                duracion_base_min: 30,
-                precio_base: 50,
-                buffer_antes_min: 0,
-                buffer_despues_min: 5,
-                activo: true,
-                visible_portal_publico: true,
-                capacidad_maxima: 1,
-                impuesto_porcentaje: 16,
-                precio_incluye_impuesto: true,
-                anticipacion_minima_horas: 2,
-                anticipacion_maxima_dias: 30,
-              })
-              setModalAbierto(true)
-            }}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Nuevo Servicio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                setServicioEditando({
+                  nombre: '',
+                  descripcion: '',
+                  duracion_base_min: 30,
+                  precio_base: 50,
+                  buffer_antes_min: 0,
+                  buffer_despues_min: 5,
+                  activo: true,
+                  visible_portal_publico: true,
+                  capacidad_maxima: 1,
+                  impuesto_porcentaje: 16,
+                  precio_incluye_impuesto: true,
+                  anticipacion_minima_horas: 2,
+                  anticipacion_maxima_dias: 30,
+                })
+                setModalAbierto(true)
+              }}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Nuevo Servicio
+            </Button>
+          </div>
         )}
       </div>
 
       {/* Navegación por pestañas superiores */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex items-center gap-2 border-b border-border pb-3">
         {[
           { id: 'servicios', label: `Servicios Individuales (${servicios.length})`, icon: Sparkles },
           { id: 'paquetes', label: 'Paquetes de Sesiones', icon: Package },
@@ -142,10 +312,10 @@ export default function ServiciosPage() {
               type="button"
               onClick={() => setTabPrincipal(tab.id as TabServiciosPage)}
               className={[
-                'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
                 esActiva
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700',
+                  ? 'bg-primary text-white shadow-2xs'
+                  : 'bg-surface text-text-muted hover:text-text hover:bg-surface-subtle border border-border',
               ].join(' ')}
             >
               <Icon className="w-4 h-4" />
@@ -163,184 +333,108 @@ export default function ServiciosPage() {
 
       {/* PESTAÑA: SERVICIOS INDIVIDUALES */}
       {tabPrincipal === 'servicios' && (
-        <div className="space-y-6">
-          {/* Filtro por Categorías */}
-          {categorias.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <button
-                type="button"
-                onClick={() => setCategoriaFiltro(null)}
-                className={[
-                  'px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all',
-                  categoriaFiltro === null
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700',
-                ].join(' ')}
-              >
-                Todas las categorías ({servicios.length})
-              </button>
-              {categorias.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategoriaFiltro(cat.id)}
-                  className={[
-                    'px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5',
-                    categoriaFiltro === cat.id
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700',
-                  ].join(' ')}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {cat.nombre}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="space-y-5">
+          {/* Onboarding / First Use Hint */}
+          <FirstUseHint
+            hintKey="servicios_catalogo_onboarding"
+            title="Catálogo Flexible & Subservicios"
+            description="Configura duraciones y variantes de precios escalonados para cada servicio. Puedes asignar especialistas compatibles, requerir señas o anticipos y desactivar servicios sin alterar tus reportes históricos."
+            variant="banner"
+          />
 
-          {/* Grid de servicios */}
+          {/* Barra de Filtros, Categorías y Modos de Vista */}
+          <ServiciosFiltrosBar
+            filtros={filtros}
+            onFiltrosChange={setFiltros}
+            categorias={categorias}
+            empleados={empleados}
+            totalServicios={servicios.length}
+            serviciosFiltrados={serviciosFiltrados.length}
+            vistaModo={vistaModo}
+            onVistaModoChange={handleVistaModoChange}
+            onAbrirGestionCategorias={() => setModalCategoriasAbierto(true)}
+          />
+
+          {/* Contenido: Loader, Empty State o Catálogo */}
           {cargando ? (
-            <Loader text="Cargando catálogo comercial..." />
+            <div className="py-16">
+              <Loader text="Cargando catálogo comercial y subservicios..." />
+            </div>
           ) : serviciosFiltrados.length === 0 ? (
             <EmptyState
-              title="No hay servicios en esta categoría"
-              description="Crea tu primer servicio con duraciones, recursos y depósitos para comenzar a recibir reservas."
-              actionLabel="Crear Servicio"
+              title={
+                servicios.length === 0
+                  ? 'Tu catálogo de servicios está vacío'
+                  : 'No se encontraron servicios'
+              }
+              description={
+                servicios.length === 0
+                  ? 'Crea tu primer servicio con duraciones, precios escalonados y especialistas asignados para habilitar reservas.'
+                  : 'Prueba ajustando los filtros de búsqueda, estado o categoría seleccionada.'
+              }
+              actionLabel={
+                servicios.length === 0
+                  ? 'Crear Primer Servicio'
+                  : 'Limpiar Filtros'
+              }
               onAction={() => {
-                setServicioEditando({
-                  nombre: '',
-                  descripcion: '',
-                  duracion_base_min: 30,
-                  precio_base: 50,
-                  buffer_antes_min: 0,
-                  buffer_despues_min: 5,
-                  activo: true,
-                })
-                setModalAbierto(true)
+                if (servicios.length === 0) {
+                  setServicioEditando({
+                    nombre: '',
+                    descripcion: '',
+                    duracion_base_min: 30,
+                    precio_base: 50,
+                    buffer_antes_min: 0,
+                    buffer_despues_min: 5,
+                    activo: true,
+                  })
+                  setModalAbierto(true)
+                } else {
+                  setFiltros({
+                    busqueda: '',
+                    categoriaId: 'todas',
+                    estado: 'todos',
+                    empleadoId: 'todos',
+                  })
+                }
               }}
             />
-          ) : (
+          ) : vistaModo === 'grid' ? (
+            /* Vista de Tarjetas */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {serviciosFiltrados.map((serv) => (
-                <div
+                <ServicioCard
                   key={serv.id}
-                  className="card p-5 flex flex-col justify-between hover:shadow-lg transition-all border border-slate-100 dark:border-slate-800"
-                >
-                  <div>
-                    {/* Header de tarjeta */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-sm"
-                          style={{ backgroundColor: serv.color || '#6366f1' }}
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-base text-slate-900 dark:text-slate-100 line-clamp-1">
-                            {serv.nombre}
-                          </h4>
-                          {serv.categoria && (
-                            <span className="text-[10px] font-semibold text-slate-400 block">
-                              {serv.categoria.nombre}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                        ${serv.precio_base}
-                      </span>
-                    </div>
-
-                    {serv.descripcion && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
-                        {serv.descripcion}
-                      </p>
-                    )}
-
-                    {/* Variantes de Duración */}
-                    {serv.duraciones && serv.duraciones.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {serv.duraciones.map((d) => (
-                          <span
-                            key={d.id}
-                            className="text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md"
-                          >
-                            {d.duracion_min}m • ${d.precio}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Insignias de recurso, visibilidad y depósito */}
-                    <div className="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                      {serv.recurso_requerido_tipo && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
-                          <DoorOpen className="w-3 h-3" />
-                          {serv.recurso_requerido_tipo.toUpperCase()}
-                        </span>
-                      )}
-
-                      {serv.requiere_deposito && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded">
-                          <DollarSign className="w-3 h-3" />
-                          Seña: {serv.tipo_deposito === 'porcentaje' ? `${serv.monto_deposito}%` : `$${serv.monto_deposito}`}
-                        </span>
-                      )}
-
-                      {serv.visible_portal_publico ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold px-1.5 py-0.5">
-                          <Eye className="w-3 h-3" /> Portal OK
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-semibold px-1.5 py-0.5">
-                          <EyeOff className="w-3 h-3" /> Privado
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Footer de métricas y botones */}
-                  <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-primary-500" />
-                        {serv.duracion_base_min} min
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Tag className="w-3.5 h-3.5" />
-                        +{serv.buffer_despues_min}m buf
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          setServicioEditando(serv)
-                          setModalAbierto(true)
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 transition-colors"
-                        title="Editar servicio"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleEliminar(serv.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-500 transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  servicio={serv}
+                  empleados={empleados}
+                  onEditar={(s) => {
+                    setServicioEditando(s)
+                    setModalAbierto(true)
+                  }}
+                  onDuplicar={handleDuplicar}
+                  onToggleActivo={handleToggleActivo}
+                  onEliminar={handleSolicitarEliminar}
+                />
               ))}
             </div>
+          ) : (
+            /* Vista de Tabla Compacta */
+            <ServiciosTabla
+              servicios={serviciosFiltrados}
+              empleados={empleados}
+              onEditar={(s) => {
+                setServicioEditando(s)
+                setModalAbierto(true)
+              }}
+              onDuplicar={handleDuplicar}
+              onToggleActivo={handleToggleActivo}
+              onEliminar={handleSolicitarEliminar}
+            />
           )}
         </div>
       )}
 
-      {/* Modal Crear / Editar Servicio Comercial */}
+      {/* Modal Comercial de Servicio (Crear / Editar) */}
       <ModalServicioComercial
         isOpen={modalAbierto}
         onClose={() => {
@@ -351,7 +445,175 @@ export default function ServiciosPage() {
         categorias={categorias}
         empleados={empleados}
         onGuardar={handleGuardarServicio}
+        onAbrirCategorias={() => setModalCategoriasAbierto(true)}
       />
+
+      {/* Modal de Gestión de Categorías Multirubro */}
+      <ModalGestionCategorias
+        isOpen={modalCategoriasAbierto}
+        onClose={() => setModalCategoriasAbierto(false)}
+        categorias={categorias}
+        servicios={servicios}
+        onCategoriasActualizadas={cargarDatos}
+      />
+
+      {/* Diálogo de Eliminación Segura y Protección de Citas */}
+      <Modal
+        isOpen={deleteDialog.isOpen}
+        onClose={() => {
+          if (!deleteDialog.procesando) {
+            setDeleteDialog((prev) => ({ ...prev, isOpen: false }))
+          }
+        }}
+        title="Confirmación de Eliminación"
+        size="md"
+      >
+        <div className="p-5 space-y-4">
+          {deleteDialog.verificando ? (
+            <div className="py-6">
+              <Loader text="Comprobando citas e historial de reservas..." />
+            </div>
+          ) : deleteDialog.citasCount > 0 ? (
+            <>
+              {/* Advertencia de Citas Históricas / Activas */}
+              <div className="p-4 rounded-xl bg-warning-soft border border-warning/30 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold text-text">
+                    Servicio vinculado a reservas activas o históricas
+                  </p>
+                  <p className="text-text-muted">
+                    El servicio <strong className="text-text font-bold">"{deleteDialog.servicio?.nombre}"</strong> registra{' '}
+                    <strong className="text-text font-bold">{deleteDialog.citasCount} citas</strong> en la plataforma
+                    {deleteDialog.citasActivasCount > 0 && (
+                      <span className="text-warning-bold font-semibold">
+                        {' '}({deleteDialog.citasActivasCount} agendadas / activas)
+                      </span>
+                    )}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs text-text-muted">
+                  ¿Qué acción deseas realizar con este servicio?
+                </p>
+
+                {/* Opción 1: Desactivar (Recomendada) */}
+                <label
+                  onClick={() => setDeleteDialog((prev) => ({ ...prev, modo: 'desactivar' }))}
+                  className={[
+                    'flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all',
+                    deleteDialog.modo === 'desactivar'
+                      ? 'border-primary bg-primary-soft/40 shadow-2xs'
+                      : 'border-border bg-surface hover:bg-surface-subtle',
+                  ].join(' ')}
+                >
+                  <input
+                    type="radio"
+                    name="modoEliminar"
+                    checked={deleteDialog.modo === 'desactivar'}
+                    onChange={() => setDeleteDialog((prev) => ({ ...prev, modo: 'desactivar' }))}
+                    className="mt-0.5 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-text">
+                        Desactivar servicio
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 font-semibold">
+                        Recomendado
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      Se retira del catálogo y reservas públicas, pero se preserva todo el historial contable, citas pasadas y reportes.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Opción 2: Eliminar definitivamente */}
+                <label
+                  onClick={() => setDeleteDialog((prev) => ({ ...prev, modo: 'eliminar_forzado' }))}
+                  className={[
+                    'flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all',
+                    deleteDialog.modo === 'eliminar_forzado'
+                      ? 'border-danger bg-danger-soft/30 shadow-2xs'
+                      : 'border-border bg-surface hover:bg-surface-subtle',
+                  ].join(' ')}
+                >
+                  <input
+                    type="radio"
+                    name="modoEliminar"
+                    checked={deleteDialog.modo === 'eliminar_forzado'}
+                    onChange={() => setDeleteDialog((prev) => ({ ...prev, modo: 'eliminar_forzado' }))}
+                    className="mt-0.5 text-danger focus:ring-danger"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-danger">
+                      Eliminar permanentemente del sistema
+                    </span>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      Borrado forzado. Las citas históricas vinculadas perderán la referencia al servicio original.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+                  disabled={deleteDialog.procesando}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant={deleteDialog.modo === 'desactivar' ? 'primary' : 'danger'}
+                  onClick={handleConfirmarEliminacion}
+                  loading={deleteDialog.procesando}
+                >
+                  {deleteDialog.modo === 'desactivar'
+                    ? 'Desactivar Servicio'
+                    : 'Eliminar de Todos Modos'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Sin citas asociadas - Borrado estándar seguro */}
+              <div className="p-4 rounded-xl bg-danger-soft border border-danger/20 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold text-text">
+                    ¿Confirmas que deseas eliminar este servicio?
+                  </p>
+                  <p className="text-text-muted">
+                    El servicio <strong className="text-text font-bold">"{deleteDialog.servicio?.nombre}"</strong> no tiene citas registradas. Se eliminará de forma permanente de tu catálogo.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+                  disabled={deleteDialog.procesando}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleConfirmarEliminacion}
+                  loading={deleteDialog.procesando}
+                >
+                  Eliminar Servicio
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

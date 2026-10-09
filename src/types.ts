@@ -669,12 +669,18 @@ export interface PlantillaMensaje {
 // ─── UI ────────────────────────────────────────────────────────────────────
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 export interface Toast {
   id: string
   type: ToastType
   title: string
   message?: string
   duration?: number
+  action?: ToastAction
 }
 
 export type Theme = 'light' | 'dark' | 'system'
@@ -1372,8 +1378,10 @@ export type ModuleId =
   | 'modulos'
   | 'ajustes'
   | 'hardware'
-  // Planificados (hoja de ruta, sin ruta todavía)
   | 'crm'
+  | 'comisiones'
+  | 'sucursales'
+  // Planificados (hoja de ruta, sin ruta todavía)
   | 'compras'
   | 'fidelizacion'
   | 'marketing'
@@ -1421,6 +1429,8 @@ export interface ModuleDefinition {
   category: ModuleCategory
   /** Ruta principal. Los módulos sin ruta no aparecen en la navegación */
   route?: string
+  /** Ruta opcional directa a la pantalla de configuración o subpestaña */
+  configRoute?: string
   /** Permiso mínimo de lectura (UI). La autorización real es responsabilidad del backend */
   permission?: string
   platformFlag?: PlatformFlag
@@ -1471,6 +1481,7 @@ export interface BusinessProfile {
   industria: IndustryId
   modulos: ModuleId[]
   complementos: string[]
+  terminos_personalizados?: Partial<Record<TermKey, string>>
   updated_at: string
 }
 

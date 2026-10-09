@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
 export interface TooltipProps {
   content: React.ReactNode
   children: React.ReactNode
   position?: 'top' | 'bottom' | 'left' | 'right'
+  delay?: number
   className?: string
 }
 
@@ -11,9 +12,36 @@ export function Tooltip({
   content,
   children,
   position = 'top',
+  delay = 120,
   className = '',
 }: TooltipProps) {
   const [visible, setVisible] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tooltipId = React.useId()
+
+  const handleMouseEnter = () => {
+    timerRef.current = setTimeout(() => {
+      setVisible(true)
+    }, delay)
+  }
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setVisible(false)
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && visible) {
+        setVisible(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [visible])
 
   const positions = {
     top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
@@ -25,16 +53,22 @@ export function Tooltip({
   return (
     <div
       className={`relative inline-flex ${className}`}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onFocus={() => setVisible(true)}
       onBlur={() => setVisible(false)}
+      aria-describedby={visible ? tooltipId : undefined}
     >
       {children}
       {visible && content && (
         <div
+          id={tooltipId}
           role="tooltip"
-          className={`absolute z-50 whitespace-nowrap px-2.5 py-1 text-[11px] font-medium text-white bg-slate-900 dark:bg-slate-800 rounded-md shadow-lg pointer-events-none transition-all duration-150 animate-in fade-in-0 zoom-in-95 ${positions[position]}`}
+          className={[
+            'absolute z-tooltip pointer-events-none whitespace-nowrap px-2.5 py-1 text-xs font-medium',
+            'bg-surface-elevated text-text border border-border shadow-md rounded-md animate-fade-in',
+            positions[position],
+          ].join(' ')}
         >
           {content}
         </div>

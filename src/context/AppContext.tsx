@@ -5,7 +5,12 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import { Theme, Toast, ToastType } from '@/types'
+import { Theme, Toast, ToastAction, ToastType } from '@/types'
+
+export interface ToastOptions {
+  duration?: number
+  action?: ToastAction
+}
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -18,10 +23,11 @@ interface AppContextValue {
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
   toast: {
-    success: (title: string, message?: string) => void
-    error: (title: string, message?: string) => void
-    warning: (title: string, message?: string) => void
-    info: (title: string, message?: string) => void
+    success: (title: string, message?: string, options?: ToastOptions) => void
+    error: (title: string, message?: string, options?: ToastOptions) => void
+    warning: (title: string, message?: string, options?: ToastOptions) => void
+    info: (title: string, message?: string, options?: ToastOptions) => void
+    custom: (toast: Omit<Toast, 'id'>) => void
   }
 }
 
@@ -71,8 +77,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const makeToast = useCallback(
     (type: ToastType) =>
-      (title: string, message?: string) =>
-        addToast({ type, title, message }),
+      (title: string, message?: string, options?: ToastOptions) =>
+        addToast({
+          type,
+          title,
+          message,
+          duration: options?.duration,
+          action: options?.action,
+        }),
     [addToast]
   )
 
@@ -90,6 +102,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         error:   makeToast('error'),
         warning: makeToast('warning'),
         info:    makeToast('info'),
+        custom:  addToast,
       },
     }),
     [theme, setTheme, sidebarOpen, toggleSidebar, toasts, addToast, removeToast, makeToast]

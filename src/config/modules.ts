@@ -23,6 +23,8 @@ import {
   Megaphone,
   UserCircle,
   Printer,
+  Percent,
+  Building2,
   type LucideIcon,
 } from 'lucide-react'
 import type { ModuleCategory, ModuleDefinition, ModuleId, TenantPlan } from '@/types'
@@ -294,6 +296,26 @@ export const MODULES: ModuleDefinition[] = [
       'Lector de códigos de barras HID',
     ],
   },
+  {
+    id: 'comisiones',
+    label: 'Comisiones',
+    description: 'Reglas de comisión por servicio y producto, cálculo automático y liquidación periódica a profesionales.',
+    category: 'ventas',
+    route: '/finanzas',
+    configRoute: '/finanzas?tab=comisiones',
+    permission: 'sales.read',
+    core: false,
+    availability: 'disponible',
+    backend: 'frontend_ready',
+    minPlan: 'pro',
+    dependencies: { technical: ['profesionales'], functional: ['pos', 'servicios'] },
+    capabilities: [
+      'Porcentajes de comisión por servicio y producto',
+      'Cálculo automático en órdenes del POS',
+      'Liquidación periódica por empleado',
+      'Historial de pagos de comisiones',
+    ],
+  },
 
   // ─── Inventario ────────────────────────────────────────────────────────────
   {
@@ -455,6 +477,26 @@ export const MODULES: ModuleDefinition[] = [
     minPlan: 'starter',
     capabilities: ['Marca blanca', 'Paletas y tipografía', 'Widget embebible'],
   },
+  {
+    id: 'sucursales',
+    label: 'Sucursales y Sedes',
+    description: 'Gestión multi-sede, selector de sucursal activa, horarios independientes y aislamiento de agenda.',
+    category: 'configuracion',
+    route: '/configuracion',
+    configRoute: '/configuracion?tab=ubicaciones',
+    permission: 'settings.manage',
+    core: false,
+    availability: 'disponible',
+    backend: 'frontend_ready',
+    minPlan: 'pro',
+    dependencies: { functional: ['recursos', 'profesionales'] },
+    capabilities: [
+      'Multi-tenant con cambio instantáneo de sede',
+      'Aislamiento de citas por ubicación',
+      'Asignación de recursos y personal por sede',
+      'Horarios y festivos específicos por sucursal',
+    ],
+  },
 ]
 
 export const MODULE_ICONS: Record<ModuleId, LucideIcon> = {
@@ -482,6 +524,8 @@ export const MODULE_ICONS: Record<ModuleId, LucideIcon> = {
   desarrolladores: Code2,
   ajustes: Settings,
   hardware: Printer,
+  comisiones: Percent,
+  sucursales: Building2,
 }
 
 const MODULE_INDEX = new Map<ModuleId, ModuleDefinition>(MODULES.map((m) => [m.id, m]))

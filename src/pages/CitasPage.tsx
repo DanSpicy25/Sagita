@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Plus, Calendar as CalIcon, CalendarDays, ListFilter } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus, Calendar as CalIcon, CalendarDays, ListFilter, Clock } from 'lucide-react'
 import type { Cita, VistaCalendario, EstadoCita, Factura, Empleado } from '@/types'
 import { citasService } from '@/services/citas.service'
 import { pagosService } from '@/services/pagos.service'
 import { empleadosService } from '@/services/empleados.service'
 import {
+  CalendarioDiario,
   CalendarioMensual,
   CalendarioSemanal,
   VistaLista,
+  MobileCitaPreviewSheet,
 } from '@/components/calendario'
 import { AgendaFiltrosBar, type AgendaFiltros } from '@/components/calendario/AgendaFiltrosBar'
 import { FacturaModal } from '@/components/pagos/FacturaModal'
@@ -18,14 +20,19 @@ import { Button, Loader } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useConfiguracion } from '@/context/ConfiguracionContext'
 import { useModules } from '@/context/ModulesContext'
+import { useRole } from '@/hooks/useRole'
 
 export default function CitasPage() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { isWorker, currentEmpleadoId, user } = useRole()
   const { configuracion } = useConfiguracion()
   const [citas, setCitas] = useState<Cita[]>([])
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [cargando, setCargando] = useState(true)
   const [vista, setVista] = useState<VistaCalendario>('mes')
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null)
+  const [citaPreviewMobile, setCitaPreviewMobile] = useState<Cita | null>(null)
   const [citaParaReprogramar, setCitaParaReprogramar] = useState<Cita | null>(null)
   const [facturaModal, setFacturaModal] = useState<Factura | null>(null)
 
@@ -48,7 +55,29 @@ export default function CitasPage() {
     ])
       .then(([citasRes, empRes]) => {
         if (citasRes.data) setCitas(citasRes.data)
-        if (empRes.data) setEmpleados(empRes.data)
+        if (empRes.data) {
+          const empList = empRes.data
+          setEmpleados(empList)
+
+          // Si el usuario es un empleado / profesional, preseleccionar su propia agenda
+          if (isWorker) {
+            const matchedEmp = empList.find(
+              (e) =>
+                (currentEmpleadoId && e.id === currentEmpleadoId) ||
+                (user?.id && e.usuario_id === user.id) ||
+                (user?.email && e.email?.toLowerCase() === user.email.toLowerCase())
+            )
+            if (matchedEmp) {
+              setFiltros((prev) => {
+                const urlParam = searchParams.get('empleadoId')
+                if (urlParam) {
+                  return { ...prev, empleadoId: urlParam === 'todos' ? 'todos' : Number(urlParam) }
+                }
+                return { ...prev, empleadoId: matchedEmp.id }
+              })
+            }
+          }
+        }
       })
       .catch((err) => {
         toast.error(`Error al cargar ${citasTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
@@ -95,6 +124,7 @@ export default function CitasPage() {
       await citasService.cancel(id)
       toast.success(`${citaTerm} cancelada`, `La ${citaTerm.toLowerCase()} fue cancelada exitosamente`)
       setCitaSeleccionada(null)
+      setCitaPreviewMobile(null)
       cargarDatos()
     } catch (err) {
       toast.error(`Error al cancelar ${citaTerm.toLowerCase()}`, err instanceof Error ? err.message : 'Error')
@@ -106,6 +136,7 @@ export default function CitasPage() {
       await citasService.update(id, { estado: nuevoEstado })
       toast.success('Estado actualizado', `La ${citaTerm.toLowerCase()} ahora está ${nuevoEstado}`)
       setCitaSeleccionada(null)
+      setCitaPreviewMobile(null)
       cargarDatos()
     } catch (err) {
       toast.error('Error al actualizar estado', err instanceof Error ? err.message : 'Error')
@@ -151,24 +182,25 @@ export default function CitasPage() {
             Agenda de {citasTerm}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Administra tus {citasTerm.toLowerCase()} en calendario mensual, semanal o vista en lista
+            Administra tus {citasTerm.toLowerCase()} en vista diaria, semanal, mensual o en lista
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Selector de vistas */}
+          {/* Selector de 4 vistas */}
           <div className="flex items-center p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <button
-              onClick={() => setVista('mes')}
+              onClick={() => setVista('dia')}
               className={[
                 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
-                vista === 'mes'
+                vista === 'dia'
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
+              aria-label="Vista diaria"
             >
-              <CalendarDays className="w-3.5 h-3.5" />
-              Mes
+              <Clock className="w-3.5 h-3.5" />
+              Día
             </button>
             <button
               onClick={() => setVista('semana')}
@@ -178,9 +210,23 @@ export default function CitasPage() {
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
+              aria-label="Vista semanal"
             >
               <CalIcon className="w-3.5 h-3.5" />
               Semana
+            </button>
+            <button
+              onClick={() => setVista('mes')}
+              className={[
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer',
+                vista === 'mes'
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
+              ].join(' ')}
+              aria-label="Vista mensual"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Mes
             </button>
             <button
               onClick={() => setVista('lista')}
@@ -190,6 +236,7 @@ export default function CitasPage() {
                   ? 'bg-primary-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
               ].join(' ')}
+              aria-label="Vista en lista"
             >
               <ListFilter className="w-3.5 h-3.5" />
               Lista
@@ -204,6 +251,41 @@ export default function CitasPage() {
         </div>
       </div>
 
+      {/* Banner de Contexto Operativo para Trabajadores */}
+      {isWorker && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-surface-elevated border border-primary/20 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+            <span className="text-text font-medium">
+              {filtros.empleadoId !== 'todos'
+                ? 'Vista activa: Tu agenda de trabajo personal.'
+                : 'Vista activa: Agendas de toda la sede.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (filtros.empleadoId !== 'todos') {
+                setFiltros((f) => ({ ...f, empleadoId: 'todos' }))
+              } else {
+                const matchedEmp = empleados.find(
+                  (e) =>
+                    (currentEmpleadoId && e.id === currentEmpleadoId) ||
+                    (user?.id && e.usuario_id === user.id) ||
+                    (user?.email && e.email?.toLowerCase() === user.email.toLowerCase())
+                )
+                if (matchedEmp) {
+                  setFiltros((f) => ({ ...f, empleadoId: matchedEmp.id }))
+                }
+              }
+            }}
+            className="font-semibold text-primary hover:underline cursor-pointer self-start sm:self-auto text-left"
+          >
+            {filtros.empleadoId !== 'todos' ? 'Ver toda la sede' : 'Ver solo mi agenda'}
+          </button>
+        </div>
+      )}
+
       {/* Barra de Filtros Unificada de la Agenda */}
       <AgendaFiltrosBar
         filtros={filtros}
@@ -217,20 +299,39 @@ export default function CitasPage() {
       {/* Vistas del Calendario */}
       {cargando ? (
         <Loader text={`Cargando ${citasTerm.toLowerCase()}...`} />
-      ) : vista === 'mes' ? (
-        <CalendarioMensual
+      ) : vista === 'dia' ? (
+        <CalendarioDiario
           citas={citasFiltradas}
+          empleados={empleados}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
+          onLongPressCita={(c) => setCitaPreviewMobile(c)}
+          onCrearCitaEnFecha={(fecha, hora) => {
+            navigate(hora ? `/citas/nueva?fecha=${fecha}&hora=${hora}` : `/citas/nueva?fecha=${fecha}`)
+          }}
         />
       ) : vista === 'semana' ? (
         <CalendarioSemanal
           citas={citasFiltradas}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
+          onLongPressCita={(c) => setCitaPreviewMobile(c)}
+          onCrearCitaEnFecha={(fecha, hora) => {
+            navigate(hora ? `/citas/nueva?fecha=${fecha}&hora=${hora}` : `/citas/nueva?fecha=${fecha}`)
+          }}
+        />
+      ) : vista === 'mes' ? (
+        <CalendarioMensual
+          citas={citasFiltradas}
+          onSeleccionarCita={(c) => setCitaSeleccionada(c)}
+          onLongPressCita={(c) => setCitaPreviewMobile(c)}
+          onCrearCitaEnFecha={(fecha) => {
+            navigate(`/citas/nueva?fecha=${fecha}`)
+          }}
         />
       ) : (
         <VistaLista
           citas={citasFiltradas}
           onSeleccionarCita={(c) => setCitaSeleccionada(c)}
+          onLongPressCita={(c) => setCitaPreviewMobile(c)}
           onCancelarCita={handleCancelarCita}
         />
       )}
@@ -249,6 +350,33 @@ export default function CitasPage() {
         onVerFactura={handleVerFactura}
         configuracion={configuracion}
         citaTerm={citaTerm}
+      />
+
+      {/* Mobile Bottom Sheet de Vista Previa Táctil */}
+      <MobileCitaPreviewSheet
+        cita={citaPreviewMobile}
+        isOpen={!!citaPreviewMobile}
+        onClose={() => setCitaPreviewMobile(null)}
+        onDetalles={(c: Cita) => {
+          setCitaPreviewMobile(null)
+          setCitaSeleccionada(c)
+        }}
+        onReprogramar={(c: Cita) => {
+          setCitaPreviewMobile(null)
+          setCitaParaReprogramar(c)
+        }}
+        onCobrar={(c: Cita) => {
+          setCitaPreviewMobile(null)
+          handleVerFactura(c)
+        }}
+        onCambiarEstado={(id: number, nuevoEstado: EstadoCita) => {
+          setCitaPreviewMobile(null)
+          handleCambiarEstado(id, nuevoEstado)
+        }}
+        onCancelar={(id: number) => {
+          setCitaPreviewMobile(null)
+          handleCancelarCita(id)
+        }}
       />
 
       {/* Modal Comprobante / Factura */}

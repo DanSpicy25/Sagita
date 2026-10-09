@@ -279,7 +279,7 @@ export function PortalModulosShowcase() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-6 sm:space-y-8">
       {/* Banner Minimalista de Presentación */}
       <div className="bg-neutral-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-10 shadow-sm border border-neutral-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
         <div className="space-y-2 max-w-2xl">

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button, Input, Badge, Loader } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
+import { useSector } from '@/context/SectorContext'
 import type {
   Servicio,
   Empleado,
@@ -89,6 +90,7 @@ export function PortalWizardReserva({
   isEmbed = false,
 }: PortalWizardReservaProps) {
   const { toast } = useToast()
+  const { vocabulario } = useSector()
 
   const [paso, setPaso] = useState<1 | 2 | 3 | 4>(1)
   const [servicioSel, setServicioSel] = useState<Servicio | null>(null)
@@ -234,7 +236,7 @@ export function PortalWizardReserva({
     <>
       <section
         id="seccion-reserva"
-        className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full ${isEmbed ? 'py-4' : 'py-12'}`}
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full ${isEmbed ? 'py-4' : 'py-12 md:py-16'}`}
       >
         {/* Indicador de pasos */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
@@ -248,7 +250,7 @@ export function PortalWizardReserva({
                   : 'text-slate-400'
               }`}
             >
-              1. Servicio
+              1. {vocabulario.singularItem || 'Ítem'}
             </div>
             <div
               className={`p-2 rounded-xl transition-all ${
@@ -259,7 +261,7 @@ export function PortalWizardReserva({
                   : 'text-slate-400'
               }`}
             >
-              2. Horario
+              2. Atención & Horario
             </div>
             <div
               className={`p-2 rounded-xl transition-all ${
@@ -270,7 +272,7 @@ export function PortalWizardReserva({
                   : 'text-slate-400'
               }`}
             >
-              3. Tus Datos
+              3. Confirmación
             </div>
             <div
               className={`p-2 rounded-xl transition-all ${
@@ -279,7 +281,7 @@ export function PortalWizardReserva({
                   : 'text-slate-400'
               }`}
             >
-              4. Confirmada
+              4. Completado
             </div>
           </div>
         </div>
@@ -289,10 +291,10 @@ export function PortalWizardReserva({
           <div id="servicios" className="space-y-6">
             <div className="text-center sm:text-left">
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Elige tu Servicio
+                Selecciona tu {vocabulario.singularItem || 'Ítem'} o Pedido
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Haz clic en el tratamiento o servicio que deseas agendar
+                Explora las opciones de nuestro catálogo y personaliza tu selección
               </p>
             </div>
 
@@ -442,20 +444,23 @@ export function PortalWizardReserva({
           </div>
         )}
 
-        {/* ── PASO 2: PROFESIONAL, FECHA Y HORA ── */}
+        {/* ── PASO 2: ENTREGA, ATENCIÓN Y HORARIO ── */}
         {paso === 2 && servicioSel && (
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                  Paso 2 de 3
+                  Paso 2 de 3 • Datos de Entrega & Atención
                 </span>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  ¿Quién te atenderá y cuándo?
+                  Datos de Entrega & Atención
                 </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Selecciona al profesional o encargado, fecha y horario de atención
+                </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setPaso(1)}>
-                Cambiar servicio
+                Cambiar {vocabulario.singularItem?.toLowerCase() || 'ítem'}
               </Button>
             </div>
 
@@ -677,10 +682,10 @@ export function PortalWizardReserva({
                   Paso 3 de 3 • Confirmación Inmediata
                 </span>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Ingresa tus Datos de Contacto
+                  Confirmación & Datos de Contacto
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Sin contraseñas ni registros obligatorios. Solo necesitamos tus datos para la cita.
+                  Sin contraseñas ni registros obligatorios. Solo necesitamos tus datos para la orden.
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setPaso(2)}>
@@ -816,10 +821,10 @@ export function PortalWizardReserva({
                 Folio Oficial: {folioReserva}
               </span>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white">
-                ¡Tu Cita está Confirmada!
+                ¡Tu {vocabulario.singularUnidad || 'Orden'} está Confirmada!
               </h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-md mx-auto">
-                Hemos reservado tu turno. Te esperamos en la sede en la fecha y hora indicadas.
+                Hemos registrado tu solicitud. Te esperamos o procesamos tu pedido en el horario acordado.
               </p>
             </div>
 

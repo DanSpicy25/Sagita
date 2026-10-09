@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { X } from 'lucide-react'
-import { Button } from './Button'
+import { IconButton } from './IconButton'
 
 export interface ModalProps {
   isOpen: boolean
@@ -58,7 +58,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-fade-in sm:p-4"
+      className="fixed inset-0 z-modal flex items-center justify-center overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-fade-in sm:p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -73,30 +73,28 @@ export function Modal({
       <div
         className={[
           'relative flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden',
-          'bg-surface-elevated text-text border border-border shadow-lg rounded-xl z-10 animate-slide-up sm:max-h-[calc(100dvh-2rem)]',
+          'bg-surface-elevated text-text border border-border shadow-elevated rounded-xl z-10 animate-slide-up sm:max-h-[calc(100dvh-2rem)]',
           maxWidth || sizes[size],
         ].join(' ')}
       >
         {/* Header */}
         {title && (
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 sm:px-6 sm:py-4">
-            <div>
-              <h2 className="text-base sm:text-lg font-semibold text-text font-heading">
+            <div className="min-w-0 pr-2">
+              <h2 className="text-base sm:text-lg font-semibold text-text font-heading leading-snug truncate">
                 {title}
               </h2>
               {description && (
-                <p className="text-xs text-text-muted mt-0.5">{description}</p>
+                <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{description}</p>
               )}
             </div>
-            <Button
+            <IconButton
+              icon={<X className="w-4 h-4" />}
+              aria-label="Cerrar modal"
               variant="ghost"
               size="sm"
               onClick={onClose}
-              aria-label="Cerrar"
-              className="p-1 h-8 w-8 text-text-muted hover:text-text rounded-md"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+            />
           </div>
         )}
 
@@ -107,7 +105,7 @@ export function Modal({
 
         {/* Footer */}
         {footer && (
-          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-secondary-soft/20 px-4 py-3 sm:px-6">
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border bg-surface-subtle/50 px-4 py-3 sm:px-6">
             {footer}
           </div>
         )}

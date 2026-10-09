@@ -7,7 +7,9 @@ import {
   Users,
   Plus,
   Trash2,
-  CheckCircle,
+  CheckCircle2,
+  Tag,
+  Check,
 } from 'lucide-react'
 import {
   Servicio,
@@ -16,19 +18,32 @@ import {
   TipoRecurso,
   DuracionServicio,
 } from '@/types'
-import { Modal, Button, Input, Select } from '@/components/ui'
+import { Modal, Button, Input, Select, Switch } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 
-interface ModalServicioComercialProps {
+export interface ModalServicioComercialProps {
   isOpen: boolean
   onClose: () => void
   servicio: Partial<Servicio> | null
   categorias: CategoriaServicio[]
   empleados: Empleado[]
   onGuardar: (servicio: Partial<Servicio>) => Promise<void>
+  onAbrirCategorias?: () => void
 }
 
 type TabModalServicio = 'general' | 'precios' | 'recursos' | 'politicas'
+
+const PALETA_COLORES = [
+  '#6366f1',
+  '#ec4899',
+  '#10b981',
+  '#f59e0b',
+  '#3b82f6',
+  '#8b5cf6',
+  '#14b8a6',
+  '#ef4444',
+  '#64748b',
+]
 
 export function ModalServicioComercial({
   isOpen,
@@ -37,6 +52,7 @@ export function ModalServicioComercial({
   categorias,
   empleados,
   onGuardar,
+  onAbrirCategorias,
 }: ModalServicioComercialProps) {
   const [tabActiva, setTabActiva] = useState<TabModalServicio>('general')
   const [formData, setFormData] = useState<Partial<Servicio>>({})
@@ -51,6 +67,7 @@ export function ModalServicioComercial({
         activo: servicio.activo ?? true,
         duracion_base_min: servicio.duracion_base_min || 30,
         precio_base: servicio.precio_base || 50,
+        color: servicio.color || '#6366f1',
         buffer_antes_min: servicio.buffer_antes_min || 0,
         buffer_despues_min: servicio.buffer_despues_min || 5,
         capacidad_maxima: servicio.capacidad_maxima || 1,
@@ -70,8 +87,8 @@ export function ModalServicioComercial({
     const nueva: DuracionServicio = {
       id: Date.now(),
       servicio_id: formData.id || 0,
-      duracion_min: 60,
-      precio: (formData.precio_base || 50) * 1.5,
+      duracion_min: (formData.duracion_base_min || 30) + 30,
+      precio: Math.round((formData.precio_base || 50) * 1.5),
       etiqueta: 'Sesión Extendida',
     }
     setDuraciones([...duraciones, nueva])
@@ -102,10 +119,20 @@ export function ModalServicioComercial({
     }
   }
 
+  const handleSeleccionarTodosEmpleados = () => {
+    const todosIds = empleados.map((e) => e.id)
+    const actuales = formData.empleados_compatibles_ids || []
+    if (actuales.length === todosIds.length) {
+      setFormData({ ...formData, empleados_compatibles_ids: [] })
+    } else {
+      setFormData({ ...formData, empleados_compatibles_ids: todosIds })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nombre?.trim() || !formData.precio_base) {
-      toast.warning('Validación', 'El nombre y precio base son obligatorios')
+    if (!formData.nombre?.trim() || formData.precio_base === undefined) {
+      toast.warning('Validación requerida', 'El nombre y precio base son obligatorios')
       setTabActiva('general')
       return
     }
@@ -118,7 +145,7 @@ export function ModalServicioComercial({
       })
       onClose()
     } catch (err) {
-      toast.error('Error', err instanceof Error ? err.message : 'Error al guardar')
+      toast.error('Error al guardar', err instanceof Error ? err.message : 'Error')
     } finally {
       setGuardando(false)
     }
@@ -133,10 +160,10 @@ export function ModalServicioComercial({
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Navegación por pestañas */}
-        <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-700 pb-2">
+        <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto scrollbar-none">
           {[
             { id: 'general', label: 'General & Categoría', icon: Sparkles },
-            { id: 'precios', label: 'Precios, Duraciones & Impuestos', icon: DollarSign },
+            { id: 'precios', label: 'Precios & Subservicios', icon: DollarSign },
             { id: 'recursos', label: 'Recursos & Personal', icon: Layers },
             { id: 'politicas', label: 'Políticas & Depósitos', icon: Shield },
           ].map((tab) => {
@@ -148,107 +175,131 @@ export function ModalServicioComercial({
                 type="button"
                 onClick={() => setTabActiva(tab.id as TabModalServicio)}
                 className={[
-                  'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer',
                   esActiva
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'text-text-muted hover:text-text hover:bg-surface-subtle',
                 ].join(' ')}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                <span>{tab.label}</span>
               </button>
             )
           })}
         </div>
 
-        {/* PESTAÑA 1: GENERAL */}
+        {/* ── PESTAÑA 1: GENERAL ── */}
         {tabActiva === 'general' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Nombre del Servicio"
-                placeholder="Ej: Consulta Médica, Limpieza Facial..."
+                label="Nombre del Servicio *"
+                placeholder="Ej: Consulta Médica, Limpieza Facial, Corte..."
                 value={formData.nombre || ''}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                 required
               />
 
-              <Select
-                label="Categoría"
-                value={formData.categoria_id || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    categoria_id: e.target.value ? Number(e.target.value) : undefined,
-                  })
-                }
-                options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
-                placeholder="Seleccionar categoría..."
-              />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-text">Categoría</label>
+                  {onAbrirCategorias && (
+                    <button
+                      type="button"
+                      onClick={onAbrirCategorias}
+                      className="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>Gestionar categorías</span>
+                    </button>
+                  )}
+                </div>
+                <Select
+                  value={formData.categoria_id || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      categoria_id: e.target.value ? Number(e.target.value) : undefined,
+                    })
+                  }
+                  options={[
+                    { value: '', label: 'Sin categoría clasificada' },
+                    ...categorias.map((c) => ({ value: c.id, label: c.nombre })),
+                  ]}
+                  placeholder="Seleccionar categoría..."
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-text mb-1">
                 Descripción Detallada
               </label>
               <textarea
                 rows={3}
-                placeholder="Explica a tus clientes de qué trata este servicio, qué incluye y los beneficios..."
+                placeholder="Explica qué incluye este servicio, beneficios para el cliente y consideraciones previas..."
                 value={formData.descripcion || ''}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                className="input-base text-xs w-full"
+                className="w-full p-2.5 rounded-xl border border-border bg-surface-subtle text-text text-xs placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-surface transition-all"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center p-3.5 rounded-xl bg-surface-subtle border border-border">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Color Identificador (Agenda)
+                <label className="block text-xs font-medium text-text mb-1.5">
+                  Color Identificador (Agenda y Calendario)
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {PALETA_COLORES.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, color: c })}
+                      className="w-6 h-6 rounded-full border border-border shrink-0 flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+                      style={{ backgroundColor: c }}
+                    >
+                      {formData.color === c && <Check className="w-3.5 h-3.5 text-white" />}
+                    </button>
+                  ))}
                   <input
                     type="color"
                     value={formData.color || '#6366f1'}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-10 h-10 rounded-xl cursor-pointer border border-slate-200 dark:border-slate-700 p-0.5 bg-transparent"
+                    className="w-6 h-6 rounded-full cursor-pointer border border-border p-0 bg-transparent shrink-0 ml-1"
+                    title="Color personalizado"
                   />
-                  <span className="text-xs font-mono text-slate-500">{formData.color || '#6366f1'}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 pt-4">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  <input
-                    type="checkbox"
+              <div className="space-y-2 pt-1 md:pt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-text">Servicio Activo en Catálogo</span>
+                  <Switch
                     checked={formData.activo ?? true}
-                    onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
-                    className="rounded text-primary-600 focus:ring-primary-500"
+                    onChange={(checked) => setFormData({ ...formData, activo: checked })}
                   />
-                  Servicio Activo en Catálogo
-                </label>
+                </div>
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-text">Visible en Portal Público de Clientes</span>
+                  <Switch
                     checked={formData.visible_portal_publico ?? true}
-                    onChange={(e) =>
-                      setFormData({ ...formData, visible_portal_publico: e.target.checked })
+                    onChange={(checked) =>
+                      setFormData({ ...formData, visible_portal_publico: checked })
                     }
-                    className="rounded text-primary-600 focus:ring-primary-500"
                   />
-                  Visible en Portal Público de Clientes
-                </label>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* PESTAÑA 2: PRECIOS, DURACIONES & IMPUESTOS */}
+        {/* ── PESTAÑA 2: PRECIOS & SUBSERVICIOS / VARIANTES ── */}
         {tabActiva === 'precios' && (
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
-                label="Duración Base (minutos)"
+                label="Duración Base (minutos) *"
                 type="number"
                 min="5"
                 step="5"
@@ -258,8 +309,9 @@ export function ModalServicioComercial({
                 }
                 required
               />
+
               <Input
-                label="Precio Base ($)"
+                label="Precio Base ($) *"
                 type="number"
                 min="0"
                 step="1"
@@ -269,6 +321,7 @@ export function ModalServicioComercial({
                 }
                 required
               />
+
               <Input
                 label="Tasa de Impuesto / IVA (%)"
                 type="number"
@@ -281,36 +334,32 @@ export function ModalServicioComercial({
               />
             </div>
 
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={formData.precio_incluye_impuesto ?? true}
-                  onChange={(e) =>
-                    setFormData({ ...formData, precio_incluye_impuesto: e.target.checked })
-                  }
-                  className="rounded text-primary-600 focus:ring-primary-500"
-                />
-                El precio base ya incluye impuesto
-              </label>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-subtle border border-border text-xs">
+              <span className="font-medium text-text">El precio base ya incluye impuesto</span>
+              <Switch
+                checked={formData.precio_incluye_impuesto ?? true}
+                onChange={(checked) =>
+                  setFormData({ ...formData, precio_incluye_impuesto: checked })
+                }
+              />
             </div>
 
-            {/* Variantes de Duración */}
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            {/* Subservicios / Variantes de Duración */}
+            <div className="pt-3 border-t border-border space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100">
-                    Variantes de Duración / Opciones de Sesión
-                  </h5>
-                  <p className="text-[11px] text-slate-400">
-                    Permite a los clientes elegir diferentes duraciones (ej: 30 min, 60 min, 90 min) con precio diferencial.
+                  <h4 className="font-bold text-xs text-text">
+                    Subservicios & Variantes de Duración
+                  </h4>
+                  <p className="text-[11px] text-text-muted">
+                    Permite a tus clientes elegir duraciones o niveles alternativos con precio diferencial.
                   </p>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
                   type="button"
-                  leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  leftIcon={<Plus className="w-3.5 h-3.5 text-primary" />}
                   onClick={handleAgregarDuracion}
                 >
                   Añadir Variante
@@ -318,24 +367,24 @@ export function ModalServicioComercial({
               </div>
 
               {duraciones.length === 0 ? (
-                <p className="text-xs text-slate-400 py-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl text-center">
-                  Solo se utiliza la duración base ({formData.duracion_base_min} min). Haz clic en "Añadir Variante" para crear opciones adicionales.
-                </p>
+                <div className="text-xs text-text-muted py-4 bg-surface-subtle rounded-xl text-center border border-dashed border-border">
+                  Solo se utiliza la duración base ({formData.duracion_base_min} min a ${formData.precio_base}). Haz clic en "Añadir Variante" para crear opciones adicionales (ej. Sesión Express, Sesión Completa).
+                </div>
               ) : (
                 <div className="space-y-2">
                   {duraciones.map((d) => (
                     <div
                       key={d.id}
-                      className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700"
+                      className="flex items-center gap-2.5 p-2.5 bg-surface-subtle rounded-xl border border-border"
                     >
                       <input
                         type="text"
-                        placeholder="Etiqueta (ej: Sesión Corta)"
+                        placeholder="Nombre de variante (ej: Sesión Extendida 60 min)"
                         value={d.etiqueta || ''}
                         onChange={(e) =>
                           handleActualizarDuracion(d.id, { etiqueta: e.target.value })
                         }
-                        className="input-base text-xs flex-1"
+                        className="flex-1 p-1.5 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <div className="flex items-center gap-1 w-28">
                         <input
@@ -347,12 +396,12 @@ export function ModalServicioComercial({
                               duracion_min: Number(e.target.value),
                             })
                           }
-                          className="input-base text-xs w-full"
+                          className="w-full p-1.5 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                        <span className="text-xs text-slate-400">m</span>
+                        <span className="text-xs text-text-muted">min</span>
                       </div>
                       <div className="flex items-center gap-1 w-28">
-                        <span className="text-xs text-slate-400">$</span>
+                        <span className="text-xs text-text-muted">$</span>
                         <input
                           type="number"
                           placeholder="Precio"
@@ -360,13 +409,14 @@ export function ModalServicioComercial({
                           onChange={(e) =>
                             handleActualizarDuracion(d.id, { precio: Number(e.target.value) })
                           }
-                          className="input-base text-xs w-full"
+                          className="w-full p-1.5 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => handleEliminarDuracion(d.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40"
+                        className="p-1.5 text-text-muted hover:text-danger rounded-lg hover:bg-danger-soft transition-colors cursor-pointer"
+                        title="Eliminar variante"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -378,12 +428,12 @@ export function ModalServicioComercial({
           </div>
         )}
 
-        {/* PESTAÑA 3: RECURSOS & PERSONAL */}
+        {/* ── PESTAÑA 3: RECURSOS & PERSONAL ── */}
         {tabActiva === 'recursos' && (
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                label="Tipo de Recurso Requerido"
+                label="Tipo de Recurso Físico Requerido"
                 value={formData.recurso_requerido_tipo || ''}
                 onChange={(e) =>
                   setFormData({
@@ -396,13 +446,13 @@ export function ModalServicioComercial({
                   { value: 'sala', label: 'Consultorio / Sala' },
                   { value: 'cabina', label: 'Cabina Estética / Spa' },
                   { value: 'silla', label: 'Sillón / Puesto de Estilismo' },
-                  { value: 'equipo', label: 'Equipo Especializado / Láser' },
+                  { value: 'equipo', label: 'Equipo Especializado / Máquina' },
                   { value: 'generico', label: 'Recurso Genérico' },
                 ]}
               />
 
               <Input
-                label="Capacidad Máxima Simultánea"
+                label="Capacidad Máxima Simultánea de Clientes"
                 type="number"
                 min="1"
                 value={formData.capacidad_maxima || 1}
@@ -412,51 +462,79 @@ export function ModalServicioComercial({
               />
             </div>
 
-            {/* Profesionales Compatibles */}
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-              <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-primary-500" />
-                Profesionales Habilitados para este Servicio
-              </h5>
-              <p className="text-[11px] text-slate-400">
-                Selecciona qué miembros del equipo pueden prestar este servicio en la agenda.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                {empleados.map((emp) => {
-                  const seleccionado = (formData.empleados_compatibles_ids || []).includes(emp.id)
-                  return (
-                    <div
-                      key={emp.id}
-                      onClick={() => handleToggleEmpleado(emp.id)}
-                      className={[
-                        'flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all',
-                        seleccionado
-                          ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/20 text-primary-900 dark:text-primary-100 font-semibold'
-                          : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-600 dark:text-slate-400',
-                      ].join(' ')}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-600 flex items-center justify-center font-bold text-xs">
-                          {emp.nombre.slice(0, 1)}
-                        </div>
-                        <span className="text-xs">{emp.nombre}</span>
-                      </div>
-                      {seleccionado && <CheckCircle className="w-4 h-4 text-primary-600" />}
-                    </div>
-                  )
-                })}
+            {/* Asignación de Profesionales */}
+            <div className="pt-3 border-t border-border space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-text flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    <span>Personal Habilitado para este Servicio</span>
+                  </h4>
+                  <p className="text-[11px] text-text-muted">
+                    Selecciona qué profesionales pueden prestar este servicio en la agenda.
+                  </p>
+                </div>
+                {empleados.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleSeleccionarTodosEmpleados}
+                    className="text-xs text-primary hover:underline cursor-pointer"
+                  >
+                    {(formData.empleados_compatibles_ids || []).length === empleados.length
+                      ? 'Deseleccionar todos'
+                      : 'Seleccionar todos'}
+                  </button>
+                )}
               </div>
+
+              {empleados.length === 0 ? (
+                <div className="p-4 bg-surface-subtle rounded-xl text-center text-xs text-text-muted border border-dashed border-border">
+                  No hay profesionales registrados aún. Cualquier operador podrá agendar este servicio.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {empleados.map((emp) => {
+                    const seleccionado = (formData.empleados_compatibles_ids || []).includes(emp.id)
+                    return (
+                      <div
+                        key={emp.id}
+                        onClick={() => handleToggleEmpleado(emp.id)}
+                        className={[
+                          'flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all select-none',
+                          seleccionado
+                            ? 'border-primary bg-primary-soft text-primary font-semibold shadow-2xs'
+                            : 'border-border bg-surface hover:bg-surface-subtle text-text',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={[
+                              'w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0',
+                              seleccionado
+                                ? 'bg-primary text-white'
+                                : 'bg-surface-subtle text-text-muted border border-border',
+                            ].join(' ')}
+                          >
+                            {emp.nombre.charAt(0)}
+                          </div>
+                          <span className="text-xs truncate">{emp.nombre}</span>
+                        </div>
+                        {seleccionado && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* PESTAÑA 4: POLÍTICAS & DEPÓSITOS */}
+        {/* ── PESTAÑA 4: POLÍTICAS & DEPÓSITOS ── */}
         {tabActiva === 'politicas' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Buffer Antes (minutos de preparación)"
+                label="Buffer Antes (minutos de preparación previa)"
                 type="number"
                 min="0"
                 value={formData.buffer_antes_min || 0}
@@ -486,7 +564,7 @@ export function ModalServicioComercial({
                 }
               />
               <Input
-                label="Anticipación Máxima Vista (días hacia adelante)"
+                label="Anticipación Máxima Vista en Calendario (días)"
                 type="number"
                 min="1"
                 value={formData.anticipacion_maxima_dias || 30}
@@ -497,21 +575,21 @@ export function ModalServicioComercial({
             </div>
 
             {/* Depósito o Seña */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
-                <input
-                  type="checkbox"
+            <div className="p-4 bg-surface-subtle rounded-xl border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-text">
+                  Requiere Depósito / Seña Previa para Confirmar Cita
+                </span>
+                <Switch
                   checked={formData.requiere_deposito ?? false}
-                  onChange={(e) =>
-                    setFormData({ ...formData, requiere_deposito: e.target.checked })
+                  onChange={(checked) =>
+                    setFormData({ ...formData, requiere_deposito: checked })
                   }
-                  className="rounded text-primary-600 focus:ring-primary-500"
                 />
-                Requiere Depósito / Seña Previa para Confirmar Cita
-              </label>
+              </div>
 
               {formData.requiere_deposito && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border-subtle">
                   <Select
                     label="Modalidad del Depósito"
                     value={formData.tipo_deposito || 'porcentaje'}
@@ -577,8 +655,8 @@ export function ModalServicioComercial({
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+        {/* ── Footer ── */}
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancelar
           </Button>

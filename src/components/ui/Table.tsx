@@ -2,12 +2,31 @@ import React from 'react'
 
 export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
   wrapperClassName?: string
+  dense?: boolean
+  striped?: boolean
 }
 
-export function Table({ className = '', wrapperClassName = '', children, ...props }: TableProps) {
+export function Table({
+  className = '',
+  wrapperClassName = '',
+  children,
+  dense = false,
+  striped = false,
+  ...props
+}: TableProps) {
   return (
-    <div className={`w-full overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800 ${wrapperClassName}`}>
-      <table className={`w-full text-left text-sm text-slate-600 dark:text-slate-300 ${className}`} {...props}>
+    <div className={`w-full overflow-x-auto rounded-xl border border-border bg-surface ${wrapperClassName}`}>
+      <table
+        className={[
+          'w-full text-left text-sm text-text',
+          dense ? 'table-dense' : '',
+          striped ? 'table-striped' : '',
+          className,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        {...props}
+      >
         {children}
       </table>
     </div>
@@ -17,7 +36,7 @@ export function Table({ className = '', wrapperClassName = '', children, ...prop
 export function TableHeader({ className = '', children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={`bg-slate-50/80 dark:bg-slate-800/60 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800 ${className}`}
+      className={`bg-surface-subtle text-[11px] font-semibold text-text-muted uppercase tracking-wider border-b border-border ${className}`}
       {...props}
     >
       {children}
@@ -27,18 +46,34 @@ export function TableHeader({ className = '', children, ...props }: React.HTMLAt
 
 export function TableBody({ className = '', children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <tbody className={`divide-y divide-slate-100 dark:divide-slate-800 ${className}`} {...props}>
+    <tbody className={`divide-y divide-border-subtle ${className}`} {...props}>
       {children}
     </tbody>
   )
 }
 
-export function TableRow({ className = '', hover = true, children, ...props }: React.HTMLAttributes<HTMLTableRowElement> & { hover?: boolean }) {
+export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  hover?: boolean
+  selected?: boolean
+}
+
+export function TableRow({
+  className = '',
+  hover = true,
+  selected = false,
+  children,
+  ...props
+}: TableRowProps) {
   return (
     <tr
-      className={`transition-colors ${
-        hover ? 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40' : ''
-      } ${className}`}
+      className={[
+        'transition-colors duration-100',
+        hover ? 'hover:bg-surface-subtle/70' : '',
+        selected ? 'bg-primary-soft/50' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       {...props}
     >
       {children}
@@ -46,9 +81,18 @@ export function TableRow({ className = '', hover = true, children, ...props }: R
   )
 }
 
-export function TableHead({ className = '', children, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+export function TableHead({
+  className = '',
+  children,
+  scope = 'col',
+  ...props
+}: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th className={`px-4 py-3 whitespace-nowrap ${className}`} {...props}>
+    <th
+      scope={scope}
+      className={`px-4 py-3 whitespace-nowrap text-text-muted font-semibold align-middle ${className}`}
+      {...props}
+    >
       {children}
     </th>
   )
@@ -56,8 +100,16 @@ export function TableHead({ className = '', children, ...props }: React.ThHTMLAt
 
 export function TableCell({ className = '', children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={`px-4 py-3 align-middle ${className}`} {...props}>
+    <td className={`px-4 py-3 align-middle text-text ${className}`} {...props}>
       {children}
     </td>
+  )
+}
+
+export function TableCaption({ className = '', children, ...props }: React.HTMLAttributes<HTMLTableCaptionElement>) {
+  return (
+    <caption className={`p-2 text-xs text-text-muted italic caption-bottom ${className}`} {...props}>
+      {children}
+    </caption>
   )
 }

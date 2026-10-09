@@ -57,180 +57,153 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-950">
-      {/* Left — Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-primary-900 flex-col items-center justify-center p-12 text-white relative">
-        <div className="absolute top-8 left-8">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Volver a la Página de Reservas</span>
-          </Link>
-        </div>
-
-        <div className="max-w-md text-center space-y-6">
-          {configuracion.logo_url ? (
-            <img
-              src={configuracion.logo_url}
-              alt={nombreMarca}
-              className="max-h-20 mx-auto object-contain bg-white/10 p-3 rounded-2xl"
-            />
-          ) : (
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto">
-              <CalendarDays className="w-8 h-8 text-white" />
-            </div>
-          )}
-          <h1 className="text-3xl font-extrabold">{nombreMarca}</h1>
-          <p className="text-primary-200 text-sm leading-relaxed">
-            {lemaMarca || 'Panel administrativo seguro para gestión de citas, sucursales y personal.'}
-          </p>
-
-          <div className="bg-white/10 rounded-2xl p-4 text-left border border-white/10 text-xs space-y-2">
-            <p className="font-semibold text-white flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-amber-300" />
-              <span>Acceso Administrativo y Auditoría</span>
-            </p>
-            <p className="text-primary-100">
-              Este acceso está reservado para directores, administradores de tienda y trabajadores del establecimiento.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right — Login form */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-md space-y-6">
-          {/* Botón superior móvil para volver */}
-          <div className="lg:hidden flex justify-between items-center">
+    <main className="min-h-screen bg-[#F8F9FA] dark:bg-[#09090B]">
+      <div className="w-full max-w-4xl mx-auto min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <section className="w-full bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12">
+        <aside className="md:col-span-5 p-6 sm:p-8 lg:p-10 bg-zinc-50 dark:bg-zinc-950/50 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between gap-8">
+          <div className="space-y-8">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-primary-600 font-medium"
+              className="inline-flex items-center gap-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Ir a Reservas</span>
+              <span>Volver al portal</span>
             </Link>
-          </div>
 
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 mb-2">
-              <KeyRound className="w-3.5 h-3.5 text-primary-500" />
-              <span>Panel de Control Interno</span>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                {configuracion.logo_url ? (
+                  <img src={configuracion.logo_url} alt={nombreMarca} className="max-h-12 max-w-32 object-contain" />
+                ) : (
+                  <div className="w-11 h-11 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">{nombreMarca}</h1>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Gestión clara para tu negocio</p>
+                </div>
+              </div>
+
+              <Badge variant="outline" className="bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700">
+                Plataforma Multi-Industria
+              </Badge>
+              <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                {lemaMarca || 'Una sola plataforma para organizar ventas, equipo, inventario y atención.'}
+              </p>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Iniciar Sesión
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
-              Ingresa tus credenciales autorizadas para acceder al sistema
-            </p>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Correo electrónico"
-              type="email"
-              placeholder="tu@negocio.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-              autoComplete="email"
-              required
-            />
-            <Input
-              label="Contraseña"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              rightIcon={
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/70 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <ShieldAlert className="w-4 h-4 text-zinc-500" />
+              <span>Acceso seguro y por roles</span>
+            </div>
+            <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+              Cada integrante accede únicamente a las herramientas que necesita para trabajar.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {['Gastronomía', 'Retail', 'Farmacias', 'Bienestar'].map((sector) => (
+                <span key={sector} className="px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  {sector}
+                </span>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <div className="md:col-span-7 p-6 sm:p-8 lg:p-10">
+          <div className="max-w-md mx-auto space-y-6">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 mb-3">
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Panel de Control</span>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Iniciar sesión
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                Ingresa tus credenciales para continuar.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Correo electrónico"
+                type="email"
+                placeholder="tu@negocio.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leftIcon={<Mail className="w-4 h-4" />}
+                autoComplete="email"
+                required
+                className="rounded-xl border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm dark:border-zinc-800 dark:bg-zinc-950/50"
+              />
+              <Input
+                label="Contraseña"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                leftIcon={<Lock className="w-4 h-4" />}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="pointer-events-auto hover:text-zinc-900 dark:hover:text-zinc-100"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+                autoComplete="current-password"
+                required
+                className="rounded-xl border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm dark:border-zinc-800 dark:bg-zinc-950/50"
+              />
+
+              <Button
+                type="submit"
+                className="w-full rounded-xl bg-zinc-900 text-zinc-50 hover:bg-zinc-800 active:scale-[0.98] transition-all font-medium shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                isLoading={isLoading}
+                size="lg"
+              >
+                Iniciar Sesión
+              </Button>
+            </form>
+
+            <div className="pt-5 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">Acceso rápido de demostración</span>
+                <Badge variant="outline" className="text-[10px]">Entorno local</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="hover:text-slate-600 dark:hover:text-slate-200"
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  onClick={() => handleAutoCompletar('supremo@demo.app', 'Supremo123!')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/70 px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <ShieldAlert className="w-3.5 h-3.5" /> Supremo
                 </button>
-              }
-              autoComplete="current-password"
-              required
-            />
-
-            <Button type="submit" className="w-full font-bold" isLoading={isLoading} size="lg">
-              Entrar al Panel
-            </Button>
-          </form>
-
-          {/* Selector Rápido de Credenciales Demo (Admin Supremo, Admin Tienda, Trabajador) */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Credenciales Demo Rápidas (1 Clic)
-              </span>
-              <Badge variant="outline">Simulación LocalStorage</Badge>
+                <button
+                  type="button"
+                  onClick={() => handleAutoCompletar('admin@demo.app', 'Admin123!')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/70 px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <Building2 className="w-3.5 h-3.5" /> Admin tienda
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAutoCompletar('empleado@tienda.com', 'Empleado123!')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/70 px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <Briefcase className="w-3.5 h-3.5" /> Equipo
+                </button>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* Botón Admin Supremo */}
-              <button
-                type="button"
-                onClick={() => handleAutoCompletar('supremo@demo.app', 'Supremo123!')}
-                className="p-2.5 rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100/70 dark:hover:bg-purple-900/40 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300 font-bold text-xs mb-0.5">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Supremo</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  supremo@demo.app
-                </p>
-              </button>
-
-              {/* Botón Admin Tienda */}
-              <button
-                type="button"
-                onClick={() => handleAutoCompletar('admin@demo.app', 'Admin123!')}
-                className="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/30 hover:bg-blue-100/70 dark:hover:bg-blue-900/40 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-xs mb-0.5">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Admin Tienda</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  admin@demo.app
-                </p>
-              </button>
-
-              {/* Botón Trabajador */}
-              <button
-                type="button"
-                onClick={() => handleAutoCompletar('empleado@tienda.com', 'Empleado123!')}
-                className="p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-bold text-xs mb-0.5">
-                  <Briefcase className="w-3.5 h-3.5" />
-                  <span>Trabajador</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  empleado@tienda.com
-                </p>
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center pt-2">
-            <Link
-              to="/"
-              className="text-xs text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 font-medium inline-flex items-center gap-1"
-            >
-              <span>← Volver al Portal Público de Reservas</span>
-            </Link>
           </div>
         </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

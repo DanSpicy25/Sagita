@@ -15,7 +15,8 @@ export interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 
 export const Radio = forwardRef<HTMLInputElement, RadioProps>(
   ({ className = '', label, description, error, disabled, id, ...props }, ref) => {
-    const inputId = id || (label ? `radio-${String(label).replace(/\s+/g, '-').toLowerCase()}` : undefined)
+    const generatedId = React.useId()
+    const inputId = id || (label ? `radio-${String(label).replace(/\s+/g, '-').toLowerCase()}` : generatedId)
 
     return (
       <div className={`flex items-start gap-2.5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
@@ -25,7 +26,8 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(
             ref={ref}
             type="radio"
             disabled={disabled}
-            className="w-4 h-4 text-primary-600 border-slate-300 dark:border-slate-700 focus:ring-primary-500 focus:ring-offset-0 dark:bg-slate-800 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            aria-invalid={Boolean(error)}
+            className="w-4 h-4 text-primary border-border bg-surface focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface transition-colors cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />
         </div>
@@ -34,18 +36,18 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(
             {label && (
               <label
                 htmlFor={inputId}
-                className="font-medium text-slate-700 dark:text-slate-300 cursor-pointer block leading-tight"
+                className="font-medium text-text cursor-pointer block leading-tight text-xs sm:text-sm"
               >
                 {label}
               </label>
             )}
             {description && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
                 {description}
               </p>
             )}
             {error && (
-              <p className="text-xs text-red-500 dark:text-red-400 mt-1 font-medium">
+              <p className="text-xs text-danger mt-1 font-medium" role="alert">
                 {error}
               </p>
             )}
@@ -79,6 +81,7 @@ export function RadioGroup({
 }: RadioGroupProps) {
   return (
     <div
+      role="radiogroup"
       className={`flex ${
         direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-2.5'
       } ${className}`}

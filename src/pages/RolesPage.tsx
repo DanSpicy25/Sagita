@@ -13,7 +13,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react'
-import { Badge, Button, Loader, Modal, Input, Textarea, EmptyState } from '@/components/ui'
+import { Badge, Button, Loader, Modal, Input, Textarea, EmptyState, FirstUseHint } from '@/components/ui'
 import { rolesService } from '@/services/roles.service'
 import { Rol, Permiso } from '@/types'
 
@@ -518,6 +518,14 @@ export default function RolesPage() {
           </Button>
         </div>
       </header>
+
+      {/* ── Ayuda Contextual: Principio de Menor Privilegio & Seguridad ── */}
+      <FirstUseHint
+        hintKey="roles_seguridad"
+        title="Principio de Menor Privilegio & Roles del Personal"
+        description="Asigna a los empleados únicamente los permisos indispensables para su labor diaria. Los especialistas solo requieren acceso a sus citas y clientes asignados, protegiendo reportes financieros y ajustes del sistema para la administración."
+        variant="callout"
+      />
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(260px,0.85fr)_minmax(0,1.6fr)]">
         <section className="min-w-0" aria-label="Lista de roles">

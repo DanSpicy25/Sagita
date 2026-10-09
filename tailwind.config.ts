@@ -9,10 +9,12 @@ export default {
     extend: {
       colors: {
         bg: 'var(--color-bg)',
+        background: 'var(--color-bg)',
         surface: {
           DEFAULT: 'var(--color-surface)',
           elevated: 'var(--color-surface-elevated)',
-          dark: '#171d18',
+          subtle: 'var(--color-surface-subtle)',
+          dark: '#121824',
         },
         card: {
           DEFAULT: 'var(--color-surface)',
@@ -21,10 +23,27 @@ export default {
         text: {
           DEFAULT: 'var(--color-text)',
           muted: 'var(--color-text-muted)',
+          subtle: 'var(--color-text-subtle)',
+        },
+        foreground: {
+          DEFAULT: 'var(--color-text)',
+          muted: 'var(--color-text-muted)',
+        },
+        muted: {
+          DEFAULT: 'var(--color-text-muted)',
+          foreground: 'var(--color-text-muted)',
+          surface: 'var(--color-surface-subtle)',
         },
         border: {
           DEFAULT: 'var(--color-border)',
           subtle: 'var(--color-border-subtle)',
+          hover: 'var(--color-border-hover)',
+          focus: 'var(--color-primary)',
+        },
+        neutral: {
+          DEFAULT: 'var(--color-neutral)',
+          hover: 'var(--color-neutral-hover)',
+          soft: 'var(--color-neutral-soft)',
         },
         primary: {
           DEFAULT: 'var(--color-primary)',
@@ -72,6 +91,9 @@ export default {
           hover: 'var(--color-info-hover)',
           soft: 'var(--color-info-soft)',
         },
+        ring: {
+          DEFAULT: 'var(--color-primary)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
@@ -81,30 +103,52 @@ export default {
         mono: ['var(--font-mono)', 'monospace'],
       },
       borderRadius: {
+        xs: 'var(--radius-xs)',
         sm: 'var(--radius-sm)',
         DEFAULT: 'var(--radius-md)',
         md: 'var(--radius-md)',
         lg: 'var(--radius-lg)',
         xl: 'var(--radius-xl)',
-        '2xl': 'calc(var(--radius-xl) * 1.25)',
+        '2xl': 'var(--radius-2xl)',
         full: 'var(--radius-full)',
       },
       boxShadow: {
+        xs: 'var(--shadow-xs)',
         sm: 'var(--shadow-sm)',
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
         soft: 'var(--shadow-soft)',
         card: 'var(--shadow-card)',
+        elevated: 'var(--shadow-elevated)',
+      },
+      zIndex: {
+        base: 'var(--z-base)',
+        elevated: 'var(--z-elevated)',
+        sticky: 'var(--z-sticky)',
+        header: 'var(--z-header)',
+        drawer: 'var(--z-drawer)',
+        'modal-backdrop': 'var(--z-modal-backdrop)',
+        modal: 'var(--z-modal)',
+        popover: 'var(--z-popover)',
+        tooltip: 'var(--z-tooltip)',
+        toast: 'var(--z-toast)',
       },
       animation: {
-        'fade-in':    'fadeIn 0.2s ease-out',
-        'slide-up':   'slideUp 0.25s ease-out',
-        'slide-down': 'slideDown 0.25s ease-out',
+        'fade-in':    'fadeIn 0.2s cubic-bezier(0, 0, 0.2, 1)',
+        'slide-up':   'slideUp 0.22s cubic-bezier(0, 0, 0.2, 1)',
+        'slide-down': 'slideDown 0.22s cubic-bezier(0, 0, 0.2, 1)',
+        'slide-right': 'slideRight 0.24s cubic-bezier(0, 0, 0.2, 1)',
+        'scale-in':   'scaleIn 0.18s cubic-bezier(0, 0, 0.2, 1)',
+        'shimmer':    'shimmer 2s infinite linear',
       },
       keyframes: {
         fadeIn:    { from: { opacity: '0' }, to: { opacity: '1' } },
-        slideUp:   { from: { opacity: '0', transform: 'translateY(12px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
-        slideDown: { from: { opacity: '0', transform: 'translateY(-12px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        slideUp:   { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        slideDown: { from: { opacity: '0', transform: 'translateY(-8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        slideRight: { from: { opacity: '0', transform: 'translateX(100%)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+        scaleIn:   { from: { opacity: '0', transform: 'scale(0.96)' }, to: { opacity: '1', transform: 'scale(1)' } },
+        shimmer:   { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
       }
     },
   },
