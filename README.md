@@ -15,6 +15,7 @@
 - [Seguridad, Sanitización y Permisos](#-seguridad-sanitización-y-permisos)
 - [Stack Tecnológico y Dependencias](#-stack-tecnológico-y-dependencias)
 - [Instalación y Ejecución](#-instalación-y-ejecución)
+- [Vistas previas de Cloudflare](#-vistas-previas-de-cloudflare)
 - [Suite de Pruebas Unitarias](#-suite-de-pruebas-unitarias)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Contrato de API REST](#-contrato-de-api-rest)
@@ -150,19 +151,16 @@ Para conferir una apariencia industrial, comercial y rigurosamente estructurada,
 
 ---
 
-## 🌐 Portal de Entrada & Experiencia Multi-Comercio (`/`)
+## 🌐 Portal Público y Experiencia Multiindustria (`/`)
 
-El punto de entrada raíz de la aplicación (`http://localhost:5173/`) fue transformado de un simple wizard de spa a una **Plataforma Integral de Comercio & Demostración para Socios y Clientes**:
-- **Barra Superior Ejecutiva Sagitta:** Banner permanente con accesos directos a **Punto de Venta (`/ventas`)**, **Inventario `#PRD` (`/inventario`)**, **Hardware & Bluetooth (`/hardware`)**, y **Panel de Control (`/dashboard`)** o **Inicio de Sesión (`/login`)**.
-- **Navegación Unificada:** Navbar comercial con selector de sucursal, botón de acceso directo al POS y acceso staff.
-- **Hero Comercial Adaptativo:** Presentación de la plataforma para 4 grandes industrias:
-  - 🍔 **Puestos de Comida Rápida & Food Trucks:** Comandas de cocina y cobros express.
-  - ✂️ **Salones de Belleza & Estéticas:** Agendamiento web sin registros obligatorios.
-  - 🏪 **Minimarkets & Retail:** Inventario `#PRD`, lectores de barras y apertura de gaveta.
-  - 🏥 **Clínicas & Consultorios:** Expediente de pacientes y recibos fiscales.
-- **Catálogo Público de Productos (#PRD):** Pestaña interactiva con buscador en vivo, categorías, niveles de stock y botón directo para cobrar en el POS.
-- **Laboratorio de Hardware Showcase:** Espacio informativo y de prueba interactiva de impresoras y periféricos.
-- **Footer Corporativo de 4 Columnas:** Enlaces transparentes a todas las herramientas del sistema.
+La portada presenta Sagitta como una plataforma de gestión adaptable a distintos tipos de negocio. La experiencia pública comparte el selector de sector con el simulador y ajusta el contenido visible según la industria:
+- **Sectores disponibles en la experiencia:** Gastronomía, Retail/Moda, Farmacias y Spas/Clínicas.
+- **Simulador interactivo:** Al cambiar el sector se actualizan los indicadores y la actividad de ejemplo para mostrar flujos propios del rubro.
+- **Portal público contextual:** Spa conserva el flujo de reservas existente. Los demás sectores muestran un catálogo de demostración; no se procesa una compra pública real.
+- **Acceso de personal:** La pantalla `/login` ofrece una presentación adaptable a escritorio y móvil, con accesos de demostración.
+- **Navegación móvil:** El menú principal se presenta como un panel lateral para facilitar su uso en pantallas pequeñas.
+
+Los datos del simulador y los catálogos de demostración son ejemplos de interfaz y no representan transacciones reales.
 
 ---
 
@@ -226,6 +224,16 @@ npm run build
 # 5. Previsualizar compilación de producción
 npm run preview
 ```
+
+---
+
+## ☁️ Vistas previas de Cloudflare
+
+Los cambios en ramas distintas de la rama de producción pueden publicarse como una vista previa si Cloudflare Pages tiene habilitados los despliegues de preview para el repositorio.
+
+La rama `feature/cloudflare-preview` contiene la versión de trabajo actual. Después de cada `push`, Cloudflare construye un despliegue de preview; su URL está disponible en el panel de Pages o en el estado del commit de GitHub. Revisar la URL de preview permite validar los cambios antes de integrarlos en la rama de producción.
+
+La URL exacta depende de la configuración del proyecto de Cloudflare y puede cambiar entre despliegues.
 
 ---
 
