@@ -15,7 +15,7 @@ export function Table({
   ...props
 }: TableProps) {
   return (
-    <div className={`w-full overflow-x-auto rounded-xl border border-border bg-surface ${wrapperClassName}`}>
+    <div className={`w-full overflow-x-auto rounded-xl border border-border/80 bg-surface shadow-card ${wrapperClassName}`}>
       <table
         className={[
           'w-full text-left text-sm text-text',
@@ -36,7 +36,7 @@ export function Table({
 export function TableHeader({ className = '', children, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={`bg-surface-subtle text-[11px] font-semibold text-text-muted uppercase tracking-wider border-b border-border ${className}`}
+      className={`bg-black/[0.025] dark:bg-white/[0.04] text-[10px] font-bold text-text-muted uppercase tracking-[0.14em] border-b border-border/80 ${className}`}
       {...props}
     >
       {children}

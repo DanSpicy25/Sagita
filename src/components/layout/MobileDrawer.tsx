@@ -64,7 +64,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     >
       <div className="space-y-4 py-1">
         {/* User Card Summary */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-subtle border border-border-subtle">
+        <div className="flex items-center gap-3 p-3.5 rounded-[22px] bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08]">
           <Avatar
             src={user?.avatar}
             name={user?.nombre}
@@ -88,7 +88,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
         {/* Branch Context Switcher */}
         <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted px-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted px-1">
             Sede Activa
           </span>
           <div>
@@ -98,7 +98,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
         {/* Global Sector Switcher (Camaleónico) */}
         <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted px-1">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted px-1">
             Sector Comercial
           </span>
           <div>
@@ -114,11 +114,11 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
             return (
               <section key={cat.id} className="space-y-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted px-2 block">
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted/80 dark:text-white/40 px-2 block">
                   {cat.label}
                 </span>
 
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {categoryModules.map((mod) => {
                     const Icon = MODULE_ICONS[mod.id]
                     const label = mod.termKey ? tTerm(mod.termKey, mod.label) : mod.label
@@ -129,14 +129,16 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                         to={mod.route!}
                         onClick={onClose}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                          `flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-medium transition-all ios-press ${
                             isActive
-                              ? 'bg-primary-soft text-primary font-semibold border-l-2 border-primary'
-                              : 'text-text-muted hover:bg-surface-subtle hover:text-text'
+                              ? 'bg-primary-soft text-primary font-semibold'
+                              : 'text-text/75 dark:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text'
                           }`
                         }
                       >
-                        <Icon className="w-4 h-4 shrink-0" />
+                        <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-black/[0.04] dark:bg-white/[0.06]">
+                          <Icon className="w-4 h-4 shrink-0" />
+                        </span>
                         <span className="truncate">{label}</span>
                       </NavLink>
                     )
@@ -150,4 +152,3 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     </Drawer>
   )
 }
-

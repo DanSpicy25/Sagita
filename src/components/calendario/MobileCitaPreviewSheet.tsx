@@ -12,9 +12,10 @@ import {
   Receipt,
   FileText,
   Eye,
+  X,
 } from 'lucide-react'
 import { Cita, EstadoCita } from '@/types'
-import { BottomSheet, Button, Badge } from '@/components/ui'
+import { Button, Badge } from '@/components/ui'
 import { getEstadoConfig } from './CitaBlock'
 
 export interface MobileCitaPreviewSheetProps {
@@ -44,7 +45,7 @@ export function MobileCitaPreviewSheet({
 }: MobileCitaPreviewSheetProps) {
   const navigate = useNavigate()
 
-  if (!cita) return null
+  if (!isOpen || !cita) return null
 
   const config = getEstadoConfig(cita.estado)
   const StatusIcon = config.icon
@@ -67,20 +68,41 @@ export function MobileCitaPreviewSheet({
   }
 
   return (
-    <BottomSheet
-      isOpen={isOpen}
-      onClose={onClose}
-      title={
-        <div className="flex items-center gap-2">
-          <span>{cita.servicio?.nombre || 'Detalle de Cita'}</span>
-          <Badge variant="primary" size="sm" className="font-mono">
-            #CIT-{String(cita.id).padStart(4, '0')}
-          </Badge>
-        </div>
-      }
-      description={`${fechaStr} • ${horaInicio}${horaFin ? ` - ${horaFin}` : ''}`}
+    <div
+      className="fixed inset-0 z-modal flex items-center justify-center p-3.5 sm:p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+      onClick={onClose}
     >
-      <div className="space-y-4 py-2 text-xs">
+      <div
+        className="w-full max-w-lg rounded-2xl bg-surface border border-border shadow-elevated overflow-hidden max-h-[90vh] flex flex-col animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header centrado */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border bg-surface-subtle/50">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-text text-base sm:text-lg">
+                {cita.servicio?.nombre || 'Detalle de Cita'}
+              </h3>
+              <Badge variant="primary" size="sm" className="font-mono">
+                #CIT-{String(cita.id).padStart(4, '0')}
+              </Badge>
+            </div>
+            <p className="text-xs text-text-muted mt-0.5 capitalize">
+              {fechaStr} • {horaInicio}{horaFin ? ` - ${horaFin}` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-subtle transition-colors cursor-pointer"
+            aria-label="Cerrar modal de cita"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Contenido scrolleable centrado */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs flex-1">
         {/* ── Status Banner Card ── */}
         <div
           className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${config.bgClass} ${config.borderClass} border-l-4`}
@@ -261,7 +283,8 @@ export function MobileCitaPreviewSheet({
           </div>
         </div>
       </div>
-    </BottomSheet>
-  )
+    </div>
+  </div>
+)
 }
 

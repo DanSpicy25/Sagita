@@ -59,14 +59,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={[
-            'w-full px-3 py-2 text-sm bg-surface text-text rounded-md border transition-all duration-150',
-            'placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface',
-            'disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-surface-subtle',
+            'w-full px-3.5 py-2.5 text-sm bg-black/[0.035] dark:bg-white/[0.06] text-text rounded-2xl border transition-all duration-150',
+            'placeholder:text-text-muted/60 focus:outline-none focus:bg-white dark:focus:bg-[#1C1C1E] focus:ring-2 focus:ring-primary/25 focus:border-primary',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-surface-subtle',
             error
               ? 'border-danger focus:border-danger focus:ring-danger/20 text-danger'
-              : 'border-border hover:border-border-hover focus:border-primary focus:ring-primary-soft',
-            leftIcon ? 'pl-9' : '',
-            rightIcon || (clearable && hasValue) ? 'pr-9' : '',
+              : 'border-black/[0.06] dark:border-white/[0.1] hover:border-black/[0.12] dark:hover:border-white/[0.2]',
+            leftIcon ? 'pl-9.5' : '',
+            rightIcon || (clearable && hasValue) ? 'pr-9.5' : '',
             className,
           ]
             .filter(Boolean)

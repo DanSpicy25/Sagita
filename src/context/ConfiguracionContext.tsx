@@ -11,7 +11,10 @@ import {
   PaletaColor,
   TemaConfig,
 } from '@/types'
-import { configuracionService } from '@/services/configuracion.service'
+import {
+  configuracionService,
+  migrateLegacySagittaConfig,
+} from '@/services/configuracion.service'
 import { useTenant } from '@/context/TenantContext'
 import {
   applyTheme,
@@ -77,7 +80,7 @@ export const CONFIGURACION_DEFAULT: ConfiguracionMarcaBlanca = {
   favicon_url: '',
   color_primario: '#18181B',
   paleta_predefinida: 'slate',
-  fuente_tipografica: 'Inter',
+  fuente_tipografica: 'DM Sans',
   radio_esquinas: 'moderno',
   densidad: 'comfortable',
   sombras: 'subtle',
@@ -139,10 +142,18 @@ export function ConfiguracionProvider({ children }: { children: React.ReactNode 
   const [configuracion, setConfiguracion] = useState<ConfiguracionMarcaBlanca>(() => {
     try {
       const tenantSaved = localStorage.getItem(getTenantStorageKey(tenantId))
-      if (tenantSaved) return JSON.parse(tenantSaved)
+      if (tenantSaved) {
+        const config = migrateLegacySagittaConfig(JSON.parse(tenantSaved))
+        localStorage.setItem(getTenantStorageKey(tenantId), JSON.stringify(config))
+        return config
+      }
 
       const globalSaved = localStorage.getItem(GLOBAL_STORAGE_KEY)
-      if (globalSaved) return JSON.parse(globalSaved)
+      if (globalSaved) {
+        const config = migrateLegacySagittaConfig(JSON.parse(globalSaved))
+        localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(config))
+        return config
+      }
 
       return CONFIGURACION_DEFAULT
     } catch {
@@ -161,7 +172,13 @@ export function ConfiguracionProvider({ children }: { children: React.ReactNode 
     try {
       const tenantSaved = localStorage.getItem(getTenantStorageKey(tenantId))
       if (tenantSaved) {
-        const parsed = JSON.parse(tenantSaved)
+        const parsed = migrateLegacySagittaConfig(JSON.parse(tenantSaved))
+        localStorage.setItem(getTenantStorageKey(tenantId), JSON.stringify(parsed))
+        const globalSaved = localStorage.getItem(GLOBAL_STORAGE_KEY)
+        if (globalSaved) {
+          const globalConfig = migrateLegacySagittaConfig(JSON.parse(globalSaved))
+          localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(globalConfig))
+        }
         setConfiguracion(parsed)
         const t = configuracionToTema(parsed)
         setTema(t)

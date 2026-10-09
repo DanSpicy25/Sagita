@@ -48,25 +48,25 @@ export function Stat({
     <div
       onClick={onClick}
       className={[
-        'p-4 sm:p-5 rounded-xl bg-surface border border-border shadow-card transition-all duration-200 flex flex-col justify-between',
-        onClick ? 'hover:shadow-md hover:border-border-hover cursor-pointer' : '',
+        'p-4 sm:p-5 rounded-xl bg-surface border border-border/70 shadow-card transition-all duration-200 flex flex-col justify-between',
+        onClick ? 'hover:shadow-md hover:border-border-hover cursor-pointer ios-press' : '',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider line-clamp-1">
+        <span className="text-[11px] font-bold text-text-muted uppercase tracking-[0.12em] line-clamp-1">
           {title}
         </span>
         {icon && (
-          <div className="w-8 h-8 rounded-lg bg-surface-subtle border border-border/50 flex items-center justify-center text-text-muted shrink-0">
+          <div className="w-9 h-9 rounded-2xl bg-black/[0.035] dark:bg-white/[0.06] border border-border/50 flex items-center justify-center text-text-muted shrink-0">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-2.5">
+      <div className="mt-3">
         <div className="text-2xl sm:text-3xl font-bold text-text font-heading tracking-tight leading-none">
           {value}
         </div>
@@ -75,7 +75,7 @@ export function Stat({
           <div className="mt-2.5 flex items-center gap-2 flex-wrap text-xs">
             {change !== undefined && (
               <span
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-semibold border ${changeStyles[resolvedType]}`}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${changeStyles[resolvedType]}`}
               >
                 {changeIcon[resolvedType]}
                 <span>
@@ -95,4 +95,3 @@ export function Stat({
     </div>
   )
 }
-

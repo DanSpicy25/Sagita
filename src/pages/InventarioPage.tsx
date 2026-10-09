@@ -6,6 +6,7 @@ import {
   RefreshCw,
   Truck,
   Layers,
+  ArrowUpRight,
 } from 'lucide-react'
 import type { Producto, MovimientoStock, AlertaStock, MovimientoInventario } from '@/types'
 import { inventarioService } from '@/services/inventario.service'
@@ -134,8 +135,8 @@ export default function InventarioPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Inventario & Suministro</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Inventario y productos</h1>
+          <p className="text-base text-slate-500 dark:text-slate-400 mt-1">
             Gestión integral de catálogo, trazabilidad Kardex, órdenes de compra y fórmulas BOM
           </p>
         </div>
@@ -146,12 +147,12 @@ export default function InventarioPage() {
         hintKey="inventario_umbral"
         title="Umbrales de Stock Mínimo & Alertas de Reorden"
         description="Configurar el stock mínimo en cada producto permite al sistema anticiparse al desabastecimiento. Cuando las existencias bajen de ese límite, recibirás avisos visuales automáticos en la pestaña Alertas y en el Punto de Venta (POS)."
-        variant="callout"
+        variant="banner"
       />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5 border border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={() => setTab('productos')} className="card w-full p-5 border border-slate-100 dark:border-slate-800 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 flex items-center justify-center">
               <Package className="w-5 h-5" />
@@ -164,9 +165,10 @@ export default function InventarioPage() {
             {productos.filter((p) => p.activo).length}
           </p>
           <p className="text-xs text-slate-400 mt-1">Productos en catálogo</p>
-        </div>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">Abrir catálogo <ArrowUpRight className="h-3.5 w-3.5" /></span>
+        </button>
 
-        <div className="card p-5 border border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={() => setTab('alertas')} className="card w-full p-5 border border-slate-100 dark:border-slate-800 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5" />
@@ -177,9 +179,10 @@ export default function InventarioPage() {
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{kpiStockCritico}</p>
           <p className="text-xs text-slate-400 mt-1">Productos bajo stock mínimo</p>
-        </div>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">Revisar alertas <ArrowUpRight className="h-3.5 w-3.5" /></span>
+        </button>
 
-        <div className="card p-5 border border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={() => setTab('productos')} className="card w-full p-5 border border-slate-100 dark:border-slate-800 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
               <PackagePlus className="w-5 h-5" />
@@ -192,9 +195,10 @@ export default function InventarioPage() {
             ${kpiValorInventario.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p className="text-xs text-slate-400 mt-1">Valor de inventario (costo)</p>
-        </div>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">Ver productos <ArrowUpRight className="h-3.5 w-3.5" /></span>
+        </button>
 
-        <div className="card p-5 border border-slate-100 dark:border-slate-800">
+        <button type="button" onClick={() => setTab('movimientos')} className="card w-full p-5 border border-slate-100 dark:border-slate-800 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <div className="flex items-start justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
               <RefreshCw className="w-5 h-5" />
@@ -205,7 +209,8 @@ export default function InventarioPage() {
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{movimientos.length}</p>
           <p className="text-xs text-slate-400 mt-1">Movimientos registrados</p>
-        </div>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">Abrir Kardex <ArrowUpRight className="h-3.5 w-3.5" /></span>
+        </button>
       </div>
 
       {/* Navigation Tabs */}

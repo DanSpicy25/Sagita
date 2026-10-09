@@ -13,7 +13,7 @@ const DEFAULT_CONFIG: ConfiguracionMarcaBlanca = {
   favicon_url: '',
   color_primario: '#18181B',
   paleta_predefinida: 'slate',
-  fuente_tipografica: 'Inter',
+  fuente_tipografica: 'DM Sans',
   radio_esquinas: 'moderno',
   marca_blanca_activa: false,
   ocultar_marca_sistema: false,
@@ -32,10 +32,25 @@ const DEFAULT_CONFIG: ConfiguracionMarcaBlanca = {
   url_privacidad: 'https://sagitta.com/privacidad',
 }
 
+export function migrateLegacySagittaConfig(
+  config: ConfiguracionMarcaBlanca
+): ConfiguracionMarcaBlanca {
+  const isLegacyDefault =
+    config.nombre_negocio === 'Sagitta' &&
+    config.fuente_tipografica === 'Inter' &&
+    config.color_primario === '#18181B' &&
+    config.paleta_predefinida === 'slate' &&
+    config.marca_blanca_activa === false
+
+  return isLegacyDefault ? { ...config, fuente_tipografica: 'DM Sans' } : config
+}
+
 function getStoredConfig(): ConfiguracionMarcaBlanca {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? { ...DEFAULT_CONFIG, ...JSON.parse(raw) } : DEFAULT_CONFIG
+    return raw
+      ? migrateLegacySagittaConfig({ ...DEFAULT_CONFIG, ...JSON.parse(raw) })
+      : DEFAULT_CONFIG
   } catch {
     return DEFAULT_CONFIG
   }

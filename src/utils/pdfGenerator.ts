@@ -451,7 +451,7 @@ export function visualizarCitaPdf(
   const brandName = config?.nombre_negocio || 'Sagitta'
   const brandTagline = config?.lema_negocio || 'Sistema Inteligente de Gestión de Citas'
   const logoUrl = config?.logo_url || ''
-  const primaryColor = config?.color_primario || '#6366f1'
+  const primaryColor = config?.color_primario || '#18181B'
   const supportEmail = config?.email_soporte || ''
   const supportPhone = config?.telefono_soporte || ''
   const website = config?.sitio_web || ''

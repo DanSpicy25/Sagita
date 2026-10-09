@@ -15,6 +15,52 @@
     color: var(--color-text);
   }
 
+  #root {
+    min-height: 100%;
+  }
+
+  .app-main-scroll {
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .portal-page {
+    scrollbar-gutter: stable;
+    scrollbar-color: #928873 #e8e4da;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .portal-page::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .portal-page::-webkit-scrollbar-track {
+    background: #e8e4da;
+  }
+
+  .portal-page::-webkit-scrollbar-thumb {
+    background: #928873;
+    border: 3px solid #e8e4da;
+    border-radius: 8px;
+  }
+
+  .portal-page::-webkit-scrollbar-thumb:hover {
+    background: #706650;
+  }
+
+  .dark .portal-page {
+    scrollbar-color: #77766e #20211e;
+  }
+
+  .dark .portal-page::-webkit-scrollbar-track {
+    background: #20211e;
+  }
+
+  .dark .portal-page::-webkit-scrollbar-thumb {
+    background: #77766e;
+    border-color: #20211e;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
@@ -178,4 +224,3 @@
     size: auto;
   }
 }
-

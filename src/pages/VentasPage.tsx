@@ -396,31 +396,58 @@ export default function VentasPage() {
             (cartItems.reduce((acc, i) => acc + i.total, 0) * descuentoGlobal) / 100
           }
           onConfirmar={async (metodo, pagosSplit, propina) => {
-            setModalCobroAbierto(false)
             await completarVenta(metodo, pagosSplit, propina)
           }}
         />
       )}
 
-      {/* Modal Venta Exitosa */}
+      {/* Modal Venta Exitosa con Micro-Animación y Ticket */}
       {ventaExitosa && (
-        <Modal isOpen={!!ventaExitosa} onClose={() => setVentaExitosa(null)} title="¡Cobro Realizado con Éxito!">
-          <div className="text-center py-4 space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h3 className="text-base font-bold text-text">Folio: {ventaExitosa.numero}</h3>
-            <p className="text-xs text-text-muted">Total Cobrado: ${ventaExitosa.total.toFixed(2)}</p>
-            <div className="flex justify-center gap-2 pt-3">
+        <Modal
+          isOpen={!!ventaExitosa}
+          onClose={() => setVentaExitosa(null)}
+          title="¡Venta Registrada con Éxito!"
+        >
+          <div className="text-center py-6 px-2 space-y-4">
+            <div className="relative inline-flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-500 animate-bounce-check">
+                <CheckCircle2 className="w-12 h-12 stroke-[2.5]" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                Folio: {ventaExitosa.numero}
+              </span>
+              <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 pt-2">
+                Cobro Finalizado
+              </h3>
+              <p className="text-2xl font-black text-primary-600 dark:text-primary-400 font-mono">
+                ${ventaExitosa.total.toFixed(2)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Inventario y movimientos de caja sincronizados correctamente.
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
-                size="sm"
+                size="md"
+                className="font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl"
                 onClick={() => {
                   setVentaParaTicket(ventaExitosa)
                   setVentaExitosa(null)
                 }}
               >
-                <Printer className="w-3.5 h-3.5 mr-1.5" /> Imprimir Ticket
+                <Printer className="w-4 h-4 mr-2" /> Imprimir Ticket
               </Button>
-              <Button variant="primary" size="sm" onClick={() => setVentaExitosa(null)}>
+              <Button
+                variant="primary"
+                size="md"
+                className="font-black text-xs sm:text-sm py-2.5 px-5 rounded-xl shadow-xs"
+                onClick={() => setVentaExitosa(null)}
+              >
                 Nueva Venta
               </Button>
             </div>

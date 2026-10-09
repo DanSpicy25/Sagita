@@ -236,7 +236,7 @@ export default function PortalReservaPage() {
 
   // Modo portal completo adaptativo al Sistema Operativo (Pantalla Completa Nativa)
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-[#09090B] text-zinc-900 dark:text-zinc-100 selection:bg-zinc-900 selection:text-white font-sans overflow-x-hidden pb-12 sm:pb-16">
+    <div className="portal-page h-dvh min-h-screen flex flex-col bg-[#f7f5f0] text-zinc-900 selection:bg-[#806331] selection:text-white font-sans overflow-x-hidden overflow-y-auto overscroll-y-contain dark:bg-[#111210] dark:text-zinc-100">
       {/* 0 & 1. Header de Acceso y Marca */}
       <PortalHeader
         configuracion={configuracion}
@@ -251,7 +251,7 @@ export default function PortalReservaPage() {
 
       {/* 2. Hero Multi-Comercio */}
       <PortalHero
-        tabPrincipal={tabPrincipal}
+        simboloMoneda={configuracion.simbolo_moneda || '$'}
         onSelectTab={(tab) => {
           setTabPrincipal(tab)
           if (tab === 'reservas') {
@@ -392,7 +392,7 @@ export default function PortalReservaPage() {
       )}
 
       {tabPrincipal === 'productos' && (
-        <div className="pt-8">
+        <div id="catalogo" className="scroll-mt-20 pt-8">
           <PortalCatalogoProductos
             productos={productos}
             formatearMoneda={formatearMoneda}

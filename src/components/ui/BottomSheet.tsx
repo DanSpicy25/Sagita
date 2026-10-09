@@ -59,7 +59,7 @@ export function BottomSheet({
       {/* Sheet Panel */}
       <div
         className={[
-          'relative z-10 flex w-full flex-col bg-surface-elevated text-text shadow-elevated rounded-t-2xl border-t border-x border-border animate-slide-up',
+          'relative z-10 flex w-full flex-col bg-surface text-text shadow-xl rounded-t-2xl border-t border-border animate-slide-up pb-[max(1rem,env(safe-area-inset-bottom))]',
           maxHeight,
           className,
         ]
@@ -67,8 +67,8 @@ export function BottomSheet({
           .join(' ')}
       >
         {/* Grab Handle */}
-        <div className="flex justify-center pt-2.5 pb-1">
-          <div className="w-10 h-1 rounded-full bg-border-hover/80" />
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1.5 rounded-full bg-black/20 dark:bg-white/25" />
         </div>
 
         {/* Header */}
@@ -109,4 +109,3 @@ export function BottomSheet({
     </div>
   )
 }
-

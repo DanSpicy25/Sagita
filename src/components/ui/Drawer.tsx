@@ -61,15 +61,15 @@ export function Drawer({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div
         className={[
-          'relative z-10 flex h-full w-full flex-col bg-surface-elevated text-text shadow-elevated border-border',
-          isRight ? 'ml-auto border-l animate-slide-right' : 'mr-auto border-r animate-fade-in',
+          'relative z-10 flex h-full w-full flex-col bg-surface/95 text-text shadow-xl border-border',
+          isRight ? 'ml-auto border-l animate-slide-right rounded-l-2xl' : 'mr-auto border-r animate-fade-in rounded-r-2xl',
           sizes[size],
         ].join(' ')}
       >
@@ -109,4 +109,3 @@ export function Drawer({
     </div>
   )
 }
-

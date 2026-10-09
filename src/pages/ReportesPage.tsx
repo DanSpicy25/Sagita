@@ -15,6 +15,7 @@ import {
   AlertCircle,
   DollarSign,
   Activity,
+  Layers,
 } from 'lucide-react'
 import { Badge, Loader, EmptyState } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
@@ -92,9 +93,9 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sub, icon, color, trend }: KpiCardProps) {
   return (
-    <div className="card p-5 border border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+    <div className="card p-4 sm:p-5 border border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
           {icon}
         </div>
         {trend && (
@@ -104,8 +105,8 @@ function KpiCard({ label, value, sub, icon, color, trend }: KpiCardProps) {
         )}
       </div>
       <div>
-        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">{value}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
+        <p className="text-xl sm:text-[1.65rem] font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">{value}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{label}</p>
         {sub && <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -156,7 +157,7 @@ function FilterBar({ range, onRange, extraFilters }: FilterBarProps) {
             onClick={() => onRange(opt.value)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               range === opt.value
-                ? 'bg-primary-600 text-white'
+                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -165,6 +166,333 @@ function FilterBar({ range, onRange, extraFilters }: FilterBarProps) {
         ))}
       </div>
       {extraFilters}
+    </div>
+  )
+}
+
+// ─── Componente de Volumen & Tendencias (Curva con Subidas y Bajadas) ───────
+
+interface GraficoVolumenProps {
+  facturas: Factura[]
+  topVendidos: { nombre: string; cantidad: number; ingresos: number }[]
+  from: Date
+  to: Date
+}
+
+function GraficoVolumenYTendencia({
+  facturas,
+  topVendidos,
+  from,
+  to,
+}: GraficoVolumenProps) {
+  const [metricMode, setMetricMode] = useState<'volumen' | 'ingresos'>('volumen')
+  const [puntoSeleccionado, setPuntoSeleccionado] = useState<number | null>(null)
+
+  const puntos = useMemo(() => {
+    const start = from.getTime()
+    const duration = Math.max(to.getTime() - start + 1, 1)
+    const list = Array.from({ length: 7 }, (_, index) => {
+      const bucketStart = new Date(start + (duration * index) / 7)
+      return {
+        id: index,
+        label: bucketStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }),
+        volumen: 0,
+        ingresos: 0,
+      }
+    })
+
+    facturas.forEach((factura) => {
+      const fechaVenta = new Date(factura.created_at).getTime()
+      if (!Number.isFinite(fechaVenta) || fechaVenta < start || fechaVenta > to.getTime()) return
+
+      const index = Math.min(6, Math.floor(((fechaVenta - start) / duration) * list.length))
+      const unidades = (factura.items ?? []).reduce(
+        (sum, item) => sum + Math.max(0, item.cantidad),
+        0
+      )
+      list[index].volumen += unidades
+      list[index].ingresos += factura.total
+    })
+
+    const vals = list.map((p) => (metricMode === 'volumen' ? p.volumen : p.ingresos))
+    const maxVal = Math.max(...vals, 0)
+    const scaleMax = maxVal > 0 ? maxVal * 1.15 : 1
+
+    return list.map((p, index) => {
+      const val = metricMode === 'volumen' ? p.volumen : p.ingresos
+      const x = 40 + (index / (list.length - 1)) * 520
+      const y = 140 - (val / scaleMax) * 96
+      return {
+        ...p,
+        valor: val,
+        x,
+        y: Math.max(25, Math.min(145, y)),
+      }
+    })
+  }, [facturas, metricMode, from, to])
+
+  // Construir comando SVG Path suave (Curva Cúbica)
+  const pathD = useMemo(() => {
+    if (puntos.length < 2) return ''
+    let d = `M ${puntos[0].x} ${puntos[0].y}`
+    for (let i = 0; i < puntos.length - 1; i++) {
+      const curr = puntos[i]
+      const next = puntos[i + 1]
+      const cpx1 = curr.x + (next.x - curr.x) / 2
+      const cpy1 = curr.y
+      const cpx2 = curr.x + (next.x - curr.x) / 2
+      const cpy2 = next.y
+      d += ` C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${next.x} ${next.y}`
+    }
+    return d
+  }, [puntos])
+
+  const areaD = useMemo(() => {
+    if (puntos.length < 2) return ''
+    const first = puntos[0]
+    const last = puntos[puntos.length - 1]
+    return `${pathD} L ${last.x} 155 L ${first.x} 155 Z`
+  }, [pathD, puntos])
+
+  const totalVolumenVendido = facturas.reduce(
+    (total, factura) =>
+      total + (factura.items ?? []).reduce((sum, item) => sum + Math.max(0, item.cantidad), 0),
+    0
+  )
+
+  const maxItemCantidad = Math.max(...topVendidos.map((item) => item.cantidad), 1)
+
+  return (
+    <div className="card p-4 sm:p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+      {/* Cabecera del Gráfico y Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-primary-soft text-primary">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                Ventas del período
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Tendencia real de unidades vendidas e ingresos
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Toggle de Métrica */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 self-start sm:self-auto text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setMetricMode('volumen')
+              setPuntoSeleccionado(null)
+            }}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              metricMode === 'volumen'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Unidades vendidas
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMetricMode('ingresos')
+              setPuntoSeleccionado(null)
+            }}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              metricMode === 'ingresos'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Ingresos ($)
+          </button>
+        </div>
+      </div>
+
+      {/* ── Gráfico SVG Interactivo con Puntos y Línea de Subida/Bajada ── */}
+      <div className="relative pt-2">
+      {facturas.length === 0 && (
+        <p className="mb-2 text-sm text-text-muted">
+          No hay ventas pagadas registradas en este período.
+        </p>
+      )}
+      <div className="w-full h-44 sm:h-48 relative overflow-hidden">
+          <svg
+            className="w-full h-full overflow-visible"
+            viewBox="0 0 600 170"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="volumenGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
+
+            {/* Líneas horizontales de referencia (Grid) */}
+            <line x1="40" y1="40" x2="560" y2="40" stroke="currentColor" strokeDasharray="3 3" className="text-slate-200 dark:text-slate-800" strokeWidth="1" />
+            <line x1="40" y1="90" x2="560" y2="90" stroke="currentColor" strokeDasharray="3 3" className="text-slate-200 dark:text-slate-800" strokeWidth="1" />
+            <line x1="40" y1="140" x2="560" y2="140" stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeWidth="1" />
+
+            {/* Área sombreada bajo la curva */}
+            <path d={areaD} fill="url(#volumenGradient)" />
+
+            {/* Línea continua de tendencia */}
+            <path
+              d={pathD}
+              fill="none"
+              stroke="var(--color-primary)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Puntos interactivos sobre la curva */}
+            {puntos.map((pt) => {
+              const activo = puntoSeleccionado === pt.id
+              return (
+                <g
+                  key={pt.id}
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${pt.label}: ${metricMode === 'volumen' ? `${pt.volumen} unidades vendidas` : fmtMoney(pt.ingresos)}`}
+                  onClick={() => setPuntoSeleccionado(pt.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setPuntoSeleccionado(pt.id)
+                    }
+                  }}
+                >
+                  {/* Círculo de interacción más amplio */}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={activo ? 14 : 9}
+                    className="fill-primary/20 transition-all duration-200"
+                  />
+                  {/* Punto central */}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="5"
+                    className="fill-primary stroke-white dark:stroke-slate-900 transition-all duration-200"
+                    strokeWidth="2.5"
+                  />
+
+                  {/* Etiqueta del período en el eje X */}
+                  <text
+                    x={pt.x}
+                    y="165"
+                    textAnchor="middle"
+                    className="text-[10px] font-bold fill-slate-500 dark:fill-slate-400 font-mono"
+                  >
+                    {pt.label}
+                  </text>
+                </g>
+              )
+            })}
+          </svg>
+
+          {/* Tooltip flotante al seleccionar o pulsar un punto */}
+          {puntoSeleccionado !== null && (
+            <div
+              className="absolute top-2 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900/95 dark:bg-slate-800/95 text-white shadow-xl text-xs flex items-center gap-3 border border-slate-700/60 animate-fade-in"
+            >
+              <div>
+                <span className="text-[10px] uppercase font-mono text-slate-400 font-semibold">
+                  {puntos[puntoSeleccionado].label}
+                </span>
+                <p className="font-bold text-sm text-white">
+                  {metricMode === 'volumen'
+                        ? `${puntos[puntoSeleccionado].volumen} unidades vendidas`
+                    : fmtMoney(puntos[puntoSeleccionado].ingresos)}
+                </p>
+              </div>
+              <div className="border-l border-slate-700 pl-3 text-[11px] text-slate-300">
+                <p>Ingresos: <strong className="text-white">{fmtMoney(puntos[puntoSeleccionado].ingresos)}</strong></p>
+                <p>Volumen: <strong className="text-white">{puntos[puntoSeleccionado].volumen} uds</strong></p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPuntoSeleccionado(null)}
+                className="text-slate-400 hover:text-white text-xs font-bold ml-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Leyenda explicativa de puntos */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" />
+            <span>Ventas registradas · escala desde cero</span>
+          </div>
+
+          <span className="text-[11px] text-slate-400 italic">
+            Selecciona un punto para ver el detalle del período.
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Barras de Volumen de lo Más Vendido ─── */}
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-primary" /> Más vendidos por unidades
+          </h4>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {totalVolumenVendido} unidades totales • {topVendidos.length} ítems en ranking
+          </span>
+        </div>
+
+        {topVendidos.length === 0 ? (
+          <p className="text-xs text-slate-400 italic py-2">Sin datos de volumen para este período.</p>
+        ) : (
+          <div className="space-y-3">
+            {topVendidos.map((s, idx) => {
+              const porcentaje = Math.round((s.cantidad / maxItemCantidad) * 100)
+              return (
+                <div key={idx} className="space-y-1 group">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-500">
+                        {idx + 1}
+                      </span>
+                      {s.nombre}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-primary text-xs">
+                        {s.cantidad} {s.cantidad === 1 ? 'unidad' : 'unidades'} ({porcentaje}%)
+                      </span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                        {fmtMoney(s.ingresos)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Barra de volumen visual */}
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-500 group-hover:brightness-110"
+                      style={{ width: `${Math.max(8, porcentaje)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -204,6 +532,22 @@ function ResumenTab({ citas, clientes, facturas, range, onRange }: ResumenTabPro
     ? ((canceladas / citasFiltradas.length) * 100).toFixed(1)
     : '0.0'
 
+  const vendidosConteo: Record<string, { nombre: string; cantidad: number; ingresos: number }> = {}
+  facturasFiltradas.forEach((factura) => {
+    const items = factura.items ?? []
+    items.forEach((item) => {
+      const nombre = (item.descripcion ?? '').trim() || 'Artículo sin nombre'
+      if (!vendidosConteo[nombre]) {
+        vendidosConteo[nombre] = { nombre, cantidad: 0, ingresos: 0 }
+      }
+      vendidosConteo[nombre].cantidad += Math.max(0, item.cantidad)
+      vendidosConteo[nombre].ingresos += item.total ?? 0
+    })
+  })
+  const topVendidos = Object.values(vendidosConteo)
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 5)
+
   // Top 5 servicios
   const servicioConteo: Record<number, { nombre: string; cantidad: number; ingresos: number }> = {}
   citasFiltradas.forEach((c) => {
@@ -235,18 +579,26 @@ function ResumenTab({ citas, clientes, facturas, range, onRange }: ResumenTabPro
     <div className="space-y-6">
       <FilterBar range={range} onRange={onRange} />
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="Total Ingresos" value={fmtMoney(totalIngresos)} icon={<DollarSign className="w-5 h-5" />} color="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" trend="up" />
         <KpiCard label="Total Citas" value={fmt(citasFiltradas.length)} icon={<Calendar className="w-5 h-5" />} color="text-primary-500 bg-primary-50 dark:bg-primary-900/30" />
         <KpiCard label="Nuevos Clientes" value={fmt(clientesFiltrados.length)} icon={<Users className="w-5 h-5" />} color="text-blue-500 bg-blue-50 dark:bg-blue-900/30" />
         <KpiCard label="Tasa Cancelación" value={`${tasaCancelacion}%`} icon={<Activity className="w-5 h-5" />} color="text-rose-500 bg-rose-50 dark:bg-rose-900/30" trend="down" />
       </div>
 
+      {/* ─── Gráfico de Volumen y Tendencias de Demanda (Puntos con Subidas y Bajadas) ─── */}
+      <GraficoVolumenYTendencia
+        facturas={facturasFiltradas}
+        topVendidos={topVendidos}
+        from={from}
+        to={to}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top servicios */}
         <div className="card border border-slate-100 dark:border-slate-800">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">Top 5 Servicios Más Vendidos</h3>
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">Servicios con más citas</h3>
           </div>
           {topServicios.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-8">Sin datos para el período</p>
@@ -780,8 +1132,8 @@ export default function ReportesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Reportes</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Reportes y análisis</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-base mt-1">
             Análisis de rendimiento y métricas del negocio
           </p>
         </div>

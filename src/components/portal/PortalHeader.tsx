@@ -69,8 +69,8 @@ export function PortalHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 dark:bg-neutral-950/90 border-b border-black/[0.06] dark:border-white/[0.08] transition-all">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-50 border-b border-[#d9d3c7] bg-[#f7f5f0] transition-colors duration-200 dark:border-zinc-800 dark:bg-[#171815]">
+      <div className="mx-auto flex h-[4.25rem] w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         {/* Marca y Logo */}
         <div className="flex items-center gap-3 shrink-0">
           {configuracion.logo_url ? (
@@ -80,7 +80,7 @@ export function PortalHeader({
               className="h-9 max-w-[140px] object-contain rounded-lg"
             />
           ) : (
-            <div className="w-9 h-9 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center font-black tracking-tighter text-sm shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#334338] text-sm font-black tracking-tighter text-white dark:bg-[#d0b675] dark:text-[#25231d]">
               S
             </div>
           )}
@@ -95,14 +95,14 @@ export function PortalHeader({
         </div>
 
         {/* Segmented Control Central Desktop (Apple Style) */}
-        <nav className="hidden lg:flex items-center bg-neutral-100/90 dark:bg-neutral-900/90 p-1 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación del portal">
           <button
             type="button"
             onClick={() => handleNavClick('reservas', 'reserva')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] ${
               tabPrincipal === 'reservas'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                ? 'bg-[#e7e2d8] text-[#3f3a30] dark:bg-zinc-800 dark:text-zinc-100'
+                : 'text-neutral-600 hover:bg-[#ece8df] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-zinc-800/70 dark:hover:text-white'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -112,10 +112,10 @@ export function PortalHeader({
           <button
             type="button"
             onClick={() => handleNavClick('productos')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] ${
               tabPrincipal === 'productos'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                ? 'bg-[#e7e2d8] text-[#3f3a30] dark:bg-zinc-800 dark:text-zinc-100'
+                : 'text-neutral-600 hover:bg-[#ece8df] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-zinc-800/70 dark:hover:text-white'
             }`}
           >
             <Package className="w-3.5 h-3.5" />
@@ -125,10 +125,10 @@ export function PortalHeader({
           <button
             type="button"
             onClick={() => handleNavClick('hardware', 'hardware')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] ${
               tabPrincipal === 'hardware'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                ? 'bg-[#e7e2d8] text-[#3f3a30] dark:bg-zinc-800 dark:text-zinc-100'
+                : 'text-neutral-600 hover:bg-[#ece8df] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-zinc-800/70 dark:hover:text-white'
             }`}
           >
             <Printer className="w-3.5 h-3.5" />
@@ -138,10 +138,10 @@ export function PortalHeader({
           <button
             type="button"
             onClick={() => handleNavClick('verticales', 'sectores')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] ${
               tabPrincipal === 'verticales'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                ? 'bg-[#e7e2d8] text-[#3f3a30] dark:bg-zinc-800 dark:text-zinc-100'
+                : 'text-neutral-600 hover:bg-[#ece8df] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-zinc-800/70 dark:hover:text-white'
             }`}
           >
             <Store className="w-3.5 h-3.5" />
@@ -151,10 +151,10 @@ export function PortalHeader({
           <button
             type="button"
             onClick={() => handleNavClick('modulos', 'modulos')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold transition-all duration-200 ease-in-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] ${
               tabPrincipal === 'modulos'
-                ? 'bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+                ? 'bg-[#e7e2d8] text-[#3f3a30] dark:bg-zinc-800 dark:text-zinc-100'
+                : 'text-neutral-600 hover:bg-[#ece8df] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-zinc-800/70 dark:hover:text-white'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -164,20 +164,22 @@ export function PortalHeader({
 
         {/* Acciones Rápidas del Header */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <TenantSelector />
+          <div className="hidden xl:block">
+            <TenantSelector />
+          </div>
 
           <Link
             to="/demo"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 transition-colors"
+            className="hidden items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold text-[#56684d] transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:bg-[#e8e4da] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] dark:text-[#b9c8af] dark:hover:bg-zinc-800 xl:inline-flex"
             title="Explorar el Demo Center Interactivo para Ventas"
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <Sparkles className="h-4 w-4" />
             <span>Demo Center</span>
           </Link>
 
           <Link
             to="/ventas"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 transition-colors"
+            className="hidden items-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold text-neutral-700 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:bg-[#e8e4da] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] dark:text-neutral-300 dark:hover:bg-zinc-800 xl:inline-flex"
           >
             <ShoppingCart className="w-3.5 h-3.5" />
             <span>Abrir POS</span>
@@ -186,7 +188,7 @@ export function PortalHeader({
           <button
             type="button"
             onClick={handleAccesoRapido}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#806331] px-3.5 py-2 text-xs font-bold text-white transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:bg-[#6d5329] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] focus-visible:ring-offset-2 active:translate-y-0 dark:bg-[#b99a5c] dark:text-[#211d15] dark:hover:bg-[#c8aa6a]"
           >
             {isAuthenticated ? (
               <>
@@ -207,7 +209,7 @@ export function PortalHeader({
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+            className="rounded-lg p-2 text-neutral-700 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:bg-[#e8e4da] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#806331] dark:text-neutral-300 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={mobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
             aria-expanded={mobileMenuOpen}
           >

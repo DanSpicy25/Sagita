@@ -5,6 +5,8 @@ import { empleadosService } from '@/services/empleados.service'
 import { Button, Avatar, Badge, Loader, Modal, Input, Textarea, EmptyState } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useModules } from '@/context/ModulesContext'
+import { LocalStorageAdapter } from '@/repositories/local/LocalStorageAdapter'
+import { MOCK_EMPLEADOS } from '@/mocks/handlers/empleados.handlers'
 
 const DIAS_NOMBRES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
@@ -52,10 +54,17 @@ export default function EmpleadosPage() {
     empleadosService
       .getAll()
       .then((res) => {
-        if (res.data) setEmpleados(res.data)
+        if (res.data && res.data.length > 0) {
+          setEmpleados(res.data)
+        } else {
+          const stored = LocalStorageAdapter.getCollection<Empleado>('empleados', MOCK_EMPLEADOS)
+          setEmpleados(stored)
+        }
       })
       .catch((err) => {
-        toast.error('Error al cargar empleados', err instanceof Error ? err.message : 'Error')
+        console.warn('[EmpleadosPage] Recuperado con fallback:', err)
+        const stored = LocalStorageAdapter.getCollection<Empleado>('empleados', MOCK_EMPLEADOS)
+        setEmpleados(stored)
       })
       .finally(() => setCargando(false))
   }

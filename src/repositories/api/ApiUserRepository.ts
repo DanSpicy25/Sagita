@@ -1,33 +1,70 @@
 import { apiClient } from '@/services/api.client'
 import { ApiResponse, UsuarioGestion, CrearUsuarioPayload } from '@/types'
 import { IUserRepository } from '../interfaces/IUserRepository'
+import { LocalUserRepository } from '../local/LocalUserRepository'
 
 export class ApiUserRepository implements IUserRepository {
-  getUsuarios(params?: Record<string, string>): Promise<ApiResponse<UsuarioGestion[]>> {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return apiClient.get<UsuarioGestion[]>(`/usuarios${qs}`)
+  private local = new LocalUserRepository()
+
+  async getUsuarios(params?: Record<string, string>): Promise<ApiResponse<UsuarioGestion[]>> {
+    try {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : ''
+      const res = await apiClient.get<UsuarioGestion[]>(`/usuarios${qs}`)
+      if (res && res.data) return res
+    } catch (err) {
+      console.warn('[ApiUserRepository] Fallback a repositorio local getUsuarios:', err)
+    }
+    return this.local.getUsuarios(params)
   }
 
-  getUsuario(id: number): Promise<ApiResponse<UsuarioGestion>> {
-    return apiClient.get<UsuarioGestion>(`/usuarios/${id}`)
+  async getUsuario(id: number): Promise<ApiResponse<UsuarioGestion>> {
+    try {
+      const res = await apiClient.get<UsuarioGestion>(`/usuarios/${id}`)
+      if (res && res.data) return res
+    } catch (err) {
+      console.warn('[ApiUserRepository] Fallback a repositorio local getUsuario:', err)
+    }
+    return this.local.getUsuario(id)
   }
 
-  crearUsuario(data: CrearUsuarioPayload): Promise<ApiResponse<UsuarioGestion>> {
-    return apiClient.post<UsuarioGestion>('/usuarios', data)
+  async crearUsuario(data: CrearUsuarioPayload): Promise<ApiResponse<UsuarioGestion>> {
+    try {
+      const res = await apiClient.post<UsuarioGestion>('/usuarios', data)
+      if (res && res.data) return res
+    } catch (err) {
+      console.warn('[ApiUserRepository] Fallback a repositorio local crearUsuario:', err)
+    }
+    return this.local.crearUsuario(data)
   }
 
-  actualizarUsuario(
+  async actualizarUsuario(
     id: number,
     data: Partial<UsuarioGestion>
   ): Promise<ApiResponse<UsuarioGestion>> {
-    return apiClient.put<UsuarioGestion>(`/usuarios/${id}`, data)
+    try {
+      const res = await apiClient.put<UsuarioGestion>(`/usuarios/${id}`, data)
+      if (res && res.data) return res
+    } catch (err) {
+      console.warn('[ApiUserRepository] Fallback a repositorio local actualizarUsuario:', err)
+    }
+    return this.local.actualizarUsuario(id, data)
   }
 
-  eliminarUsuario(id: number): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>(`/usuarios/${id}`)
+  async eliminarUsuario(id: number): Promise<ApiResponse<void>> {
+    try {
+      return await apiClient.delete<void>(`/usuarios/${id}`)
+    } catch {
+      return this.local.eliminarUsuario(id)
+    }
   }
 
-  toggleActivo(id: number): Promise<ApiResponse<UsuarioGestion>> {
-    return apiClient.post<UsuarioGestion>(`/usuarios/${id}/toggle-activo`, {})
+  async toggleActivo(id: number): Promise<ApiResponse<UsuarioGestion>> {
+    try {
+      const res = await apiClient.post<UsuarioGestion>(`/usuarios/${id}/toggle-activo`, {})
+      if (res && res.data) return res
+    } catch (err) {
+      console.warn('[ApiUserRepository] Fallback a repositorio local toggleActivo:', err)
+    }
+    return this.local.toggleActivo(id)
   }
 }

@@ -57,7 +57,7 @@ export function TabsList({
     <div
       role="tablist"
       className={[
-        'inline-flex items-center gap-1 p-1 bg-surface-subtle rounded-xl border border-border-subtle',
+        'inline-flex items-center gap-1 p-1 bg-black/[0.05] dark:bg-white/[0.08] rounded-xl border border-black/[0.04] dark:border-white/[0.06]',
         fullWidth ? 'w-full' : '',
         className,
       ]
@@ -102,11 +102,11 @@ export function TabsTrigger({
         disabled={disabled}
         onClick={() => ctx.onValueChange(value)}
         className={[
-          'inline-flex items-center gap-2 py-3 px-1 text-sm font-medium border-b-2 transition-all cursor-pointer select-none whitespace-nowrap',
+          'inline-flex items-center gap-2 py-3 px-1 text-sm font-semibold border-b-2 transition-all cursor-pointer select-none whitespace-nowrap ios-press',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-40',
           isSelected
-            ? 'border-primary text-primary font-semibold'
+            ? 'border-primary text-primary font-bold'
             : 'border-transparent text-text-muted hover:text-text hover:border-border',
           className,
         ]
@@ -129,12 +129,12 @@ export function TabsTrigger({
       disabled={disabled}
       onClick={() => ctx.onValueChange(value)}
       className={[
-        'inline-flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer select-none whitespace-nowrap',
+        'inline-flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer select-none whitespace-nowrap ios-press',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
-        'disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]',
+        'disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.96]',
         isSelected
-          ? 'bg-surface text-text shadow-xs border border-border/50 font-semibold'
-          : 'text-text-muted hover:text-text hover:bg-surface/50 border border-transparent',
+          ? 'bg-surface text-text shadow-xs font-bold'
+          : 'text-text-muted hover:text-text hover:bg-black/[0.03] dark:hover:bg-white/[0.04] border border-transparent',
         className,
       ]
         .filter(Boolean)

@@ -91,10 +91,10 @@ export function MobileQuickActionsSheet({
               key={act.title}
               type="button"
               onClick={() => handleAction(act.route, act.action)}
-              className="flex flex-col items-start p-3.5 rounded-xl bg-surface border border-border shadow-xs hover:border-border-hover hover:shadow-sm transition-all text-left cursor-pointer group active:scale-[0.98]"
+              className="flex flex-col items-start p-3.5 rounded-[20px] bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] shadow-xs hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-all text-left cursor-pointer group ios-press"
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center border mb-2.5 transition-transform group-hover:scale-105 ${act.color}`}
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center border mb-2.5 transition-transform group-hover:scale-105 shadow-xs ${act.color}`}
               >
                 <Icon className="w-5 h-5" aria-hidden="true" />
               </div>

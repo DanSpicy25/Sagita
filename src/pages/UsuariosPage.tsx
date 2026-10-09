@@ -18,9 +18,11 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { Button, Input, Modal, Badge, Loader } from '@/components/ui'
-import { usuariosService } from '@/services/usuarios.service'
+import { usuariosService, USUARIOS_INICIALES } from '@/services/usuarios.service'
 import { rolesService } from '@/services/roles.service'
 import { UsuarioGestion, UserRole, CrearUsuarioPayload, Rol } from '@/types'
+import { LocalStorageAdapter } from '@/repositories/local/LocalStorageAdapter'
+import { MOCK_ROLES } from '@/mocks/handlers/roles.handlers'
 
 export default function UsuariosPage() {
   const { user: currentUser } = useAuth()
@@ -46,16 +48,28 @@ export default function UsuariosPage() {
   const cargarUsuarios = async () => {
     setCargando(true)
     try {
-      const [resUsers, resRoles] = await Promise.all([
+      const [resUsers, resRoles] = await Promise.allSettled([
         usuariosService.getAll(),
         rolesService.getRoles(),
       ])
-      setUsuarios(resUsers.data ?? [])
-      if (resRoles.data) {
-        setRolesDisponibles(resRoles.data)
+
+      if (resUsers.status === 'fulfilled' && resUsers.value?.data && resUsers.value.data.length > 0) {
+        setUsuarios(resUsers.value.data)
+      } else {
+        const local = LocalStorageAdapter.getCollection<UsuarioGestion>('usuarios', USUARIOS_INICIALES)
+        setUsuarios(local)
+      }
+
+      if (resRoles.status === 'fulfilled' && resRoles.value?.data && resRoles.value.data.length > 0) {
+        setRolesDisponibles(resRoles.value.data)
+      } else {
+        setRolesDisponibles(MOCK_ROLES)
       }
     } catch (err) {
-      toast.error('Error al cargar datos de usuarios', err instanceof Error ? err.message : '')
+      console.warn('[UsuariosPage] Error recuperado con fallback local:', err)
+      const local = LocalStorageAdapter.getCollection<UsuarioGestion>('usuarios', USUARIOS_INICIALES)
+      setUsuarios(local)
+      setRolesDisponibles(MOCK_ROLES)
     } finally {
       setCargando(false)
     }

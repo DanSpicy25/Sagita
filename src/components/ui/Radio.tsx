@@ -27,7 +27,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(
             type="radio"
             disabled={disabled}
             aria-invalid={Boolean(error)}
-            className="w-4 h-4 text-primary border-border bg-surface focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-4.5 h-4.5 text-[#007AFF] accent-[#007AFF] border-border bg-black/[0.03] dark:bg-white/[0.06] focus:ring-2 focus:ring-[#007AFF] focus:ring-offset-1 focus:ring-offset-surface transition-all cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />
         </div>

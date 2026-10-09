@@ -45,7 +45,7 @@ export const Card: React.FC<CardProps> = ({
         'rounded-xl text-text transition-all duration-200',
         variantMap[variant],
         hoverable
-          ? 'hover:shadow-md hover:border-border-hover cursor-pointer active:scale-[0.995]'
+          ? 'hover:shadow-md hover:border-border-hover cursor-pointer active:scale-[0.985] ios-press'
           : '',
         isCustomCompound ? '' : paddingMap[padding],
         className,

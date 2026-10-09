@@ -154,14 +154,20 @@ export function PortalWizardReserva({
     )
   }
 
-  const handleSeleccionarServicio = (serv: Servicio) => {
-    setServicioSel(serv)
-    setExtrasSeleccionados([])
-    setHoraSel('')
+  const seleccionarServicio = (serv: Servicio) => {
+    if (servicioSel?.id !== serv.id) {
+      setServicioSel(serv)
+      setExtrasSeleccionados([])
+      setHoraSel('')
+    }
     if (!empleadoSel) {
       const empCompatible = empleados.find((e) => e.activo) ?? empleados[0]
       if (empCompatible) onEmpleadoChange(empCompatible)
     }
+  }
+
+  const handleSeleccionarServicio = (serv: Servicio) => {
+    seleccionarServicio(serv)
     setPaso(2)
 
     if (!isEmbed) {
@@ -348,8 +354,7 @@ export function PortalWizardReserva({
                   return (
                     <div
                       key={serv.id}
-                      onClick={() => setServicioSel(serv)}
-                      className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 transition-all flex flex-col justify-between group cursor-pointer ${
+                      className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 transition-all flex flex-col justify-between group ${
                         isSelected
                           ? 'border-neutral-900 dark:border-white ring-2 ring-neutral-900/15 dark:ring-white/20 shadow-lg bg-neutral-50/50 dark:bg-neutral-800/40'
                           : 'border-slate-200 dark:border-slate-800 hover:border-neutral-400 dark:hover:border-neutral-600 hover:shadow-md'
@@ -391,16 +396,20 @@ export function PortalWizardReserva({
                           <span>{serv.duracion_base_min} minutos</span>
                         </div>
                         <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleSeleccionarServicio(serv)
+                          size="md"
+                          onClick={() => {
+                            if (isSelected) {
+                              handleSeleccionarServicio(serv)
+                            } else {
+                              seleccionarServicio(serv)
+                            }
                           }}
+                          aria-pressed={isSelected}
                           className={`rounded-xl text-xs font-semibold ${
                             isSelected ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : ''
                           }`}
                         >
-                          <span>{isSelected ? 'Continuar' : 'Reservar'}</span>
+                          <span>{isSelected ? 'Elegir horario' : 'Seleccionar'}</span>
                           <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
                       </div>
@@ -412,27 +421,31 @@ export function PortalWizardReserva({
 
             {/* Isla Flotante de Selección Dinámica (Estilo Apple / wilanye.com) */}
             {paso === 1 && servicioSel && (
-              <div className="fixed bottom-6 inset-x-0 mx-auto w-[92%] sm:w-[96%] max-w-[480px] z-40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
-                <div className="backdrop-blur-2xl bg-neutral-900/95 dark:bg-white/95 text-white dark:text-neutral-900 rounded-2xl px-4 py-3 sm:py-3.5 shadow-[0_16px_48px_rgba(0,0,0,0.28)] flex items-center justify-between border border-white/10 dark:border-black/10 gap-3">
+              <div className="fixed left-1/2 top-1/2 z-40 w-[min(92vw,480px)] -translate-x-1/2 -translate-y-1/2 animate-fade-in">
+                <div
+                  aria-label="Resumen del servicio seleccionado"
+                  aria-live="polite"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface/95 px-4 py-3.5 text-text shadow-elevated backdrop-blur-xl sm:px-5"
+                >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 dark:text-neutral-500 font-medium truncate">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted font-medium truncate">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />
                       <span>Servicio seleccionado</span>
                       <span>•</span>
                       <span>{servicioSel.duracion_base_min} min</span>
                     </div>
-                    <div className="font-bold text-sm sm:text-base truncate text-white dark:text-neutral-900 mt-0.5">
+                    <div className="mt-0.5 truncate text-sm font-bold text-text sm:text-base">
                       {servicioSel.nombre}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-base sm:text-lg font-extrabold text-white dark:text-neutral-900">
+                    <span className="text-base font-extrabold text-text sm:text-lg">
                       {formatearMoneda(servicioSel.precio_base)}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleSeleccionarServicio(servicioSel)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-xl bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all shadow-md"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-95 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
                     >
                       <span>Elegir Horario</span>
                       <ChevronRight className="w-4 h-4" />

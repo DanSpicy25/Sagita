@@ -24,7 +24,7 @@ export function PageHeader({
   className = '',
 }: PageHeaderProps) {
   return (
-    <div className={`space-y-2 pb-5 border-b border-border-subtle ${className}`}>
+    <div className={`space-y-2 pb-5 border-b border-black/[0.06] dark:border-white/[0.08] ${className}`}>
       {breadcrumbs && <div className="mb-1">{breadcrumbs}</div>}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -36,13 +36,13 @@ export function PageHeader({
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="mt-0.5"
+              className="mt-0.5 rounded-full ios-press"
             />
           )}
 
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-text font-heading tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-text font-heading tracking-tight leading-tight">
                 {title}
               </h1>
               {badge && <div className="shrink-0">{badge}</div>}

@@ -156,45 +156,30 @@ export default function DashboardPage() {
       />
 
       {/* ── Acceso Rápido al Mostrador POS Multivertical Camaleónico ── */}
-      <section className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-neutral-900/90 border border-white/10 text-white shadow-xl backdrop-blur-md">
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 w-64 h-64 rounded-full opacity-20 filter blur-3xl"
-          style={{ background: tokens.accentColor }}
-          aria-hidden="true"
-        />
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <section className="overflow-hidden rounded-2xl border border-border bg-surface p-4 text-text shadow-sm sm:p-5">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3.5">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl border border-white/15 bg-white/[0.04] shadow-md shrink-0"
-              style={{
-                borderColor: tokens.accentBorder,
-                boxShadow: `0 0 16px ${tokens.accentGlow}`,
-              }}
-            >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-subtle text-2xl shadow-xs">
               {tokens.iconEmoji}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-extrabold text-white">
+                <h3 className="text-sm font-extrabold text-text sm:text-base">
                   Mostrador Operativo Camaleónico ({tokens.nombre})
                 </h3>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 font-semibold border border-white/10">
+                <span className="rounded-full border border-border bg-surface-subtle px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-text-muted">
                   Sector Activo
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Punto de Venta multivertical de 12 columnas: respuesta física háptica, skeletons de cristal anti-pulse y despacho efervescente.
+              <p className="mt-0.5 text-xs text-text-muted">
+                Punto de Venta multivertical: respuesta física táctil, catálogo optimizado y despacho ágil.
               </p>
             </div>
           </div>
 
           <Link
             to="/mostrador"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-150 shrink-0 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
-            style={{
-              background: `linear-gradient(135deg, ${tokens.accentColor} 0%, ${tokens.accentHover} 100%)`,
-              boxShadow: `0 4px 16px ${tokens.accentGlow}`,
-            }}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-150 hover:bg-slate-700 active:scale-95 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Abrir Mostrador POS</span>

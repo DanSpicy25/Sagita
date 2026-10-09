@@ -16,7 +16,7 @@ import { AgendaFiltrosBar, type AgendaFiltros } from '@/components/calendario/Ag
 import { FacturaModal } from '@/components/pagos/FacturaModal'
 import { ModalReprogramarCita } from '@/components/reservas'
 import { ModalDetalleCita } from '@/components/reservas/ModalDetalleCita'
-import { Button, Loader } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
 import { useConfiguracion } from '@/context/ConfiguracionContext'
 import { useModules } from '@/context/ModulesContext'
@@ -298,7 +298,23 @@ export default function CitasPage() {
 
       {/* Vistas del Calendario */}
       {cargando ? (
-        <Loader text={`Cargando ${citasTerm.toLowerCase()}...`} />
+        <div
+          className="card flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-subtle text-primary shadow-sm">
+            <CalIcon className="h-8 w-8" aria-hidden="true" />
+            <span className="absolute -inset-1 animate-spin rounded-[1.15rem] border-[3px] border-transparent border-t-primary border-r-primary/50 motion-reduce:animate-none" />
+          </div>
+          <div>
+            <p className="font-semibold text-text">Preparando tu agenda</p>
+            <p className="mt-1 text-sm text-text-muted">Cargando {citasTerm.toLowerCase()}...</p>
+          </div>
+          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-surface-subtle">
+            <span className="block h-full w-2/5 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
+          </div>
+        </div>
       ) : vista === 'dia' ? (
         <CalendarioDiario
           citas={citasFiltradas}

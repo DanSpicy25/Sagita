@@ -1,7 +1,7 @@
 import { useContext } from 'react'
 import { Menu, Sun, Moon, Search } from 'lucide-react'
 import { AppContext } from '@/context/AppContext'
-import { IconButton, StreakCounter } from '@/components/ui'
+import { IconButton } from '@/components/ui'
 import { CentroNotificaciones } from '@/components/integraciones'
 import { useConfiguracion } from '@/hooks/useConfiguracion'
 import { TenantSelector } from '@/components/crm'
@@ -29,15 +29,14 @@ export function Navbar({ onOpenCommand, onToggleMobileDrawer }: NavbarProps) {
       : configuracion.logo_url
 
   return (
-    <header className="sticky top-0 z-header flex h-14 sm:h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface/95 text-text px-3 sm:px-5 backdrop-blur shadow-2xs">
-      {/* ─── Left Section ─────────────────────────────────────────────────── */}
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        {/* Toggle para Sidebar Desktop / Drawer Mobile */}
+    <header className="sticky top-0 z-header flex h-[4.25rem] sm:h-[4.75rem] shrink-0 items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#000000]/75 px-3.5 sm:px-6 backdrop-blur-2xl transition-colors">
+      <div className="flex min-w-0 items-center gap-2.5 sm:gap-4">
         <IconButton
-          icon={<Menu className="h-4 w-4 sm:h-5 sm:w-5 text-text" />}
+          icon={<Menu className="h-5 w-5 text-text" />}
           aria-label="Alternar menú de navegación"
           variant="ghost"
-          size="sm"
+          size="md"
+          className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.06] shadow-xs ios-press hover:bg-black/[0.06] dark:hover:bg-white/[0.1]"
           onClick={() => {
             if (window.innerWidth < 768 && onToggleMobileDrawer) {
               onToggleMobileDrawer()
@@ -47,84 +46,83 @@ export function Navbar({ onOpenCommand, onToggleMobileDrawer }: NavbarProps) {
           }}
         />
 
-        {/* Brand Logo / Title */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           {logoUrl ? (
             <img
               src={logoUrl}
               alt={nombreMarca}
-              className="h-7 sm:h-8 max-w-[100px] sm:max-w-[140px] shrink-0 object-contain"
+              className="h-8 max-w-[120px] shrink-0 object-contain sm:h-10 sm:max-w-[150px]"
             />
           ) : (
-            <span className="truncate font-display text-lg sm:text-xl font-bold text-text">
-              {nombreMarca}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-xs">
+                S
+              </div>
+              <div className="min-w-0">
+                <span className="block truncate font-heading text-lg font-bold tracking-tight text-text sm:text-xl">
+                  {nombreMarca}
+                </span>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Multi-Tenant Switcher (Desktop) */}
-        <div className="hidden md:block pl-2 border-l border-border-subtle">
+        <div className="hidden 2xl:block pl-3 border-l border-black/[0.06] dark:border-white/[0.08]">
           <TenantSelector />
         </div>
 
-        {/* Global Sector Switcher (Camaleónico) */}
-        <div className="hidden md:block pl-2 border-l border-border-subtle">
+        <div className="hidden xl:block pl-3 border-l border-black/[0.06] dark:border-white/[0.08]">
           <SectorSelector />
         </div>
       </div>
 
-      {/* ─── Center Section (Desktop Omnibar Search Trigger) ─────────────── */}
-      <div className="flex-1 max-w-xs md:max-w-md mx-2 hidden sm:block">
+      <div className="mx-3 hidden flex-1 max-w-xl md:max-w-2xl sm:block">
         <button
           type="button"
           onClick={onOpenCommand}
-          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-text-muted bg-surface-subtle hover:bg-surface border border-border hover:border-border-hover rounded-lg transition-all shadow-2xs group cursor-pointer"
-          title="Buscar clientes, productos #PRD, citas o acciones (Ctrl+K)"
+          className="group flex w-full items-center justify-between rounded-full border border-black/[0.06] dark:border-white/[0.1] bg-black/[0.035] dark:bg-white/[0.06] px-4 py-2 text-xs text-text-muted shadow-xs transition-all duration-200 hover:bg-black/[0.06] dark:hover:bg-white/[0.1] hover:border-black/[0.1] dark:hover:border-white/[0.15] ios-press cursor-pointer"
+          title="Buscar clientes, productos #PRD, citas o acciones (⌘K)"
         >
-          <div className="flex items-center gap-2 truncate">
-            <Search className="w-3.5 h-3.5 text-text-muted group-hover:text-primary transition-colors shrink-0" />
-            <span className="truncate">Buscar clientes, productos #PRD, citas...</span>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <Search className="h-3.5 w-3.5" />
+            </span>
+            <span className="truncate font-medium text-text-muted transition-colors group-hover:text-text">
+              Buscar clientes, productos #PRD, citas o acciones...
+            </span>
           </div>
-          <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-medium text-text-muted bg-surface border border-border rounded shadow-2xs shrink-0">
-            <span className="text-[9px]">Ctrl</span> K
+          <kbd className="hidden items-center gap-1 rounded-full border border-black/[0.06] dark:border-white/[0.1] bg-white/80 dark:bg-white/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-text-muted dark:text-white/70 shadow-xs lg:inline-flex">
+            <span>⌘</span> K
           </kbd>
         </button>
       </div>
 
-      {/* ─── Right Section (Quick Actions, Notifications, Theme, User) ──── */}
-      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        {/* Mobile Search Trigger */}
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
         <IconButton
           icon={<Search className="h-4 w-4 text-text" />}
           aria-label="Abrir buscador global"
           variant="ghost"
-          size="sm"
+          size="md"
           onClick={onOpenCommand}
-          className="sm:hidden"
+          className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.06] ios-press sm:hidden"
         />
 
-        {/* Widget de Racha Diaria en Barra Superior */}
         <div className="hidden sm:block">
-          <StreakCounter />
+          <QuickActionsMenu />
         </div>
 
-        {/* Desktop Quick Actions Dropdown */}
-        <QuickActionsMenu />
-
-        {/* Centro de Notificaciones */}
         <CentroNotificaciones />
 
-        {/* Selector de Tema */}
         <IconButton
-          icon={app?.theme === 'dark' ? <Sun className="h-4 w-4 text-warning" /> : <Moon className="h-4 w-4 text-text" />}
+          icon={app?.theme === 'dark' ? <Sun className="h-4 w-4 text-[#FF9500]" /> : <Moon className="h-4 w-4 text-text" />}
           aria-label={app?.theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           variant="ghost"
-          size="sm"
+          size="md"
+          className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.06] ios-press hover:bg-black/[0.06] dark:hover:bg-white/[0.1]"
           onClick={toggleTheme}
         />
 
-        {/* Perfil de Usuario */}
-        <div className="border-l border-border-subtle pl-1 sm:pl-2">
+        <div className="border-l border-black/[0.06] dark:border-white/[0.08] pl-2 sm:pl-3">
           <UserProfileMenu />
         </div>
       </div>

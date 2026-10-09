@@ -25,14 +25,14 @@ export function Switch({
   const switchId = id || (label ? `sw-${String(label).replace(/\s+/g, '-').toLowerCase()}` : generatedId)
 
   const dimensions = {
-    sm: { track: 'w-8 h-4', thumb: 'w-3 h-3', translate: 'translate-x-4' },
-    md: { track: 'w-11 h-6', thumb: 'w-4 h-4', translate: 'translate-x-5' },
+    sm: { track: 'w-9 h-5 p-0.5', thumb: 'w-4 h-4', translate: 'translate-x-4' },
+    md: { track: 'w-12 h-7 p-0.5', thumb: 'w-6 h-6', translate: 'translate-x-5' },
   }
 
   const { track, thumb, translate } = dimensions[size]
 
   return (
-    <div className={`flex items-start gap-3 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
+    <div className={`flex items-start gap-3 ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}>
       <button
         id={switchId}
         type="button"
@@ -41,10 +41,10 @@ export function Switch({
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={[
-          'relative inline-flex items-center shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out border border-transparent',
+          'relative inline-flex items-center shrink-0 cursor-pointer rounded-full transition-colors duration-240 ease-in-out border border-transparent ios-press',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
           track,
-          checked ? 'bg-primary' : 'bg-surface-subtle border-border',
+          checked ? 'bg-[#34C759]' : 'bg-[#E9E9EA] dark:bg-[#39393D]',
           disabled ? 'cursor-not-allowed' : '',
         ]
           .filter(Boolean)
@@ -52,9 +52,9 @@ export function Switch({
       >
         <span
           className={[
-            'pointer-events-none inline-block rounded-full bg-white shadow-xs transform transition duration-200 ease-in-out',
+            'pointer-events-none inline-block rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.22),0_0_1px_rgba(0,0,0,0.12)] transform transition-transform duration-240 cubic-bezier(0.32,0.72,0,1)',
             thumb,
-            checked ? translate : 'translate-x-1',
+            checked ? translate : 'translate-x-0.5',
           ]
             .filter(Boolean)
             .join(' ')}

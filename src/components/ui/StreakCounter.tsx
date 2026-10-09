@@ -44,8 +44,8 @@ export function StreakCounter({
         } bg-neutral-900/80 dark:bg-black/60 border-white/10 hover:border-white/20 text-neutral-200`}
         style={{
           boxShadow: isAnimating
-            ? `0 0 16px ${tokens.accentGlow}`
-            : '0 2px 8px rgba(0,0,0,0.2)',
+            ? '0 4px 12px rgba(0,0,0,0.15)'
+            : '0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
         {/* Icono de chispa / racha con animación activa */}
@@ -89,9 +89,9 @@ export function StreakCounter({
       {/* Popover flotante con detalles de la jornada */}
       {(popoverOpen || showDetails) && (
         <div
-          className="absolute top-full mt-2 right-0 sm:left-0 sm:right-auto z-50 w-64 p-3.5 backdrop-blur-xl bg-neutral-900/95 dark:bg-[#0d0e14]/95 border border-white/15 rounded-xl shadow-2xl shadow-black/80 text-neutral-100 animate-fade-in"
+          className="absolute top-full mt-2 right-0 sm:left-0 sm:right-auto z-50 w-64 p-3.5 backdrop-blur-xl bg-neutral-900/95 dark:bg-[#0d0e14]/95 border border-white/15 rounded-xl shadow-2xl text-neutral-100 animate-fade-in"
           style={{
-            boxShadow: `0 12px 28px -4px rgba(0,0,0,0.8), 0 0 16px -2px ${tokens.accentGlow}`,
+            boxShadow: '0 12px 28px -4px rgba(0,0,0,0.4)',
           }}
         >
           {/* Header */}

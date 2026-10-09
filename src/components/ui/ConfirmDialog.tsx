@@ -109,7 +109,7 @@ export function ConfirmDialog({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface-elevated p-4 shadow-elevated animate-slide-up z-10 focus:outline-none sm:max-h-[calc(100dvh-2rem)] sm:p-6"
+        className="relative z-10 my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-xl animate-slide-up focus:outline-none sm:max-h-[calc(100dvh-2rem)] sm:p-6"
       >
         {/* Botón cerrar esquina superior derecha */}
         <div className="absolute top-4 right-4">
@@ -120,13 +120,14 @@ export function ConfirmDialog({
             size="sm"
             disabled={loading}
             onClick={onCancel}
+            className="rounded-full bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] ios-press"
           />
         </div>
 
         <div className="flex items-start gap-4">
           {/* Badge de icono semántico */}
           <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${currentConfig.style}`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs ${currentConfig.style}`}
           >
             {currentConfig.icon}
           </div>

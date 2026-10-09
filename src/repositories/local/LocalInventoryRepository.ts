@@ -21,6 +21,7 @@ const SEED_PRODUCTOS: Producto[] = [
     stock_minimo: 5,
     unidad: 'unidad',
     activo: true,
+    imagen: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=400&q=80',
     proveedor: 'Cosméticos del Valle S.A.',
     created_at: '2026-01-15T10:00:00Z',
   },
@@ -36,6 +37,7 @@ const SEED_PRODUCTOS: Producto[] = [
     stock_minimo: 6,
     unidad: 'unidad',
     activo: true,
+    imagen: 'https://images.unsplash.com/photo-1608248597359-54378772a1be?auto=format&fit=crop&w=400&q=80',
     proveedor: 'Aromas Naturales Spa',
     created_at: '2026-02-01T12:00:00Z',
   },
@@ -51,8 +53,57 @@ const SEED_PRODUCTOS: Producto[] = [
     stock_minimo: 8,
     unidad: 'caja',
     activo: true,
+    imagen: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
     proveedor: 'Distribuidora Médica Central',
     created_at: '2026-01-20T09:30:00Z',
+  },
+  {
+    id: 4,
+    sku: 'PROD-004',
+    nombre: 'Serum Facial Vitamina C Antioxidante 30ml',
+    descripcion: 'Tratamiento iluminador y antiedad con concentración activa al 15%.',
+    categoria: 'Productos de Belleza',
+    precio_venta: 38,
+    precio_costo: 18,
+    stock_actual: 12,
+    stock_minimo: 4,
+    unidad: 'unidad',
+    activo: true,
+    imagen: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=400&q=80',
+    proveedor: 'Dermacare Laboratorios',
+    created_at: '2026-02-10T11:00:00Z',
+  },
+  {
+    id: 5,
+    sku: 'PROD-005',
+    nombre: 'Crema Hidratante Facial Ácido Hialurónico 50g',
+    descripcion: 'Crema reparadora intensiva con micro-esferas de hidratación.',
+    categoria: 'Productos de Belleza',
+    precio_venta: 32,
+    precio_costo: 15,
+    stock_actual: 8,
+    stock_minimo: 5,
+    unidad: 'unidad',
+    activo: true,
+    imagen: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80',
+    proveedor: 'Cosméticos del Valle S.A.',
+    created_at: '2026-02-15T15:20:00Z',
+  },
+  {
+    id: 6,
+    sku: 'PROD-006',
+    nombre: 'Mascarilla Reparadora Hidratante de Colágeno',
+    descripcion: 'Mascarilla reafirmante para tratamientos faciales en cabina.',
+    categoria: 'Productos de Belleza',
+    precio_venta: 14,
+    precio_costo: 6,
+    stock_actual: 0,
+    stock_minimo: 5,
+    unidad: 'unidad',
+    activo: true,
+    imagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    proveedor: 'Dermacare Laboratorios',
+    created_at: '2026-02-18T16:00:00Z',
   },
 ]
 
@@ -65,6 +116,14 @@ export class LocalInventoryRepository implements IInventoryRepository {
       this.collectionProductos,
       SEED_PRODUCTOS
     )
+    // Asegurar que si hay productos previos en localStorage sin imagen, hereden la imagen del seed
+    list = list.map((p) => {
+      if (!p.imagen) {
+        const seedMatch = SEED_PRODUCTOS.find((s) => s.id === p.id || s.sku === p.sku)
+        if (seedMatch?.imagen) return { ...p, imagen: seedMatch.imagen }
+      }
+      return p
+    })
     if (params?.categoria) {
       list = list.filter((p) => p.categoria === params.categoria)
     }
@@ -107,6 +166,7 @@ export class LocalInventoryRepository implements IInventoryRepository {
       stock_minimo: data.stock_minimo || 5,
       unidad: data.unidad || 'unidad',
       activo: data.activo ?? true,
+      imagen: data.imagen,
       proveedor: data.proveedor,
       created_at: new Date().toISOString(),
     }

@@ -98,14 +98,14 @@ export function Dropdown({
           role="menu"
           aria-orientation="vertical"
           className={[
-            'absolute z-popover mt-1.5 rounded-xl bg-surface-elevated text-text border border-border shadow-elevated py-1.5 animate-fade-in',
+            'absolute z-popover mt-2 rounded-xl bg-surface text-text border border-border shadow-lg p-1.5 animate-fade-in',
             align === 'right' ? 'right-0' : 'left-0',
             width,
           ].join(' ')}
         >
           {items.map((item, idx) => {
             if (item.divider) {
-              return <div key={`div-${item.id || idx}`} className="my-1 border-t border-border-subtle" role="separator" />
+              return <div key={`div-${item.id || idx}`} className="my-1 border-t border-black/[0.06] dark:border-white/[0.08]" role="separator" />
             }
 
             return (
@@ -123,13 +123,13 @@ export function Dropdown({
                   }
                 }}
                 className={[
-                  'w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-left transition-colors cursor-pointer',
-                  'focus:outline-none focus:bg-surface-subtle',
+                  'w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left transition-all duration-150 cursor-pointer rounded-xl ios-press',
+                  'focus:outline-none focus:bg-black/[0.05] dark:focus:bg-white/[0.08]',
                   item.disabled
                     ? 'opacity-40 cursor-not-allowed text-text-muted'
                     : item.danger
-                    ? 'text-danger hover:bg-danger-soft'
-                    : 'text-text hover:bg-surface-subtle',
+                    ? 'text-[#FF3B30] hover:bg-[#FF3B30]/10'
+                    : 'text-text dark:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08]',
                 ]
                   .filter(Boolean)
                   .join(' ')}

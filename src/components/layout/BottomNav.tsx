@@ -18,31 +18,33 @@ export function BottomNav({
 }: BottomNavProps) {
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 text-text border-t border-border shadow-elevated backdrop-blur px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1"
-      aria-label="Navegación móvil inferior"
+      className="md:hidden fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-md w-[calc(100%-1.5rem)] sm:w-auto ios-dock p-1.5 px-2.5 transition-all select-none"
+      aria-label="Navegación móvil"
     >
-      <div className="flex items-center justify-around max-w-md mx-auto">
+      <div className="flex items-center justify-around gap-1">
         {/* 1. Inicio */}
         <NavLink
           to="/dashboard"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer min-w-[56px] ${
+            `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer min-w-[58px] ios-press ${
               isActive
-                ? 'text-primary font-semibold'
-                : 'text-text-muted hover:text-text'
+                ? 'bg-primary/10 text-primary font-bold shadow-2xs'
+                : 'text-text-muted hover:text-text hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
             }`
           }
         >
           {({ isActive }) => (
             <>
               <div
-                className={`p-1 rounded-md transition-colors ${
-                  isActive ? 'bg-primary-soft' : ''
+                className={`transition-transform duration-200 ${
+                  isActive ? 'scale-110' : ''
                 }`}
               >
-                <LayoutDashboard className="w-5 h-5" />
+                <LayoutDashboard className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-[10px] mt-0.5 leading-none">Inicio</span>
+              <span className="text-[10px] mt-0.5 font-medium leading-none tracking-tight">
+                Inicio
+              </span>
             </>
           )}
         </NavLink>
@@ -51,63 +53,67 @@ export function BottomNav({
         <NavLink
           to="/citas"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer min-w-[56px] ${
+            `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer min-w-[58px] ios-press ${
               isActive
-                ? 'text-primary font-semibold'
-                : 'text-text-muted hover:text-text'
+                ? 'bg-primary/10 text-primary font-bold shadow-2xs'
+                : 'text-text-muted hover:text-text hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
             }`
           }
         >
           {({ isActive }) => (
             <>
               <div
-                className={`p-1 rounded-md transition-colors ${
-                  isActive ? 'bg-primary-soft' : ''
+                className={`transition-transform duration-200 ${
+                  isActive ? 'scale-110' : ''
                 }`}
               >
-                <CalendarDays className="w-5 h-5" />
+                <CalendarDays className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-[10px] mt-0.5 leading-none">Agenda</span>
+              <span className="text-[10px] mt-0.5 font-medium leading-none tracking-tight">
+                Agenda
+              </span>
             </>
           )}
         </NavLink>
 
-        {/* 3. Central Quick Action Button (+) */}
-        <div className="flex flex-col items-center justify-center -mt-4 min-w-[56px]">
+        {/* Quick action */}
+        <div className="flex flex-col items-center justify-center -mt-4 min-w-[60px]">
           <button
             type="button"
             onClick={onOpenQuickActions}
             aria-label="Abrir acciones rápidas"
-            className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-white shadow-md flex items-center justify-center border-2 border-surface transition-transform duration-150 active:scale-90 cursor-pointer"
+            className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#f2f2f7] bg-primary text-white shadow-md transition-transform duration-200 hover:scale-105 active:scale-95 dark:border-[#000000] cursor-pointer group"
           >
-            <Plus className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
+            <Plus className="w-5 h-5 stroke-[2.5] transition-transform duration-200 group-active:rotate-90" aria-hidden="true" />
           </button>
-          <span className="text-[10px] font-medium text-text-muted mt-0.5 leading-none">
+          <span className="text-[10px] font-bold text-text-muted mt-0.5 leading-none">
             Rápido
           </span>
         </div>
 
-        {/* 4. POS / Caja */}
+        {/* 4. POS / Ventas */}
         <NavLink
           to="/ventas"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-colors cursor-pointer min-w-[56px] ${
+            `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer min-w-[58px] ios-press ${
               isActive
-                ? 'text-primary font-semibold'
-                : 'text-text-muted hover:text-text'
+                ? 'bg-primary/10 text-primary font-bold shadow-2xs'
+                : 'text-text-muted hover:text-text hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
             }`
           }
         >
           {({ isActive }) => (
             <>
               <div
-                className={`p-1 rounded-md transition-colors ${
-                  isActive ? 'bg-primary-soft' : ''
+                className={`transition-transform duration-200 ${
+                  isActive ? 'scale-110' : ''
                 }`}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-[10px] mt-0.5 leading-none">POS</span>
+              <span className="text-[10px] mt-0.5 font-medium leading-none tracking-tight">
+                POS
+              </span>
             </>
           )}
         </NavLink>
@@ -117,15 +123,14 @@ export function BottomNav({
           type="button"
           onClick={onToggleDrawer}
           aria-label="Abrir menú de navegación completo"
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-text-muted hover:text-text transition-colors cursor-pointer min-w-[56px]"
+          className="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-text-muted hover:text-text hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all cursor-pointer min-w-[58px] ios-press"
         >
-          <div className="p-1 rounded-md">
-            <Menu className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] mt-0.5 leading-none">Más</span>
+          <Menu className="w-5 h-5 stroke-[2.2]" />
+          <span className="text-[10px] mt-0.5 font-medium leading-none tracking-tight">
+            Más
+          </span>
         </button>
       </div>
     </nav>
   )
 }
-

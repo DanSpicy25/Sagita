@@ -29,7 +29,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             type="checkbox"
             disabled={disabled}
             aria-invalid={Boolean(error)}
-            className="w-4 h-4 rounded border-border bg-surface text-primary focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-4.5 h-4.5 rounded-[7px] border-border bg-black/[0.03] dark:bg-white/[0.06] text-[#007AFF] accent-[#007AFF] focus:ring-2 focus:ring-[#007AFF] focus:ring-offset-1 focus:ring-offset-surface transition-all cursor-pointer disabled:cursor-not-allowed"
             {...props}
           />
         </div>

@@ -120,7 +120,7 @@ export function CitaBlock({
     preventContextMenu: true,
   })
 
-  const radius = 12
+  const radius = 18
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference * (1 - progress)
 
@@ -136,7 +136,7 @@ export function CitaBlock({
         onMouseEnter={() => setShowHoverPreview(true)}
         onMouseLeave={() => setShowHoverPreview(false)}
         className={[
-          'relative text-[11px] font-medium px-1.5 py-0.5 rounded-md border-l-2 flex items-center justify-between gap-1 select-none transition-all cursor-pointer truncate',
+          'relative text-[11px] font-medium px-2 py-1 rounded-lg border-l-[3px] flex items-center justify-between gap-1.5 select-none transition-all cursor-pointer truncate shadow-2xs hover:shadow-xs hover:scale-[1.01]',
           config.borderClass,
           config.bgClass,
           className,
@@ -145,35 +145,38 @@ export function CitaBlock({
           .join(' ')}
         title={`${horaInicio} - ${cita.servicio?.nombre || 'Cita'} (${cita.cliente?.nombre || 'Cliente'})`}
       >
-        <div className="flex items-center gap-1 min-w-0 truncate">
-          <StatusIcon className={`w-3 h-3 shrink-0 ${config.textClass}`} aria-hidden="true" />
-          <span className="font-mono text-[10px] font-semibold shrink-0 text-text">
+        <div className="flex items-center gap-1.5 min-w-0 truncate">
+          <StatusIcon className={`w-3.5 h-3.5 shrink-0 ${config.textClass}`} aria-hidden="true" />
+          <span className="font-mono text-[10px] font-bold shrink-0 text-text">
             {horaInicio}
           </span>
-          <span className="truncate text-text font-normal">
+          <span className="truncate text-text font-medium">
             {cita.servicio?.nombre || 'Cita'}
           </span>
         </div>
 
-        {/* Feedback visual de Long-Press en táctil */}
+        {/* Feedback visual de Long-Press en táctil / interacción */}
         {isPressing && (
           <div
-            className="fixed pointer-events-none z-popover -translate-x-1/2 -translate-y-1/2"
+            className="fixed pointer-events-none z-modal -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
             style={{ left: coords.x, top: coords.y }}
           >
-            <svg className="w-8 h-8 -rotate-90 drop-shadow-sm" viewBox="0 0 32 32">
-              <circle cx="16" cy="16" r={radius} className="fill-surface/90 stroke-border/40" strokeWidth="2" />
-              <circle
-                cx="16"
-                cy="16"
-                r={radius}
-                className="fill-none stroke-primary"
-                strokeWidth="2.5"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-              />
-            </svg>
+            <div className="relative w-14 h-14 flex items-center justify-center rounded-full bg-surface border-2 border-border shadow-2xl backdrop-blur-md">
+              <svg className="w-14 h-14 -rotate-90 absolute inset-0" viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r={radius} className="fill-none stroke-border/40" strokeWidth="4" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r={radius}
+                  className="fill-none stroke-primary"
+                  strokeWidth="4"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <Clock className="w-5 h-5 text-primary animate-pulse relative z-10" />
+            </div>
           </div>
         )}
       </div>
@@ -271,25 +274,28 @@ export function CitaBlock({
         </div>
       )}
 
-      {/* ── Feedback visual de Long-Press en táctil ── */}
+      {/* ── Feedback visual de Long-Press en táctil / interacción ── */}
       {isPressing && (
         <div
-          className="fixed pointer-events-none z-popover -translate-x-1/2 -translate-y-1/2"
+          className="fixed pointer-events-none z-modal -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
           style={{ left: coords.x, top: coords.y }}
         >
-          <svg className="w-10 h-10 -rotate-90 drop-shadow-md" viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r={radius} className="fill-surface/90 stroke-border/40" strokeWidth="2" />
-            <circle
-              cx="16"
-              cy="16"
-              r={radius}
-              className="fill-none stroke-primary"
-              strokeWidth="2.5"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-            />
-          </svg>
+          <div className="relative w-14 h-14 flex items-center justify-center rounded-full bg-surface border-2 border-border shadow-2xl backdrop-blur-md">
+            <svg className="w-14 h-14 -rotate-90 absolute inset-0" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r={radius} className="fill-none stroke-border/40" strokeWidth="4" />
+              <circle
+                cx="22"
+                cy="22"
+                r={radius}
+                className="fill-none stroke-primary"
+                strokeWidth="4"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+              />
+            </svg>
+            <Clock className="w-5 h-5 text-primary animate-pulse relative z-10" />
+          </div>
         </div>
       )}
     </div>

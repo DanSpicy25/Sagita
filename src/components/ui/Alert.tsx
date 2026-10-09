@@ -58,7 +58,7 @@ export function Alert({
     <div
       role="alert"
       className={[
-        'flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border shadow-xs transition-all duration-150',
+        'flex items-start gap-3 p-3.5 sm:p-4 rounded-[20px] border shadow-xs transition-all duration-150 backdrop-blur-md',
         current.container,
         className,
       ]
@@ -76,7 +76,7 @@ export function Alert({
           type="button"
           onClick={onClose}
           aria-label="Cerrar alerta"
-          className="shrink-0 p-1 rounded-md text-text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+          className="shrink-0 p-1 rounded-full text-text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>

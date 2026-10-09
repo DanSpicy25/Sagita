@@ -101,21 +101,17 @@ export function PageWrapper({ children }: PageWrapperProps) {
   const showBreadcrumbs = location.pathname !== '/dashboard' && breadcrumbItems.length > 0
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg text-text">
-      {/* ── Top Navbar ──────────────────────────────────────────────────────── */}
+    <div className="ios-app-shell flex min-h-screen flex-col bg-[var(--color-bg)] text-text font-sans selection:bg-primary/20 selection:text-primary">
       <Navbar
         onOpenCommand={() => setCommandOpen(true)}
         onToggleMobileDrawer={() => setMobileDrawerOpen((prev) => !prev)}
       />
 
-      <div className="flex flex-1 min-w-0">
-        {/* ── Desktop Collapsible Sidebar ───────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 min-w-0 overflow-hidden">
         <Sidebar />
 
-        {/* ── Main Viewport Container ────────────────────────────────────────── */}
-        <main className="min-w-0 flex-1 overflow-x-hidden p-3.5 sm:p-6 lg:p-8 pb-24 md:pb-8 animate-fade-in">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3.5 pb-24 sm:p-6 lg:p-8 md:pb-8 animate-fade-in app-main-scroll">
           <div className="mx-auto w-full max-w-[1720px] space-y-4">
-            {/* Dynamic Breadcrumbs */}
             {showBreadcrumbs && (
               <div className="hidden sm:block pb-1">
                 <Breadcrumbs
@@ -126,7 +122,6 @@ export function PageWrapper({ children }: PageWrapperProps) {
               </div>
             )}
 
-            {/* Page View Body */}
             {children}
           </div>
         </main>

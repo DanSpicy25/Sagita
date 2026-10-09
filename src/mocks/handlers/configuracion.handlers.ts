@@ -13,7 +13,7 @@ export const CONFIGURACION_DEFAULT: ConfiguracionMarcaBlanca = {
   favicon_url: '',
   color_primario: '#18181B',
   paleta_predefinida: 'slate',
-  fuente_tipografica: 'Inter',
+  fuente_tipografica: 'DM Sans',
   radio_esquinas: 'moderno',
   marca_blanca_activa: false,
   ocultar_marca_sistema: false,

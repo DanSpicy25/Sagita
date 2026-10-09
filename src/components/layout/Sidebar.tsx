@@ -30,27 +30,36 @@ export function Sidebar() {
   return (
     <aside
       className={[
-        'hidden md:flex sticky top-14 sm:top-16 left-0 z-sticky h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] shrink-0 flex-col border-r border-border',
-        'bg-surface text-text transition-[width] duration-200 ease-in-out select-none',
-        isOpen ? 'w-60' : 'w-[4.25rem]',
+        'hidden md:flex sticky top-0 z-sticky h-full min-h-0 shrink-0 flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-[#f8f8fa]/90 dark:bg-[#1c1c1e]/90 text-text dark:text-white backdrop-blur-xl transition-[width] duration-300 ease-out select-none',
+        isOpen ? 'w-72' : 'w-[4.75rem]',
       ].join(' ')}
       aria-label="Navegación principal"
     >
-      {/* Scrollable Navigation List */}
-      <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-4 scrollbar-none">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-4 scrollbar-none">
+        {isOpen && (
+          <div className="flex items-center gap-3 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.04] px-3.5 py-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted dark:text-white/45">Tu espacio</span>
+              <span className="mt-0.5 block truncate text-xs font-semibold text-text dark:text-white">Gestión del negocio</span>
+            </span>
+          </div>
+        )}
         {activeCategories.map((cat) => {
           const categoryModules = visibleModules.filter((m) => m.category === cat.id)
           if (categoryModules.length === 0) return null
 
           return (
-            <section key={cat.id} className="space-y-1">
+            <section key={cat.id} className="space-y-1.5">
               {isOpen && (
-                <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted/80 dark:text-white/40">
                   {cat.label}
                 </p>
               )}
 
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                 {categoryModules.map((mod) => {
                   const Icon = MODULE_ICONS[mod.id]
                   const label = mod.termKey ? tTerm(mod.termKey, mod.label) : mod.label
@@ -61,20 +70,24 @@ export function Sidebar() {
                       to={mod.route!}
                       aria-label={label}
                       className={({ isActive }) => [
-                        'min-h-9 flex items-center gap-2.5 rounded-lg py-2 transition-all duration-150 cursor-pointer',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                        isOpen ? 'px-2.5' : 'justify-center px-0 w-10 mx-auto',
+                        'relative min-h-10 flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150 ease-out cursor-pointer ios-press',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                        isOpen ? 'justify-start' : 'mx-auto w-10 justify-center px-0',
                         isActive
-                          ? isOpen
-                            ? 'border-l-[3px] border-primary bg-primary-soft pl-[7px] font-semibold text-primary shadow-2xs'
-                            : 'bg-primary-soft font-semibold text-primary shadow-2xs'
-                          : 'text-text-muted hover:bg-surface-subtle hover:text-text',
+                          ? 'bg-primary-soft font-semibold text-primary dark:text-primary'
+                          : 'text-text/75 dark:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] hover:text-text dark:hover:text-white',
                       ]
                         .filter(Boolean)
                         .join(' ')}
                     >
-                      <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      {isOpen && <span className="truncate text-xs">{label}</span>}
+                      {({ isActive }) => (
+                        <>
+                          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${isActive ? 'bg-primary text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-text-muted dark:text-white/60'}`}>
+                            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          </span>
+                          {isOpen && <span className="truncate">{label}</span>}
+                        </>
+                      )}
                     </NavLink>
                   )
 
@@ -94,44 +107,43 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Mostrador POS Camaleónico */}
-      <div className="px-2 py-1 border-t border-border-subtle">
+      <div className="px-3 py-2 border-t border-black/[0.06] dark:border-white/[0.08]">
         <NavLink
           to="/mostrador"
           className={[
-            'w-full flex items-center py-2 rounded-lg text-amber-500 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors cursor-pointer text-xs font-semibold',
-            isOpen ? 'justify-start px-2.5 gap-2' : 'justify-center px-0 w-10 mx-auto',
+            'w-full min-h-10 flex items-center rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.04] py-2 text-primary transition-all duration-150 hover:bg-primary-soft ios-press cursor-pointer text-xs font-semibold',
+            isOpen ? 'justify-start gap-2.5 px-3' : 'mx-auto w-10 justify-center px-0',
           ].join(' ')}
           title="Terminal POS y Mostrador Multivertical Camaleónico"
         >
-          <span className="text-sm shrink-0">⚡</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-soft text-sm">⚡</span>
           {isOpen && <span className="truncate">Mostrador POS</span>}
         </NavLink>
       </div>
 
-      {/* Demo Center Sales Link */}
-      <div className="px-2 py-1.5 border-t border-border-subtle">
+      <div className="px-3 py-2 border-t border-black/[0.06] dark:border-white/[0.08]">
         <NavLink
           to="/demo"
           className={[
-            'w-full flex items-center py-2 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors cursor-pointer text-xs font-semibold',
-            isOpen ? 'justify-start px-2.5 gap-2' : 'justify-center px-0 w-10 mx-auto',
+            'w-full min-h-10 flex items-center rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.04] py-2 text-success transition-all duration-150 hover:bg-success-soft ios-press cursor-pointer text-xs font-semibold',
+            isOpen ? 'justify-start gap-2.5 px-3' : 'mx-auto w-10 justify-center px-0',
           ].join(' ')}
           title="Demo Center Interactivo para Ventas"
         >
-          <Sparkles className="h-4 w-4 shrink-0 text-emerald-500" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-success-soft text-success">
+            <Sparkles className="h-3.5 w-3.5" />
+          </span>
           {isOpen && <span className="truncate">Demo Center</span>}
         </NavLink>
       </div>
 
-      {/* Collapse / Expand Toggle Footer */}
-      <div className="border-t border-border-subtle p-2">
+      <div className="border-t border-black/[0.06] dark:border-white/[0.08] p-3">
         <button
           type="button"
           onClick={() => app?.toggleSidebar()}
           className={[
-            'w-full flex items-center py-2 rounded-lg text-text-muted hover:text-text hover:bg-surface-subtle transition-colors cursor-pointer text-xs font-medium',
-            isOpen ? 'justify-start px-2.5 gap-2' : 'justify-center',
+            'w-full min-h-10 flex items-center rounded-2xl py-2 text-text-muted hover:text-text dark:text-white/60 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] ios-press cursor-pointer text-xs font-medium transition-colors',
+            isOpen ? 'justify-start gap-2.5 px-3' : 'justify-center px-0',
           ].join(' ')}
           aria-label={isOpen ? 'Contraer menú lateral' : 'Expandir menú lateral'}
           title={isOpen ? 'Contraer menú lateral' : 'Expandir menú lateral'}

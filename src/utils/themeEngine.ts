@@ -50,7 +50,7 @@ export function applyTheme(tema: TemaConfig, isDarkOverride?: boolean): void {
   }
 
   // 5. Paleta de Colores Semánticos y Primarios
-  const primaryColor = tema.colors?.primary || '#6366f1'
+  const primaryColor = tema.colors?.primary || '#18181B'
   root.style.setProperty('--color-brand-primary', primaryColor)
   root.style.setProperty('--color-primary', primaryColor)
 
@@ -93,7 +93,7 @@ export function applyTheme(tema: TemaConfig, isDarkOverride?: boolean): void {
   }
 
   // 6. Tipografía dinámica y escala
-  const fontBody = tema.typography?.fontBody || 'Inter'
+  const fontBody = tema.typography?.fontBody || 'DM Sans'
   const fontHeading = tema.typography?.fontHeading || fontBody
   const fontScale = tema.typography?.fontScale || 'normal'
 
@@ -180,12 +180,12 @@ export function configuracionToTema(cfg: ConfiguracionMarcaBlanca): TemaConfig {
       privacyUrl: cfg.url_privacidad,
     },
     colors: {
-      primary: cfg.color_primario || '#6366f1',
+      primary: cfg.color_primario || '#18181B',
       palettePredefinida: cfg.paleta_predefinida || 'custom',
     },
     typography: {
-      fontBody: (cfg.fuente_tipografica as FuenteTipografica) || 'Inter',
-      fontHeading: (cfg.fuente_tipografica as FuenteTipografica) || 'Inter',
+      fontBody: (cfg.fuente_tipografica as FuenteTipografica) || 'DM Sans',
+      fontHeading: (cfg.fuente_tipografica as FuenteTipografica) || 'DM Sans',
       fontScale: cfg.escala_fuente || 'normal',
     },
     radius: cfg.radio_esquinas || 'moderno',

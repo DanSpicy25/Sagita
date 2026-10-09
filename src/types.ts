@@ -183,7 +183,7 @@ export interface DiaLibre {
 
 export interface Empleado {
   id: number
-  usuario_id: number
+  usuario_id?: number
   nombre: string
   apellido?: string
   email: string
@@ -1484,4 +1484,3 @@ export interface BusinessProfile {
   terminos_personalizados?: Partial<Record<TermKey, string>>
   updated_at: string
 }
-

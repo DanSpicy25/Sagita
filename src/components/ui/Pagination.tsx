@@ -67,7 +67,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           aria-label="Página anterior"
-          className="p-1.5 rounded-lg border border-border text-text hover:bg-surface-subtle disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="p-1.5 rounded-xl border border-black/[0.08] dark:border-white/[0.1] text-text hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer ios-press"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -82,10 +82,10 @@ export function Pagination({
               key={`page-${p}`}
               onClick={() => onPageChange(Number(p))}
               aria-current={currentPage === p ? 'page' : undefined}
-              className={`w-8 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              className={`w-8 h-8 rounded-xl text-xs font-medium transition-all cursor-pointer ios-press ${
                 currentPage === p
                   ? 'bg-primary text-white font-semibold shadow-xs'
-                  : 'text-text hover:bg-surface-subtle border border-transparent'
+                  : 'text-text hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-transparent'
               }`}
             >
               {p}
@@ -97,7 +97,7 @@ export function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
           aria-label="Página siguiente"
-          className="p-1.5 rounded-lg border border-border text-text hover:bg-surface-subtle disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="p-1.5 rounded-xl border border-black/[0.08] dark:border-white/[0.1] text-text hover:bg-black/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer ios-press"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
